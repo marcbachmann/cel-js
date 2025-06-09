@@ -1,0 +1,444 @@
+import {test, describe} from 'node:test'
+import {evaluate} from '../index.js'
+
+describe('macros', () => {
+  describe('has macro', () => {
+    const context = {
+      object: {property: true},
+      user: {
+        profile: {
+          name: 'John',
+          email: null,
+          foo: {bar: 'hello'}
+        }
+      }
+    }
+    test('should return true when nested property exists', (t) => {
+      t.assert.strictEqual(evaluate('has(object.property)', context), true)
+    })
+
+    test('should return false when property does not exist', (t) => {
+      t.assert.strictEqual(evaluate('has(object.nonExisting)', context), false)
+    })
+
+    test('should return false when property does not exist in logical expression', (t) => {
+      const result = evaluate('has(object.nonExisting) && object.nonExisting', context)
+      t.assert.strictEqual(result, false)
+    })
+
+    test('should work with nested properties', (t) => {
+      t.assert.strictEqual(evaluate('has(user.profile.name)', context), true)
+      t.assert.strictEqual(evaluate('has(user.profile.email)', context), true)
+      t.assert.strictEqual(evaluate('has(user.profile.foo.bar)', context), true)
+      t.assert.strictEqual(evaluate('has(user.profile.age)', context), false)
+      t.assert.strictEqual(evaluate('has(user.something.foo)', context), false)
+    })
+
+    const exactlyOneError = /has\(\) requires exactly one argument/
+    test('should throw when no arguments are passed', (t) => {
+      t.assert.throws(() => evaluate('has()'), exactlyOneError)
+    })
+
+    test('should throw when multiple arguments are passed', (t) => {
+      t.assert.throws(() => evaluate('has(a, b)', {a: 1, b: 2}), exactlyOneError)
+    })
+
+    test('should throw when argument is not a field selection', (t) => {
+      const error = /has\(\) requires a field selection/
+      t.assert.throws(() => evaluate('has(object)', context), error)
+      t.assert.throws(() => evaluate('has(object[0])', context), error)
+      t.assert.throws(() => evaluate('has(object["property"])', context), error)
+    })
+
+    describe('should throw when argument is an atomic expression', () => {
+      const error = /has\(\) does not support atomic expressions/
+
+      test('string literals', (t) => {
+        t.assert.throws(() => evaluate('has("")'), error)
+        t.assert.throws(() => evaluate('has("a")'), error)
+      })
+
+      test('array literals', (t) => {
+        t.assert.throws(() => evaluate('has([])'), error)
+        t.assert.throws(() => evaluate('has([1])'), error)
+      })
+
+      test('boolean literals', (t) => {
+        t.assert.throws(() => evaluate('has(true)'), error)
+        t.assert.throws(() => evaluate('has(false)'), error)
+      })
+
+      test('number literals', (t) => {
+        t.assert.throws(() => evaluate('has(42)'), error)
+        t.assert.throws(() => evaluate('has(0)'), error)
+        t.assert.throws(() => evaluate('has(0.3)'), error)
+      })
+    })
+  })
+
+  describe('all macro', () => {
+    const context = {
+      numbers: [1, 2, 3, 4, 5],
+      emptyList: [],
+      strings: ['hello', 'world', 'test'],
+      mixed: [1, 'two', 3, 'four'],
+      users: [
+        {name: 'Alice', age: 25, active: true},
+        {name: 'Bob', age: 30, active: true},
+        {name: 'Charlie', age: 35, active: true}
+      ],
+      products: [
+        {name: 'laptop', price: 999, inStock: true},
+        {name: 'mouse', price: 25, inStock: false},
+        {name: 'keyboard', price: 75, inStock: true}
+      ]
+    }
+
+    test('should return true when all elements match predicate', (t) => {
+      t.assert.strictEqual(evaluate('all(numbers, x, x > 0)', context), true)
+      t.assert.strictEqual(evaluate('all(numbers, x, x <= 5)', context), true)
+      t.assert.strictEqual(evaluate('all(users, u, u.active)', context), true)
+    })
+
+    test('should return false when not all elements match predicate', (t) => {
+      t.assert.strictEqual(evaluate('all(numbers, x, x > 3)', context), false)
+      t.assert.strictEqual(evaluate('all(products, p, p.inStock)', context), false)
+    })
+
+    test('should return true for empty list', (t) => {
+      t.assert.strictEqual(evaluate('all(emptyList, x, x > 0)', context), true)
+    })
+
+    test('should work with string operations', (t) => {
+      t.assert.strictEqual(evaluate('all(strings, s, s.size() > 3)', context), true)
+      t.assert.strictEqual(evaluate('all(strings, s, s.size() > 5)', context), false)
+    })
+
+    test('should work with complex predicates', (t) => {
+      t.assert.strictEqual(
+        evaluate('all(users, u, u.age >= 25 && u.name.size() > 2)', context),
+        true
+      )
+      t.assert.strictEqual(evaluate('all(products, p, p.price > 20 || p.inStock)', context), true)
+    })
+
+    test('should throw with wrong number of arguments', (t) => {
+      const error = /all\(list, var, predicate\) requires exactly 3 arguments/
+      t.assert.throws(() => evaluate('all()', context), error)
+      t.assert.throws(() => evaluate('all(numbers)', context), error)
+      t.assert.throws(() => evaluate('all(numbers, x)', context), error)
+      t.assert.throws(
+        () => evaluate('all(numbers, x > 0, y < 10)', context),
+        /Invalid iteration variable/
+      )
+    })
+
+    test('should throw with non-list argument', (t) => {
+      const error =
+        /all\(\) cannot iterate over non-collection type\. argument must be a list, map, or object/
+      t.assert.throws(() => evaluate('all(42, x, x > 0)', context), error)
+      t.assert.throws(() => evaluate('all("string", x, x > 0)', context), error)
+    })
+
+    test('should throw with invalid operation', (t) => {
+      t.assert.throws(
+        () => evaluate('all(mixed, x, x > 0)', context),
+        /no such overload: String > Number/
+      )
+    })
+  })
+
+  describe('exists macro', () => {
+    const context = {
+      numbers: [1, 2, 3, 4, 5],
+      emptyList: [],
+      strings: ['hello', 'world', 'test'],
+      users: [
+        {name: 'Alice', age: 25, active: true},
+        {name: 'Bob', age: 30, active: false},
+        {name: 'Charlie', age: 35, active: true}
+      ]
+    }
+
+    test('should return true when at least one element matches', (t) => {
+      t.assert.strictEqual(evaluate('exists(numbers, x, x > 4)', context), true)
+      t.assert.strictEqual(evaluate('numbers.exists(x, x > 4)', context), true)
+      t.assert.strictEqual(evaluate('exists(users, u, u.age > 30)', context), true)
+      t.assert.strictEqual(evaluate('users.exists(u, u.age > 30)', context), true)
+      t.assert.strictEqual(evaluate('exists(users, u, !u.active)', context), true)
+      t.assert.strictEqual(evaluate('users.exists(u, !u.active)', context), true)
+    })
+
+    test('should return false when no elements match', (t) => {
+      t.assert.strictEqual(evaluate('exists(numbers, x, x > 10)', context), false)
+      t.assert.strictEqual(evaluate('exists(users, u, u.age > 40)', context), false)
+      t.assert.strictEqual(evaluate('exists(strings, s, s == "missing")', context), false)
+    })
+
+    test('should return false for empty list', (t) => {
+      t.assert.strictEqual(evaluate('exists(emptyList, x, x > 0)', context), false)
+    })
+
+    test('should work with string operations', (t) => {
+      t.assert.strictEqual(evaluate('exists(strings, s, s.startsWith("h"))', context), true)
+      t.assert.strictEqual(evaluate('exists(strings, s, s.startsWith("z"))', context), false)
+    })
+
+    test('should throw with wrong number of arguments', (t) => {
+      const error = /exists\(list, var, predicate\) requires exactly 3 arguments/
+      t.assert.throws(() => evaluate('exists()', context), error)
+      t.assert.throws(() => evaluate('exists(numbers)', context), error)
+      t.assert.throws(() => evaluate('exists(numbers, x)', context), error)
+    })
+  })
+
+  describe('exists_one macro', () => {
+    const context = {
+      numbers: [1, 2, 3, 4, 5],
+      duplicates: [1, 2, 2, 3, 4],
+      emptyList: [],
+      users: [
+        {name: 'Alice', age: 25, admin: false},
+        {name: 'Bob', age: 30, admin: true},
+        {name: 'Charlie', age: 35, admin: false}
+      ]
+    }
+
+    test('should return true when exactly one element matches', (t) => {
+      t.assert.strictEqual(evaluate('exists_one(numbers, x, x == 3)', context), true)
+      t.assert.strictEqual(evaluate('numbers.exists_one(x, x == 3)', context), true)
+
+      t.assert.strictEqual(evaluate('exists_one(users, u, u.admin)', context), true)
+      t.assert.strictEqual(evaluate('users.exists_one(u, u.admin)', context), true)
+
+      t.assert.strictEqual(evaluate('exists_one(numbers, x, x > 4)', context), true)
+      t.assert.strictEqual(evaluate('numbers.exists_one(x, x > 4)', context), true)
+    })
+
+    test('should return false when no elements match', (t) => {
+      t.assert.strictEqual(evaluate('exists_one(numbers, x, x > 10)', context), false)
+      t.assert.strictEqual(evaluate('exists_one(users, u, u.age > 40)', context), false)
+    })
+
+    test('should return false when multiple elements match', (t) => {
+      t.assert.strictEqual(evaluate('exists_one(numbers, x, x > 2)', context), false)
+      t.assert.strictEqual(evaluate('exists_one(duplicates, x, x == 2)', context), false)
+      t.assert.strictEqual(evaluate('exists_one(users, u, !u.admin)', context), false)
+    })
+
+    test('should return false for empty list', (t) => {
+      t.assert.strictEqual(evaluate('exists_one(emptyList, x, x > 0)', context), false)
+    })
+
+    test('should throw with wrong number of arguments', (t) => {
+      const error = /exists_one\(list, var, predicate\) requires exactly 3 arguments/
+      t.assert.throws(() => evaluate('exists_one()', context), error)
+      t.assert.throws(() => evaluate('exists_one(numbers)', context), error)
+      t.assert.throws(() => evaluate('exists_one(numbers, x)', context), error)
+    })
+  })
+
+  describe('map macro', () => {
+    const context = {
+      numbers: [1, 2, 3, 4, 5],
+      emptyList: [],
+      strings: ['hello', 'world'],
+      users: [
+        {name: 'Alice', age: 25},
+        {name: 'Bob', age: 30}
+      ]
+    }
+
+    test('should transform all elements', (t) => {
+      t.assert.deepStrictEqual(evaluate('map(numbers, x, x * 2)', context), [2, 4, 6, 8, 10])
+      t.assert.deepStrictEqual(evaluate('map(numbers, x, x + 10)', context), [11, 12, 13, 14, 15])
+    })
+
+    test('should work with string transformations', (t) => {
+      t.assert.deepStrictEqual(evaluate('map(strings, s, s.size())', context), [5, 5])
+    })
+
+    test('should work with object property access', (t) => {
+      t.assert.deepStrictEqual(evaluate('map(users, u, u.name)', context), ['Alice', 'Bob'])
+      t.assert.deepStrictEqual(evaluate('map(users, u, u.age * 2)', context), [50, 60])
+    })
+
+    test('should work with complex transformations', (t) => {
+      t.assert.deepStrictEqual(evaluate('map(users, u, u.age > 25)', context), [false, true])
+    })
+
+    test('should return empty list for empty input', (t) => {
+      t.assert.deepStrictEqual(evaluate('map(emptyList, x, x * 2)', context), [])
+    })
+
+    test('should throw with wrong number of arguments', (t) => {
+      const error = /map\(list, var, predicate\) requires exactly 3 arguments/
+      t.assert.throws(() => evaluate('map()', context), error)
+      t.assert.throws(() => evaluate('map(numbers)', context), error)
+      t.assert.throws(() => evaluate('map(numbers, x)', context), error)
+    })
+
+    test('supports combination with other macros', (t) => {
+      t.assert.deepStrictEqual(
+        evaluate('numbers.filter(x, x < 5).map(x, x * 2)', context),
+        [2, 4, 6, 8]
+      )
+
+      t.assert.deepStrictEqual(
+        evaluate('users.map(u, numbers.filter(x < 2).map(n + u.age)[0])', context),
+        [26, 31]
+      )
+    })
+  })
+
+  describe('filter macro', () => {
+    const context = {
+      numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      emptyList: [],
+      strings: ['hello', 'world', 'test', 'example'],
+      users: [
+        {name: 'Alice', age: 25, active: true},
+        {name: 'Bob', age: 30, active: false},
+        {name: 'Charlie', age: 35, active: true},
+        {name: 'David', age: 20, active: false}
+      ]
+    }
+
+    test('should filter elements based on predicate', (t) => {
+      t.assert.deepStrictEqual(evaluate('filter(numbers, x, x > 5)', context), [6, 7, 8, 9, 10])
+      t.assert.deepStrictEqual(
+        evaluate('filter(numbers, x, x % 2 == 0)', context),
+        [2, 4, 6, 8, 10]
+      )
+    })
+
+    test('should work with string filtering', (t) => {
+      t.assert.deepStrictEqual(evaluate('filter(strings, s, s.size() > 4)', context), [
+        'hello',
+        'world',
+        'example'
+      ])
+      t.assert.deepStrictEqual(evaluate('filter(strings, s, s.startsWith("t"))', context), ['test'])
+    })
+
+    test('should work with object property filtering', (t) => {
+      const activeUsers = [
+        {name: 'Alice', age: 25, active: true},
+        {name: 'Charlie', age: 35, active: true}
+      ]
+      t.assert.deepStrictEqual(evaluate('filter(users, u, u.active)', context), activeUsers)
+
+      const youngUsers = [
+        {name: 'Alice', age: 25, active: true},
+        {name: 'David', age: 20, active: false}
+      ]
+      t.assert.deepStrictEqual(evaluate('filter(users, u, u.age < 30)', context), youngUsers)
+    })
+
+    test('should work with complex predicates', (t) => {
+      const result = [{name: 'Alice', age: 25, active: true}]
+      t.assert.deepStrictEqual(
+        evaluate('filter(users, u, u.active && u.age < 30)', context),
+        result
+      )
+    })
+
+    test('should return empty list when no elements match', (t) => {
+      t.assert.deepStrictEqual(evaluate('filter(numbers, x, x > 20)', context), [])
+      t.assert.deepStrictEqual(evaluate('filter(users, u, u.age > 50)', context), [])
+    })
+
+    test('should return empty list for empty input', (t) => {
+      t.assert.deepStrictEqual(evaluate('filter(emptyList, x, x > 0)', context), [])
+    })
+
+    test('should throw with wrong number of arguments', (t) => {
+      const error = /filter\(list, var, predicate\) requires exactly 3 arguments/
+      t.assert.throws(() => evaluate('filter()', context), error)
+      t.assert.throws(() => evaluate('filter(numbers)', context), error)
+      t.assert.throws(() => evaluate('filter(numbers, x)', context), error)
+    })
+  })
+
+  describe('macro chaining and composition', () => {
+    const context = {
+      numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      users: [
+        {name: 'Alice', age: 25, scores: [85, 90, 88]},
+        {name: 'Bob', age: 30, scores: [75, 80, 85]},
+        {name: 'Charlie', age: 35, scores: [95, 92, 98]}
+      ]
+    }
+
+    test('should chain filter and map', (t) => {
+      // Filter even numbers then double them
+      const evenNumbers = [2, 4, 6, 8, 10]
+      const doubledEvens = [4, 8, 12, 16, 20]
+
+      t.assert.deepStrictEqual(evaluate('filter(numbers, x % 2 == 0)', context), evenNumbers)
+      t.assert.deepStrictEqual(
+        evaluate('map(filter(numbers, x, x % 2 == 0), x * 2)', context),
+        doubledEvens
+      )
+    })
+
+    test('should use all with filtered results', (t) => {
+      // Check if all filtered users have high scores
+      t.assert.strictEqual(
+        evaluate('all(filter(users, u, u.age > 30), u, u.name.size() > 3)', context),
+        true
+      )
+    })
+
+    test('should combine multiple macros', (t) => {
+      // Complex example: check if there exists exactly one user over 30 with all scores above 90
+      t.assert.strictEqual(
+        evaluate('exists_one(users, u, u.age > 30 && all(u.scores, s, s > 90))', context),
+        true
+      )
+    })
+  })
+
+  describe('macro error handling', () => {
+    test('should handle invalid expressions in predicates', (t) => {
+      t.assert.throws(
+        () => evaluate('[1, 2, 3].all(nonexistent > 0)'),
+        /Unknown variable: nonexistent/
+      )
+    })
+
+    test('should handle type errors in predicates', (t) => {
+      t.assert.throws(
+        () => evaluate('filter([1, 2], s.startsWith("w"))'),
+        /Function not found: startsWith for Number/
+      )
+    })
+  })
+
+  describe('macro with maps and objects', () => {
+    test('should work with object iteration', (t) => {
+      const context = {
+        scores: {alice: 85, bob: 90, charlie: 75},
+        mapScores: new Map([
+          ['alice', 85],
+          ['bob', 90],
+          ['charlie', 75]
+        ])
+      }
+
+      t.assert.strictEqual(evaluate('all(scores, s, scores[s] > 70)', context), true)
+      t.assert.strictEqual(evaluate('exists(scores, s, scores[s] > 85)', context), true)
+      t.assert.deepStrictEqual(evaluate('filter(scores, s, scores[s] > 80)', context), [
+        'alice',
+        'bob'
+      ])
+
+      t.assert.strictEqual(evaluate('all(mapScores, s, mapScores[s] > 70)', context), true)
+      t.assert.strictEqual(evaluate('exists(mapScores, s, mapScores[s] > 85)', context), true)
+      t.assert.deepStrictEqual(evaluate('filter(mapScores, s, mapScores[s] > 80)', context), [
+        'alice',
+        'bob'
+      ])
+    })
+  })
+})

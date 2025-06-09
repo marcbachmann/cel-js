@@ -1,0 +1,34 @@
+{
+  "name": "@marcbachmann/cel-js",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "test": "node --test test/**/*.test.js",
+    "test:watch": "node --test --watch test/**/*.test.js",
+    "examples": "node examples.js",
+    "benchmark": "node benchmark/index.js",
+    "benchmark:memory": "node --expose-gc benchmark/memory.js"
+  },
+  "keywords": [
+    "cel",
+    "common expression language",
+    "expression",
+    "language",
+    "parser",
+    "evaluator"
+  ],
+  "author": "Marc Bachmann",
+  "license": "MIT",
+  "description": "A lightweight Common Expression Language (CEL) implementation in JavaScript with zero dependencies",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.2.0"
+  }
+}
