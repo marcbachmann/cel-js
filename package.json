@@ -30,5 +30,9 @@
   "devDependencies": {
     "eslint-config-prettier": "^10.1.5",
     "globals": "^16.2.0"
+  },
+  "release": {
+    "extends": "@livingdocs/semantic-release-presets/npm-github-verify",
+    "branches": ["main"]
   }
 }

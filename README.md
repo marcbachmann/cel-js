@@ -317,6 +317,7 @@ try {
 ### Complex Example
 
 ```javascript
+import {parse} from '@marcbachmann/cel-js'
 const context = {
   request: {
     method: 'POST',
@@ -350,7 +351,7 @@ const rules = {
   // Complex access rule
   canAccess: `
     resource.public ||
-    isAdmin ||
+    request.user.role == "admin" ||
     (isOwner && request.method in ["GET", "PUT"])
   `,
 
@@ -359,7 +360,7 @@ const rules = {
     request.method == "POST" &&
     has(request.body.name) &&
     has(request.body.email) &&
-    request.body.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
+    request.body.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$")
   `
 }
 
