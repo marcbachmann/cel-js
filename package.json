@@ -1,18 +1,7 @@
 {
-  "name": "@marcbachmann/cel-js",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "index.js",
-  "exports": {
-    ".": "./index.js"
-  },
-  "scripts": {
-    "test": "node --test test/**/*.test.js",
-    "test:watch": "node --test --watch test/**/*.test.js",
-    "examples": "node examples.js",
-    "benchmark": "node benchmark/index.js",
-    "benchmark:memory": "node --expose-gc benchmark/memory.js"
-  },
+  "name": "@marcbachmann/cel",
+  "version": "0.0.0-placeholder",
+  "description": "A lightweight Common Expression Language (CEL) implementation in JavaScript with zero dependencies",
   "keywords": [
     "cel",
     "common expression language",
@@ -21,18 +10,39 @@
     "parser",
     "evaluator"
   ],
-  "author": "Marc Bachmann",
+  "homepage": "https://github.com/marcbachmann/cel-js#readme",
+  "bugs": {
+    "url": "https://github.com/marcbachmann/cel-js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcbachmann/cel-js.git"
+  },
   "license": "MIT",
-  "description": "A lightweight Common Expression Language (CEL) implementation in JavaScript with zero dependencies",
-  "engines": {
-    "node": ">=18.0.0"
+  "author": "Marc Bachmann",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/**/*.test.js",
+    "test:watch": "node --test --watch test/**/*.test.js",
+    "examples": "node examples.js",
+    "benchmark": "node benchmark/index.js",
+    "benchmark:memory": "node --expose-gc benchmark/memory.js"
   },
   "devDependencies": {
     "eslint-config-prettier": "^10.1.5",
     "globals": "^16.2.0"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "release": {
     "extends": "@livingdocs/semantic-release-presets/npm-github-verify",
-    "branches": ["main"]
+    "branches": [
+      "main"
+    ]
   }
 }
