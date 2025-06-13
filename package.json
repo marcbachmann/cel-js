@@ -22,9 +22,18 @@
   "author": "Marc Bachmann",
   "type": "module",
   "exports": {
-    ".": "./index.js"
+    ".": "./index.js",
+    "./evaluator": "./evaluator.js",
+    "./serialize": "./serialize.js"
   },
   "main": "index.js",
+  "files": [
+    "index.js",
+    "evaluator.js",
+    "serialize.js",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --test test/**/*.test.js",
     "test:watch": "node --test --watch test/**/*.test.js",
