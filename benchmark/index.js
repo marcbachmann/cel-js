@@ -168,8 +168,7 @@ let TEST_EXPRESSIONS = [
   {
     name: 'List Comprehension',
     expression: 'items.filter(x, x > 10).map(x, x * 2)',
-    context: {items: [5, 10, 15, 20, 25]},
-    skipThirdParty: true
+    context: {items: [5, 10, 15, 20, 25]}
   },
 
   // Mixed operations (may not be supported by cel-js)
@@ -364,15 +363,8 @@ function benchmarkEvaluation() {
 
   for (const test of TEST_EXPRESSIONS) {
     console.log(`\n▸ ${test.name}`)
-    const expr = test.expression.trim()
-    if (expr.includes('\n') || expr.length > 60) {
-      console.log(`  Expression:`)
-      expr.split('\n').forEach((line) => {
-        console.log(`    ${line.trim()}`)
-      })
-    } else {
-      console.log(`  Expression: ${expr}`)
-    }
+    const expr = serialize(celJsLocal.parse(test.expression).ast)
+    console.log(`  Expression: ${expr}`)
 
     let localParsed, packageParsed
     const parseSupported = {local: true, package: true}
@@ -492,15 +484,8 @@ function benchmarkCombined() {
 
   for (const test of TEST_EXPRESSIONS) {
     console.log(`\n▸ ${test.name}`)
-    const expr = test.expression.trim()
-    if (expr.includes('\n') || expr.length > 60) {
-      console.log(`  Expression:`)
-      expr.split('\n').forEach((line) => {
-        console.log(`    ${line.trim()}`)
-      })
-    } else {
-      console.log(`  Expression: ${expr}`)
-    }
+    const expr = serialize(celJsLocal.parse(test.expression).ast)
+    console.log(`  Expression: ${expr}`)
 
     // Benchmark @marcbachmann/cel-js
     const localResults = runBenchmark(

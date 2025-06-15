@@ -1227,7 +1227,9 @@ class Evaluator {
       }
       case 'call': {
         const functionName = ast[1]
-        if (this.macros[functionName]) return this.macros[functionName].call(this, ast[2])
+        if (this.macros[functionName] && functionName === 'has') {
+          return this.macros[functionName].call(this, ast[2])
+        }
 
         const fn = this.fns[functionName]
         if (typeof fn === 'function') return fn(...ast[2].map((arg) => this.eval(arg)))
