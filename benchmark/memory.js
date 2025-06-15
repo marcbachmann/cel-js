@@ -90,11 +90,7 @@ function measureMemory(name, fn, iterations = 1) {
 
     // Run the function
     const start = performance.now()
-    const results = []
-
-    for (let i = 0; i < iterations; i++) {
-      results.push(fn())
-    }
+    for (let i = 0; i < iterations; i++) fn()
 
     const duration = performance.now() - start
 
@@ -113,7 +109,6 @@ function measureMemory(name, fn, iterations = 1) {
     return {
       duration,
       memory: memoryDiff,
-      results,
       perIteration: {
         heapUsed: memoryDiff.heapUsed / iterations,
         duration: duration / iterations
@@ -126,41 +121,6 @@ function measureMemory(name, fn, iterations = 1) {
       error: error.message
     }
   }
-}
-
-/**
- * Estimate object size by analyzing its structure
- */
-function estimateObjectSize(_obj) {
-  const seen = new WeakSet()
-
-  function sizeOf(obj) {
-    if (obj === null || obj === undefined) return 0
-    if (typeof obj !== 'object') return 8 // Rough estimate for primitives
-
-    if (seen.has(obj)) return 0
-    seen.add(obj)
-
-    let size = 0
-
-    if (Array.isArray(obj)) {
-      size += 8 * obj.length // Array overhead
-      for (const item of obj) {
-        size += sizeOf(item)
-      }
-    } else {
-      const keys = Object.keys(obj)
-      size += 8 * keys.length // Object overhead
-      for (const key of keys) {
-        size += key.length * 2 // String size (UTF-16)
-        size += sizeOf(obj[key])
-      }
-    }
-
-    return size
-  }
-
-  return sizeOf(_obj)
 }
 
 /**
@@ -240,19 +200,6 @@ function benchmarkParsingMemory() {
     } else if (!localResults.supported && packageResults.supported) {
       console.log(`\n  Result: Only cel-js package supports this expression`)
       onlyPackage++
-    }
-
-    // Analyze AST structure if both support it
-    if (localResults.supported && packageResults.supported) {
-      const localAST = localResults.results[0]
-      const packageAST = packageResults.results[0]
-
-      const localASTSize = estimateObjectSize(localAST)
-      const packageASTSize = estimateObjectSize(packageAST)
-
-      console.log(`\n  AST Size (estimated):`)
-      console.log(`    @marcbachmann/cel-js: ${formatBytes(localASTSize)}`)
-      console.log(`    cel-js package:       ${formatBytes(packageASTSize)}`)
     }
   }
 
