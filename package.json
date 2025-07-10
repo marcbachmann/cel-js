@@ -1,5 +1,5 @@
 {
-  "name": "@marcbachmann/cel",
+  "name": "@marcbachmann/cel-js",
   "version": "0.0.0-placeholder",
   "description": "A lightweight Common Expression Language (CEL) implementation in JavaScript with zero dependencies",
   "keywords": [
