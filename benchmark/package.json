@@ -10,6 +10,6 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "cel-js": "0.8.0"
+    "cel-js": "0.8.2"
   }
 }
