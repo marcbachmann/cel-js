@@ -152,6 +152,18 @@ describe('string literals and escapes', () => {
     test('should handle raw strings in expressions', (t) => {
       t.assert.strictEqual(evaluate('r"\\n" + "\\n"'), '\\n\n')
     })
+
+    test('should handle string concatenation for numbers and booleans', (t) => {
+      t.assert.strictEqual(evaluate(`'I am ' + 35 + ' years old'`), 'I am 35 years old')
+      t.assert.strictEqual(
+        evaluate(`'I am ' + years + ' years old'`, {years: Infinity}),
+        'I am Infinity years old'
+      )
+
+      t.assert.strictEqual(evaluate(`'this is ' + true`), 'this is true')
+      t.assert.strictEqual(evaluate(`'this is ' + null`), 'this is null')
+      t.assert.strictEqual(evaluate(`null + ' is null'`), 'null is null')
+    })
   })
 
   describe('bytes operations', () => {

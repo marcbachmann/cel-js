@@ -1131,7 +1131,10 @@ class Evaluator {
       case '+': {
         const left = this.eval(ast[1])
         const right = this.eval(ast[2])
-        if (typeof left !== typeof right) {
+
+        if (typeof left === 'string' || typeof right === 'string') {
+          const v = stringConcat(left, right)
+          if (v !== undefined) return v
           throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`)
         }
 
@@ -1139,8 +1142,6 @@ class Evaluator {
           case 'number':
             if (Number.isFinite(left) && Number.isFinite(right)) return left + right
             break
-          case 'string':
-            return left + right
           case 'object':
             if (left === null || right === null || left.constructor !== right.constructor) {
               break
@@ -1328,6 +1329,25 @@ class PredicateEvaluator extends Evaluator {
     for (let i = 0; i < this.predicateVars.length; i++) this.ctx[this.predicateVars[i]] = item
     return this.eval(this.predicateExpression)
   }
+}
+
+function toStringForConcat(v) {
+  switch (typeof v) {
+    case 'string':
+    case 'boolean':
+    case 'number':
+      return v
+    case 'object':
+      if (v === null) return null
+  }
+}
+
+function stringConcat(left, right) {
+  left = toStringForConcat(left)
+  if (left === undefined) return
+  right = toStringForConcat(right)
+  if (right === undefined) return
+  return left + right
 }
 
 // Get the type name for namespace lookup
