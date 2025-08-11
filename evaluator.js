@@ -907,6 +907,24 @@ const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
     for (let i = 0; i < len; i++) bytes[i] = str.charCodeAt(i) & 0xff
     return bytes
   },
+  double(v) {
+    if (arguments.length !== 1) throw new EvaluationError('double() requires exactly one argument')
+    if (typeof v === 'number') return v
+    if (typeof v === 'string') {
+      if (v === 'NaN') return NaN
+      if (v && !v.includes(' ')) {
+        const parsed = Number(v)
+        if (!isNaN(parsed)) return parsed
+      }
+      throw new EvaluationError('double() conversion error: string is not a valid number')
+    }
+
+    if (typeof v === 'boolean') return v ? 1 : 0
+    if (v === null) return 0
+    if (typeof v === 'object')
+      throw new EvaluationError('double() type error: cannot convert to double')
+    throw new EvaluationError('double() type error: unsupported type')
+  },
   string(v) {
     switch (typeof v) {
       case 'string':

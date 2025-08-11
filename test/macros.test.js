@@ -450,4 +450,86 @@ describe('macros', () => {
       ])
     })
   })
+
+  describe('double function', () => {
+    test('should return numbers as-is', (t) => {
+      t.assert.strictEqual(evaluate('double(42)'), 42)
+      t.assert.strictEqual(evaluate('double(3.14)'), 3.14)
+      t.assert.strictEqual(evaluate('double(-5)'), -5)
+      t.assert.strictEqual(evaluate('double(0)'), 0)
+      t.assert.strictEqual(evaluate('double(-0)'), -0)
+      t.assert.strictEqual(evaluate('double(inf)', {inf: Infinity}), Infinity)
+      t.assert.strictEqual(evaluate('double(inf)', {inf: -Infinity}), -Infinity)
+      t.assert.ok(Number.isNaN(evaluate('double(nan)', {nan: NaN})))
+    })
+
+    test('should convert valid numeric strings to numbers', (t) => {
+      t.assert.strictEqual(evaluate('double("42")'), 42)
+      t.assert.strictEqual(evaluate('double("3.14")'), 3.14)
+      t.assert.strictEqual(evaluate('double("-5")'), -5)
+      t.assert.strictEqual(evaluate('double("0")'), 0)
+      t.assert.strictEqual(evaluate('double("123.456")'), 123.456)
+      t.assert.strictEqual(evaluate('double("1e5")'), 100000)
+      t.assert.strictEqual(evaluate('double("1.23e-4")'), 0.000123)
+      t.assert.strictEqual(evaluate('double("Infinity")'), Infinity)
+      t.assert.strictEqual(evaluate('double("-Infinity")'), -Infinity)
+      t.assert.ok(Number.isNaN(evaluate('double("NaN")')))
+    })
+
+    test('should convert booleans to 1.0 and 0.0', (t) => {
+      t.assert.strictEqual(evaluate('double(true)'), 1.0)
+      t.assert.strictEqual(evaluate('double(false)'), 0.0)
+    })
+
+    test('should convert null to 0.0', (t) => {
+      t.assert.strictEqual(evaluate('double(null)'), 0.0)
+    })
+
+    test('should throw error for invalid string conversions', (t) => {
+      const error = /double\(\) conversion error: string is not a valid number/
+      t.assert.throws(() => evaluate('double("not a number")'), error)
+      t.assert.throws(() => evaluate('double("abc")'), error)
+      t.assert.throws(() => evaluate('double("")'), error)
+      t.assert.throws(() => evaluate('double(" ")'), error)
+      t.assert.throws(() => evaluate('double(" 1")'), error)
+      t.assert.throws(() => evaluate('double("1 ")'), error)
+      t.assert.throws(() => evaluate('double("1.1.1")'), error)
+      t.assert.throws(() => evaluate('double("1 0")'), error)
+    })
+
+    test('should throw error for objects, arrays, and bytes', (t) => {
+      const typeError = /double\(\) type error: cannot convert to double/
+      t.assert.throws(() => evaluate('double({})'), typeError)
+      t.assert.throws(() => evaluate('double([])'), typeError)
+      t.assert.throws(() => evaluate('double([1, 2, 3])'), typeError)
+      t.assert.throws(() => evaluate('double(bytes("test"))'), typeError)
+    })
+
+    test('should work with variables from context', (t) => {
+      const context = {
+        num: 42,
+        str: '3.14',
+        bool: true,
+        nullVal: null
+      }
+      t.assert.strictEqual(evaluate('double(num)', context), 42)
+      t.assert.strictEqual(evaluate('double(str)', context), 3.14)
+      t.assert.strictEqual(evaluate('double(bool)', context), 1.0)
+      t.assert.strictEqual(evaluate('double(nullVal)', context), 0.0)
+    })
+
+    test('should work in expressions', (t) => {
+      t.assert.strictEqual(evaluate('double("5") + double("3")'), 8)
+      t.assert.strictEqual(evaluate('double("3.14") * 2'), 6.28)
+      t.assert.strictEqual(evaluate('double(true) + double(false)'), 1)
+    })
+
+    test('should throw with no arguments', (t) => {
+      t.assert.throws(() => evaluate('double()'), /double\(\) requires exactly one argument/)
+    })
+
+    test('should throw with multiple arguments', (t) => {
+      t.assert.throws(() => evaluate('double(1, 2)'), /double\(\) requires exactly one argument/)
+    })
+  })
 })
