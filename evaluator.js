@@ -880,6 +880,30 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
 })
 
 const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
+  bool(v) {
+    if (typeof v === 'boolean') return v
+
+    if (typeof v === 'string') {
+      switch (v) {
+        case '1':
+        case 't':
+        case 'true':
+        case 'TRUE':
+        case 'True':
+          return true
+        case '0':
+        case 'f':
+        case 'false':
+        case 'FALSE':
+        case 'False':
+          return false
+        default:
+          throw new EvaluationError(`bool() conversion error: invalid string value "${v}"`)
+      }
+    }
+
+    throw new EvaluationError('bool() requires a boolean or string argument')
+  },
   timestamp(v) {
     if (typeof v !== 'string') {
       throw new EvaluationError('timestamp() requires a string argument')
