@@ -503,4 +503,139 @@ describe('built-in functions', () => {
       t.assert.throws(() => evaluate('double(1, 2)'), /double\(\) requires exactly one argument/)
     })
   })
+
+  describe('bool function', () => {
+    describe('boolean identity', () => {
+      test('should return true for bool(true)', (t) => {
+        t.assert.strictEqual(evaluate('bool(true)'), true)
+      })
+
+      test('should return false for bool(false)', (t) => {
+        t.assert.strictEqual(evaluate('bool(false)'), false)
+      })
+    })
+
+    describe('string to boolean conversion', () => {
+      describe('truthy string values', () => {
+        test('should return true for string "1"', (t) => {
+          t.assert.strictEqual(evaluate('bool("1")'), true)
+        })
+
+        test('should return true for string "t"', (t) => {
+          t.assert.strictEqual(evaluate('bool("t")'), true)
+        })
+
+        test('should return true for string "true" (lowercase)', (t) => {
+          t.assert.strictEqual(evaluate('bool("true")'), true)
+        })
+
+        test('should return true for string "TRUE" (uppercase)', (t) => {
+          t.assert.strictEqual(evaluate('bool("TRUE")'), true)
+        })
+
+        test('should return true for string "True" (pascalcase)', (t) => {
+          t.assert.strictEqual(evaluate('bool("True")'), true)
+        })
+      })
+
+      describe('falsy string values', () => {
+        test('should return false for string "0"', (t) => {
+          t.assert.strictEqual(evaluate('bool("0")'), false)
+        })
+
+        test('should return false for string "f"', (t) => {
+          t.assert.strictEqual(evaluate('bool("f")'), false)
+        })
+
+        test('should return false for string "false" (lowercase)', (t) => {
+          t.assert.strictEqual(evaluate('bool("false")'), false)
+        })
+
+        test('should return false for string "FALSE" (uppercase)', (t) => {
+          t.assert.strictEqual(evaluate('bool("FALSE")'), false)
+        })
+
+        test('should return false for string "False" (pascalcase)', (t) => {
+          t.assert.strictEqual(evaluate('bool("False")'), false)
+        })
+      })
+
+      describe('invalid string values', () => {
+        const invalidStrings = [
+          'T',
+          'F',
+          'yes',
+          'no',
+          '2',
+          '',
+          ' true ',
+          'tRuE',
+          'fAlSe',
+          'TrUe',
+          'FaLsE'
+        ]
+
+        for (const invalidString of invalidStrings) {
+          test(`should throw error for invalid string "${invalidString}"`, (t) => {
+            t.assert.throws(
+              () => evaluate(`bool("${invalidString}")`),
+              new RegExp(`bool\\(\\) conversion error: invalid string value "${invalidString}"`)
+            )
+          })
+        }
+      })
+    })
+
+    describe('invalid argument types', () => {
+      const invalidArg = /bool\(\) requires a boolean or string argument/
+      test('should throw error for number argument', (t) => {
+        t.assert.throws(() => evaluate('bool(1)'), invalidArg)
+      })
+
+      test('should throw error for null argument', (t) => {
+        t.assert.throws(() => evaluate('bool(null)'), invalidArg)
+      })
+
+      test('should throw error for array argument', (t) => {
+        t.assert.throws(() => evaluate('bool([])'), invalidArg)
+      })
+
+      test('should throw error for object argument', (t) => {
+        t.assert.throws(() => evaluate('bool({})'), invalidArg)
+      })
+    })
+
+    describe('integration with expressions', () => {
+      test('should work with string concatenation', (t) => {
+        t.assert.strictEqual(evaluate('bool("tr" + "ue")'), true)
+      })
+
+      test('should work with conditional expressions', (t) => {
+        t.assert.strictEqual(evaluate('bool("true") ? 1 : 0'), 1)
+        t.assert.strictEqual(evaluate('bool("false") ? 1 : 0'), 0)
+      })
+
+      test('should work with logical operators', (t) => {
+        t.assert.strictEqual(evaluate('bool("true") && bool("true")'), true)
+        t.assert.strictEqual(evaluate('bool("true") && bool("false")'), false)
+        t.assert.strictEqual(evaluate('bool("false") || bool("true")'), true)
+      })
+
+      test('should work with NOT operator', (t) => {
+        t.assert.strictEqual(evaluate('!bool("true")'), false)
+        t.assert.strictEqual(evaluate('!bool("false")'), true)
+      })
+
+      test('should work with variables from context', (t) => {
+        const context = {
+          trueString: 'TRUE',
+          falseString: 'false',
+          boolValue: true
+        }
+        t.assert.strictEqual(evaluate('bool(trueString)', context), true)
+        t.assert.strictEqual(evaluate('bool(falseString)', context), false)
+        t.assert.strictEqual(evaluate('bool(boolValue)', context), true)
+      })
+    })
+  })
 })
