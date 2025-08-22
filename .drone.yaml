@@ -18,6 +18,10 @@ steps:
       GH_TOKEN:
         from_secret: GH_TOKEN
 
+  - name: test-node-20
+    image: node:20-alpine
+    commands: ["node --test"]
+
   - name: test-node-22
     image: node:22-alpine
     commands: ["npm run test -s"]
@@ -38,6 +42,6 @@ trigger:
   event: [push]
 ---
 kind: signature
-hmac: 94ce448fd5b0c012c4354b42d83d19b50afc18d2eb9d9a8ec19bdfa1d3f5eb82
+hmac: 0d845d0c5b4673e24c8916da7c4224e94be7cedfe7bc9784ba8e8b62b8d0ed83
 
 ...
