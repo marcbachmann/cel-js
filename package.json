@@ -46,7 +46,7 @@
     "globals": "^16.2.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20.19.0"
   },
   "release": {
     "extends": "@livingdocs/semantic-release-presets/npm-github-verify",
