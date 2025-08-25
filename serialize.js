@@ -1,6 +1,6 @@
 /**
  * Convert an AST back to CEL expression string
- * @param {*} ast - The AST node to convert
+ * @param {import(".").ASTNode} ast - The AST node to convert
  * @returns {string} The CEL expression string
  */
 export function serialize(ast) {
