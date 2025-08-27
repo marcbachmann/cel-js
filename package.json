@@ -31,6 +31,7 @@
     "index.js",
     "evaluator.js",
     "serialize.js",
+    "*.d.ts",
     "LICENSE",
     "README.md"
   ],
