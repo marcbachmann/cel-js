@@ -22,15 +22,26 @@
   "author": "Marc Bachmann",
   "type": "module",
   "exports": {
-    ".": "./index.js",
-    "./evaluator": "./evaluator.js",
-    "./serialize": "./serialize.js"
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./evaluator": {
+      "types": "./evaluator.d.ts",
+      "default": "./evaluator.js"
+    },
+    "./serialize": {
+      "types": "./serialize.d.ts",
+      "default": "./serialize.js"
+    }
   },
   "main": "index.js",
+  "types": "index.d.ts",
   "files": [
     "index.js",
     "evaluator.js",
     "serialize.js",
+    "*.d.ts",
     "LICENSE",
     "README.md"
   ],
