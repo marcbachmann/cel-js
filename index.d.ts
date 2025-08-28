@@ -9,7 +9,7 @@ export type ASTNode = null | boolean | number | string | Uint8Array | [string, .
  * Can contain any nested structure of primitive values, arrays, and objects.
  */
 export interface Context {
-  [key: any]: any
+  [key: string]: any
 }
 
 /**
@@ -17,6 +17,12 @@ export interface Context {
  */
 interface Functions {
   [functionName: string]: ((...args: any[]) => any) | TypeMethods
+}
+
+export type ParseResult = {
+  (context?: Context, functions?: Functions): any
+  /** The parsed AST */
+  ast: ASTNode
 }
 
 /**
@@ -55,11 +61,7 @@ export class EvaluationError extends Error {
  * console.log(result); // "John is 30 years old"
  * ```
  */
-export function parse(expression: string): {
-  (context?: Context, functions?: Functions): any
-  /** The parsed AST */
-  ast: ASTNode
-}
+export function parse(expression: string): ParseResult
 
 /**
  * Evaluate a CEL expression string directly.
