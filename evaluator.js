@@ -825,9 +825,11 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   // Supports both: all(list, var, predicate) and all(list, predicate)
   all(args) {
     const evaluator = new PredicateEvaluator(this, 'all', args)
-    const items = evaluator.items
-    for (let i = 0; i < items.length; i++) {
-      if (!evaluator.childEvaluate(items[i])) return false
+    for (const item of evaluator.items) {
+      const result = evaluator.childEvaluate(item)
+      if (typeof result !== 'boolean')
+        throw new EvaluationError('all() predicate must return a boolean')
+      if (result === false) return false
     }
     return true
   },
@@ -836,9 +838,11 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   // Supports both: exists(list, var, predicate) and exists(list, predicate)
   exists(args) {
     const evaluator = new PredicateEvaluator(this, 'exists', args)
-    const items = evaluator.items
-    for (let i = 0; i < items.length; i++) {
-      if (evaluator.childEvaluate(items[i])) return true
+    for (const item of evaluator.items) {
+      const result = evaluator.childEvaluate(item)
+      if (typeof result !== 'boolean')
+        throw new EvaluationError('exists() predicate must return a boolean')
+      if (result) return true
     }
     return false
   },
@@ -849,9 +853,12 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
     const evaluator = new PredicateEvaluator(this, 'exists_one', args)
 
     let count = 0
-    const items = evaluator.items
-    for (let i = 0; i < items.length; i++) {
-      if (!evaluator.childEvaluate(items[i])) continue
+    for (const item of evaluator.items) {
+      const result = evaluator.childEvaluate(item)
+      if (typeof result !== 'boolean')
+        throw new EvaluationError('exists_one() predicate must return a boolean')
+      if (result === false) continue
+
       count++
       if (count > 1) return false
     }
@@ -875,6 +882,8 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
     const results = []
     for (const item of evaluator.items) {
       const result = evaluator.childEvaluate(item)
+      if (typeof result !== 'boolean')
+        throw new EvaluationError('filter() predicate must return a boolean')
       if (result) results.push(item)
     }
 
@@ -1306,9 +1315,7 @@ class PredicateEvaluator extends Evaluator {
       // If we have 2 args and the second is just an identifier, treat it as incomplete 3-arg form
       (args.length === 2 && Array.isArray(args[1]) && args[1][0] === 'id')
     ) {
-      throw new EvaluationError(
-        `${functionName}(list, var, predicate) requires exactly 3 arguments`
-      )
+      throw new EvaluationError(`${functionName}(var, predicate) requires exactly 2 arguments`)
     }
 
     this.items = this.getIterableItems(functionName, parent.eval(args[0]))
