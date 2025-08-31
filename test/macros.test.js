@@ -123,7 +123,7 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /all\(list, var, predicate\) requires exactly 3 arguments/
+      const error = /all\(var, predicate\) requires exactly 2 arguments/
       t.assert.throws(() => evaluate('numbers.all()', context), error)
       t.assert.throws(() => evaluate('numbers.all(x)', context), error)
       t.assert.throws(
@@ -189,8 +189,16 @@ describe('macros', () => {
       t.assert.strictEqual(evaluate('strings.exists(s, s.startsWith("z"))', context), false)
     })
 
+    test('should throw if no boolean is returned', (t) => {
+      const error = /exists\(\) predicate must return a boolean/
+      t.assert.throws(() => evaluate('numbers.exists(x, x)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].exists(x, 0)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].exists(x, "")', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].exists(x, {"nr": x})', context), error)
+    })
+
     test('should throw with wrong number of arguments', (t) => {
-      const error = /exists\(list, var, predicate\) requires exactly 3 arguments/
+      const error = /exists\(var, predicate\) requires exactly 2 arguments/
       t.assert.throws(() => evaluate('numbers.exists()', context), error)
       t.assert.throws(() => evaluate('numbers.exists(x)', context), error)
     })
@@ -233,8 +241,16 @@ describe('macros', () => {
       t.assert.strictEqual(evaluate('emptyList.exists_one(x, x > 0)', context), false)
     })
 
+    test('should throw if no boolean is returned', (t) => {
+      const error = /exists_one\(\) predicate must return a boolean/
+      t.assert.throws(() => evaluate('numbers.exists_one(x, x)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, 0)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, "")', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, {"nr": x})', context), error)
+    })
+
     test('should throw with wrong number of arguments', (t) => {
-      const error = /exists_one\(list, var, predicate\) requires exactly 3 arguments/
+      const error = /exists_one\(var, predicate\) requires exactly 2 arguments/
       t.assert.throws(() => evaluate('numbers.exists_one()', context), error)
       t.assert.throws(() => evaluate('numbers.exists_one(x)', context), error)
     })
@@ -281,7 +297,7 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /map\(list, var, predicate\) requires exactly 3 arguments/
+      const error = /map\(var, predicate\) requires exactly 2 arguments/
       t.assert.throws(() => evaluate('numbers.map()', context), error)
       t.assert.throws(() => evaluate('numbers.map(x)', context), error)
     })
@@ -305,7 +321,7 @@ describe('macros', () => {
 
   describe('filter macro', () => {
     const context = {
-      numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      numbers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       emptyList: [],
       strings: ['hello', 'world', 'test', 'example'],
       users: [
@@ -317,8 +333,14 @@ describe('macros', () => {
     }
 
     test('should filter elements based on predicate', (t) => {
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, x > 5)', context), [6, 7, 8, 9, 10])
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, x % 2 == 0)', context), [2, 4, 6, 8, 10])
+      t.assert.deepStrictEqual(evaluate('numbers.filter(x, true)', context), context.numbers)
+      t.assert.deepStrictEqual(evaluate('numbers.filter(x, false)', context), [])
+      t.assert.deepStrictEqual(evaluate('numbers.filter(x > 5)', context), [6, 7, 8, 9, 10])
+
+      t.assert.deepStrictEqual(
+        evaluate('numbers.filter(number, number % 2 == 0)', context),
+        [0, 2, 4, 6, 8, 10]
+      )
     })
 
     test('should work with string filtering', (t) => {
@@ -358,8 +380,16 @@ describe('macros', () => {
       t.assert.deepStrictEqual(evaluate('emptyList.filter(x, x > 0)', context), [])
     })
 
+    test('should throw if no boolean is returned', (t) => {
+      const error = /filter\(\) predicate must return a boolean/
+      t.assert.throws(() => evaluate('numbers.filter(x, x)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].filter(x, 0)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].filter(x, "")', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].filter(x, {"nr": x})', context), error)
+    })
+
     test('should throw with wrong number of arguments', (t) => {
-      const error = /filter\(list, var, predicate\) requires exactly 3 arguments/
+      const error = /filter\(var, predicate\) requires exactly 2 arguments/
       t.assert.throws(() => evaluate('numbers.filter()', context), error)
       t.assert.throws(() => evaluate('numbers.filter(x)', context), error)
     })
@@ -405,6 +435,14 @@ describe('macros', () => {
         evaluate('users.filter(u, u.age > 30).all(u, u.name.size() > 3)', context),
         true
       )
+    })
+
+    test('should throw if no boolean is returned', (t) => {
+      const error = /all\(\) predicate must return a boolean/
+      t.assert.throws(() => evaluate('numbers.all(x, x)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].all(x, 0)', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].all(x, "")', context), error)
+      t.assert.throws(() => evaluate('[0, 1, 2].all(x, {"nr": x})', context), error)
     })
   })
 
