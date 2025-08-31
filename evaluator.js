@@ -825,8 +825,9 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   // Supports both: all(list, var, predicate) and all(list, predicate)
   all(args) {
     const evaluator = new PredicateEvaluator(this, 'all', args)
-    for (const item of evaluator.items) {
-      if (!evaluator.childEvaluate(item)) return false
+    const items = evaluator.items
+    for (let i = 0; i < items.length; i++) {
+      if (!evaluator.childEvaluate(items[i])) return false
     }
     return true
   },
@@ -835,8 +836,9 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   // Supports both: exists(list, var, predicate) and exists(list, predicate)
   exists(args) {
     const evaluator = new PredicateEvaluator(this, 'exists', args)
-    for (const item of evaluator.items) {
-      if (evaluator.childEvaluate(item)) return true
+    const items = evaluator.items
+    for (let i = 0; i < items.length; i++) {
+      if (evaluator.childEvaluate(items[i])) return true
     }
     return false
   },
@@ -847,8 +849,9 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
     const evaluator = new PredicateEvaluator(this, 'exists_one', args)
 
     let count = 0
-    for (const item of evaluator.items) {
-      if (!evaluator.childEvaluate(item)) continue
+    const items = evaluator.items
+    for (let i = 0; i < items.length; i++) {
+      if (!evaluator.childEvaluate(items[i])) continue
       count++
       if (count > 1) return false
     }
@@ -1077,16 +1080,7 @@ const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
 })
 
 class Evaluator {
-  constructor(context, functions) {
-    if (context !== undefined && typeof context !== 'object')
-      throw new EvaluationError('Context must be an object')
-
-    this.ctx = context
-    this.macros = DEFAULT_MACROS
-    this.fns = functions
-      ? Object.assign(Object.create(null), DEFAULT_FUNCTIONS, functions)
-      : DEFAULT_FUNCTIONS
-  }
+  macros = DEFAULT_MACROS
 
   eval(ast) {
     // Primitive values
@@ -1302,7 +1296,9 @@ class Evaluator {
 
 class PredicateEvaluator extends Evaluator {
   constructor(parent, functionName, args) {
-    super({...parent.ctx}, parent.fns)
+    super()
+    this.ctx = {...parent.ctx}
+    this.fns = parent.fns
 
     if (
       args.length < 2 ||
@@ -1446,6 +1442,20 @@ function isEqual(a, b) {
   return true
 }
 
+const globalEvaluator = new Evaluator()
+function evaluateAST(ast, context, functions) {
+  if (context !== undefined && typeof context !== 'object')
+    throw new EvaluationError('Context must be an object')
+
+  const evaluator = globalEvaluator
+  evaluator.ctx = context
+  evaluator.fns = functions
+    ? Object.assign(Object.create(null), DEFAULT_FUNCTIONS, functions)
+    : DEFAULT_FUNCTIONS
+
+  return evaluator.eval(ast)
+}
+
 export class ParseError extends Error {
   constructor(message) {
     super(message)
@@ -1462,14 +1472,14 @@ export class EvaluationError extends Error {
 export function parse(expression) {
   const ast = new Parser(expression).parse()
   // eslint-disable-next-line no-shadow
-  const evaluate = (context, functions) => new Evaluator(context, functions).eval(ast)
+  const evaluate = (context, functions) => evaluateAST(ast, context, functions)
   evaluate.ast = ast
   return evaluate
 }
 
 export function evaluate(expression, context, functions) {
   const ast = new Parser(expression).parse()
-  return new Evaluator(context, functions).eval(ast)
+  return evaluateAST(ast, context, functions)
 }
 
 function objectGet(obj, key) {
