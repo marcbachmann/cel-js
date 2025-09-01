@@ -793,32 +793,28 @@ function dateToLocale(d, timeZone) {
   return d.toLocaleString('en-US', {timeZone})
 }
 
-function fieldExists(self, [, objectExpr, propertyName]) {
-  if (objectExpr?.[0] === '.' && Array.isArray(objectExpr) && !fieldExists(self, objectExpr)) {
-    return false
+function objectGetDeep(self, ast) {
+  if (typeof ast === 'object') {
+    if (ast[0] === 'id') {
+      return objectGet(self.ctx, ast[1])
+    } else if (ast[0] === '.') {
+      const obj = objectGetDeep(self, ast[1])
+      if (obj === undefined) return
+      return objectGet(obj, ast[2])
+    }
   }
-  return objectGet(self.eval(objectExpr), propertyName) !== undefined
+
+  if (typeof ast !== 'object' || ast === null || ast[0] === 'array' || ast[0] === 'object') {
+    throw new EvaluationError('has() does not support atomic expressions')
+  }
+
+  throw new EvaluationError('has() requires a field selection')
 }
 
 const DEFAULT_MACROS = Object.assign(Object.create(null), {
   has(args) {
     if (args.length !== 1) throw new EvaluationError('has() requires exactly one argument')
-
-    const arg = args[0]
-    if (Array.isArray(arg) && arg[0] === '.') return fieldExists(this, arg)
-
-    if (
-      typeof arg === 'string' ||
-      typeof arg === 'number' ||
-      typeof arg === 'boolean' ||
-      arg === null ||
-      arg[0] === 'array' ||
-      arg[0] === 'object'
-    ) {
-      throw new EvaluationError('has() does not support atomic expressions')
-    }
-
-    throw new EvaluationError('has() requires a field selection')
+    return objectGetDeep(this, args[0]) !== undefined
   },
 
   // all(list, predicate) - Test if all elements match a predicate
@@ -892,6 +888,50 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   }
 })
 
+const ByteOpts =
+  typeof Buffer !== 'undefined'
+    ? {
+        fromString(str) {
+          return Buffer.from(str, 'utf8')
+        },
+        toHex(b) {
+          return Buffer.prototype.hexSlice.call(b, 0, b.length)
+        },
+        toBase64(b) {
+          return Buffer.prototype.base64Slice.call(b, 0, b.length)
+        },
+        toUtf8(b) {
+          return Buffer.prototype.utf8Slice.call(b, 0, b.length)
+        },
+        jsonParse(b) {
+          return JSON.parse(b)
+        }
+      }
+    : {
+        textEncoder: new TextEncoder('utf8'),
+        fromString(str) {
+          return this.textEncoder.encode(str)
+        },
+        toHex: Uint8Array.prototype.toHex
+          ? (b) => b.toHex()
+          : (b) => {
+              return Array.from(b)
+                .map((i) => i.toString(16).padStart(2, '0'))
+                .join('')
+            },
+        toBase64: Uint8Array.prototype.toBase64
+          ? (b) => b.toBase64()
+          : (b) => {
+              return btoa(Array.from(b, (i) => String.fromCodePoint(i)).join(''))
+            },
+        toUtf8(b) {
+          return this.textEncoder.decode(b)
+        },
+        jsonParse(b) {
+          return JSON.parse(this.textEncoder.decode(b))
+        }
+      }
+
 const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
   bool(v) {
     if (typeof v === 'boolean') return v
@@ -938,11 +978,7 @@ const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
   },
   bytes(str) {
     if (typeof str !== 'string') throw new EvaluationError('bytes() requires a string argument')
-
-    const len = str.length
-    const bytes = new Uint8Array(len)
-    for (let i = 0; i < len; i++) bytes[i] = str.charCodeAt(i) & 0xff
-    return bytes
+    return ByteOpts.fromString(str)
   },
   double(v) {
     if (arguments.length !== 1) throw new EvaluationError('double() requires exactly one argument')
@@ -1007,30 +1043,13 @@ const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
     }
   },
   Bytes: {
-    toString(bytes, encoding = 'utf-8') {
-      if (!(bytes instanceof Uint8Array)) {
-        throw new EvaluationError('Bytes.toString() requires a bytes argument')
-      }
-      if (encoding === 'utf-8') {
-        return new TextDecoder().decode(bytes)
-      } else if (encoding === 'hex') {
-        return Array.from(bytes)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('')
-      } else if (encoding === 'base64') {
-        const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('')
-        return btoa(binString)
-      }
-      throw new EvaluationError(`Unsupported encoding: ${encoding}`)
-    },
-    at(bytes, index) {
-      if (!(bytes instanceof Uint8Array)) {
-        throw new EvaluationError('Bytes.at() requires a bytes argument')
-      }
-      if (index < 0 || index >= bytes.length) {
-        throw new EvaluationError('Bytes index out of range')
-      }
-      return bytes[index]
+    json: ByteOpts.jsonParse,
+    hex: ByteOpts.toHex,
+    string: ByteOpts.toUtf8,
+    base64: ByteOpts.toBase64,
+    at(b, index) {
+      if (index < 0 || index >= b.length) throw new EvaluationError('Bytes index out of range')
+      return b[index]
     }
   },
   Date: {
@@ -1209,6 +1228,8 @@ class Evaluator {
               result.set(right, left.length)
               return result
             }
+
+            if (left instanceof Set) return new Set([...left, ...right])
         }
         throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`)
       }
@@ -1447,6 +1468,18 @@ function isEqual(a, b) {
   if (typeof a !== 'object') return a !== a && b !== b // eslint-disable-line no-self-compare
   if (a.constructor !== b.constructor) return false
 
+  if (!a.constructor || a.constructor === Object) {
+    const keysA = Object.keys(a)
+    const keysB = Object.keys(b)
+    if (keysA.length !== keysB.length) return false
+
+    for (let i = 0; i < keysA.length; i++) {
+      const key = keysA[i]
+      if (!(key in b) || !isEqual(a[key], b[key])) return false
+    }
+    return true
+  }
+
   if (Array.isArray(a)) {
     const length = a.length
     if (length !== b.length) return false
@@ -1456,12 +1489,11 @@ function isEqual(a, b) {
     return true
   }
 
-  if (a instanceof RegExp) return a.source === b.source && a.flags === b.flags
-  if (a.valueOf !== Object.prototype.valueOf) return a.valueOf() === b.valueOf()
-  if (a.toString !== Object.prototype.toString) return a.toString() === b.toString()
+  if (a instanceof RegExp) {
+    return a.source === b.source && a.flags === b.flags
+  }
 
   if (a instanceof Uint8Array) {
-    if (!(b instanceof Uint8Array)) return false
     if (a.length !== b.length) return false
     for (let i = 0; i < a.length; i++) {
       if (a[i] !== b[i]) return false
@@ -1481,16 +1513,7 @@ function isEqual(a, b) {
     return true
   }
 
-  const keysA = Object.keys(a)
-  const keysB = Object.keys(b)
-  if (keysA.length !== keysB.length) return false
-
-  for (let i = 0; i < keysA.length; i++) {
-    const key = keysA[i]
-    if (!(key in b) || !isEqual(a[key], b[key])) return false
-  }
-
-  return true
+  return false
 }
 
 const globalEvaluator = new Evaluator()

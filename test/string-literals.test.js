@@ -191,17 +191,17 @@ describe('string literals and escapes', () => {
       t.assert.strictEqual(evaluate('b"hello"[1]'), 101) // 'e'
     })
 
-    test('should support bytes.toString()', (t) => {
-      t.assert.strictEqual(evaluate('b"hello".toString()'), 'hello')
-      t.assert.strictEqual(evaluate('b"hello".toString("utf-8")'), 'hello')
+    test('should support bytes.string()', (t) => {
+      t.assert.strictEqual(evaluate('b"hello".string()'), 'hello')
+      t.assert.strictEqual(evaluate('b"hello".string()'), 'hello')
     })
 
-    test('should support bytes.toString("hex")', (t) => {
-      t.assert.strictEqual(evaluate('b"ABC".toString("hex")'), '414243')
+    test('should support bytes.hex()', (t) => {
+      t.assert.strictEqual(evaluate('b"ABC".hex()'), '414243')
     })
 
-    test('should support bytes.toString("base64")', (t) => {
-      t.assert.strictEqual(evaluate('b"hello".toString("base64")'), 'aGVsbG8=')
+    test('should support bytes.base64()', (t) => {
+      t.assert.strictEqual(evaluate('b"hello".base64()'), 'aGVsbG8=')
     })
 
     test('should support bytes.at()', (t) => {

@@ -4,7 +4,7 @@ import {evaluate} from '../index.js'
 describe('macros', () => {
   describe('has macro', () => {
     const context = {
-      object: {property: true},
+      object: {property: true, 0: 'zero', keytoprop: 'property'},
       user: {
         profile: {
           name: 'John',
@@ -13,6 +13,12 @@ describe('macros', () => {
         }
       }
     }
+
+    test('should work on the root context', (t) => {
+      t.assert.strictEqual(evaluate('has(object)', context), true)
+      t.assert.strictEqual(evaluate('has(nonexistent)', context), false)
+    })
+
     test('should return true when nested property exists', (t) => {
       t.assert.strictEqual(evaluate('has(object.property)', context), true)
     })
@@ -45,9 +51,17 @@ describe('macros', () => {
 
     test('should throw when argument is not a field selection', (t) => {
       const error = /has\(\) requires a field selection/
-      t.assert.throws(() => evaluate('has(object)', context), error)
+      t.assert.throws(() => evaluate('has(size({}))', context), error)
+      t.assert.throws(() => evaluate('has("foo".size())', context), error)
+      t.assert.throws(() => evaluate('has(user["pro" + "file"].email)', context), error)
+      t.assert.throws(() => evaluate('has(user["profile"])', context), error)
       t.assert.throws(() => evaluate('has(object[0])', context), error)
-      t.assert.throws(() => evaluate('has(object["property"])', context), error)
+      t.assert.throws(() => evaluate('has([1][0])', context), error)
+      t.assert.throws(() => evaluate('has({"foo":"bar"}["foo"])', context), error)
+      t.assert.throws(() => evaluate('has(object[object.keytoprop])', context), error)
+      t.assert.throws(() => evaluate('has([1][1])', context), error)
+      t.assert.throws(() => evaluate('has({"foo":"bar"}["bar"])', context), error)
+      t.assert.throws(() => evaluate('has(object[object.nonexistent])', context), error)
     })
 
     describe('should throw when argument is an atomic expression', () => {
