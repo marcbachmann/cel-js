@@ -825,12 +825,16 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   // Supports both: all(list, var, predicate) and all(list, predicate)
   all(args) {
     const evaluator = new PredicateEvaluator(this, 'all', args)
+    let error = null
     for (const item of evaluator.items) {
-      const result = evaluator.childEvaluate(item)
-      if (typeof result !== 'boolean')
-        throw new EvaluationError('all() predicate must return a boolean')
-      if (result === false) return false
+      try {
+        if (evaluator.childEvaluateBool(item)) continue
+        return false
+      } catch (e) {
+        error ??= e
+      }
     }
+    if (error) throw error
     return true
   },
 
@@ -838,12 +842,15 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
   // Supports both: exists(list, var, predicate) and exists(list, predicate)
   exists(args) {
     const evaluator = new PredicateEvaluator(this, 'exists', args)
+    let error
     for (const item of evaluator.items) {
-      const result = evaluator.childEvaluate(item)
-      if (typeof result !== 'boolean')
-        throw new EvaluationError('exists() predicate must return a boolean')
-      if (result) return true
+      try {
+        if (evaluator.childEvaluateBool(item)) return true
+      } catch (e) {
+        error ??= e
+      }
     }
+    if (error) throw error
     return false
   },
 
@@ -854,14 +861,10 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
 
     let count = 0
     for (const item of evaluator.items) {
-      const result = evaluator.childEvaluate(item)
-      if (typeof result !== 'boolean')
-        throw new EvaluationError('exists_one() predicate must return a boolean')
-      if (result === false) continue
-
-      count++
-      if (count > 1) return false
+      if (evaluator.childEvaluateBool(item) === false) continue
+      if (++count > 1) return false
     }
+
     return count === 1
   },
 
@@ -881,10 +884,8 @@ const DEFAULT_MACROS = Object.assign(Object.create(null), {
 
     const results = []
     for (const item of evaluator.items) {
-      const result = evaluator.childEvaluate(item)
-      if (typeof result !== 'boolean')
-        throw new EvaluationError('filter() predicate must return a boolean')
-      if (result) results.push(item)
+      if (evaluator.childEvaluateBool(item) === false) continue
+      results.push(item)
     }
 
     return results
@@ -1102,14 +1103,40 @@ class Evaluator {
         return val
       }
       case '||': {
-        const left = this.eval(ast[1])
-        if (left !== false && left !== null) return left
-        return this.eval(ast[2])
+        try {
+          const left = this.eval(ast[1])
+          if (left === true) return true
+          if (typeof left !== 'boolean')
+            throw new EvaluationError('Left operand of || is not a boolean')
+        } catch (err) {
+          const right = this.eval(ast[2])
+          if (right === true) return true
+          if (right === false) throw err
+          if (typeof right !== 'boolean')
+            throw new EvaluationError('Right operand of || is not a boolean')
+        }
+
+        const right = this.eval(ast[2])
+        if (typeof right === 'boolean') return right
+        throw new EvaluationError('Right operand of || is not a boolean')
       }
       case '&&': {
-        const left = this.eval(ast[1])
-        if (left === false || left === null) return left
-        return this.eval(ast[2])
+        try {
+          const left = this.eval(ast[1])
+          if (left === false) return false
+          if (typeof left !== 'boolean') {
+            throw new EvaluationError('Left operand of && is not a boolean')
+          }
+        } catch (err) {
+          const right = this.eval(ast[2])
+          if (right === false) return false
+          if (right === true) throw err
+          throw new EvaluationError('Right operand of && is not a boolean')
+        }
+
+        const right = this.eval(ast[2])
+        if (typeof right === 'boolean') return right
+        throw new EvaluationError('Right operand of && is not a boolean')
       }
       case '==': {
         const left = this.eval(ast[1])
@@ -1262,8 +1289,9 @@ class Evaluator {
       // Receiver call
       case 'rcall': {
         const functionName = ast[2]
-        if (this.macros[functionName])
+        if (this.macros[functionName]) {
           return this.macros[functionName].call(this, [ast[1], ...ast[3]])
+        }
 
         const value = this.eval(ast[1])
         const fnNs = debugType(value)
@@ -1303,11 +1331,13 @@ class Evaluator {
   }
 }
 
+const predicateVarsCache = new WeakMap()
 class PredicateEvaluator extends Evaluator {
   constructor(parent, functionName, args) {
     super()
     this.ctx = {...parent.ctx}
     this.fns = parent.fns
+    this.functionName = functionName
 
     if (
       args.length < 2 ||
@@ -1319,6 +1349,12 @@ class PredicateEvaluator extends Evaluator {
     }
 
     this.items = this.getIterableItems(functionName, parent.eval(args[0]))
+    const cached = predicateVarsCache.get(args[0])
+    if (cached) {
+      this.predicateExpression = cached[0]
+      this.predicateVars = cached[1]
+      return
+    }
 
     if (args.length === 3) {
       this.predicateExpression = args[2]
@@ -1328,6 +1364,8 @@ class PredicateEvaluator extends Evaluator {
       this.predicateExpression = args[1]
       this.predicateVars = [...this.extractVariablesOfExpression(this.predicateExpression)]
     }
+
+    predicateVarsCache.set(args[0], [this.predicateExpression, this.predicateVars])
   }
 
   getIterableItems(functionName, collection) {
@@ -1350,6 +1388,12 @@ class PredicateEvaluator extends Evaluator {
 
     for (let i = 1; i < expr.length; i++) this.extractVariablesOfExpression(expr[i], vars)
     return vars
+  }
+
+  childEvaluateBool(item) {
+    const bool = this.childEvaluate(item)
+    if (typeof bool === 'boolean') return bool
+    throw new EvaluationError(`${this.functionName}() predicate must return a boolean`)
   }
 
   childEvaluate(item) {
