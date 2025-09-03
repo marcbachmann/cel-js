@@ -102,9 +102,7 @@ export function serialize(ast) {
 
     // Method calls (receiver style)
     case 'rcall':
-      const method = args[1]
-      const methodArgs = args[2].map(serialize).join(', ')
-      return `${wrapIfNeeded(args[0], op)}.${method}(${methodArgs})`
+      return `${wrapIfNeeded(args[0], op)}.${args[1]}(${args[2].map(serialize).join(', ')})`
 
     // Arrays
     case 'array':
@@ -112,10 +110,11 @@ export function serialize(ast) {
 
     // Objects
     case 'object':
-      const pairs = args[0].map(([key, value]) => {
-        return `${serialize(key)}: ${serialize(value)}`
-      })
-      return `{${pairs.join(', ')}}`
+      return `{${args[0]
+        .map(([key, value]) => {
+          return `${serialize(key)}: ${serialize(value)}`
+        })
+        .join(', ')}}`
 
     // Ternary operator
     case '?:':

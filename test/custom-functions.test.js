@@ -92,14 +92,17 @@ describe('custom functions', () => {
 
   describe('error handling', () => {
     test('should throw when an unknown function is called', (t) => {
-      t.assert.throws(() => evaluate('unknownFunction("")'), /Function not found: unknownFunction/)
+      t.assert.throws(
+        () => evaluate('unknownFunction("")'),
+        /Function not found: 'unknownFunction'/
+      )
     })
 
     test('should not treat context values as callable functions', (t) => {
       const context = {notAFunction: 'just a string', bar: 'value'}
       t.assert.throws(
         () => evaluate('notAFunction(bar)', context),
-        /Function not found: notAFunction/
+        /Function not found: 'notAFunction'/
       )
     })
 

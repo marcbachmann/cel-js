@@ -47,17 +47,20 @@ describe('conditional ternary operator', () => {
   })
 
   test('should handle null conditions properly', (t) => {
-    t.assert.strictEqual(evaluate('null ? "true" : "false"'), 'false')
-    t.assert.strictEqual(evaluate('!null ? "true" : "false"'), 'true')
+    t.assert.strictEqual(evaluate('null == null ? "true" : "false"'), 'true')
+    t.assert.strictEqual(evaluate('null != null ? "true" : "false"'), 'false')
   })
 
-  test('should handle empty string as truthy in ternary (CEL semantics)', (t) => {
-    t.assert.strictEqual(evaluate('"" ? "true" : "false"'), 'true')
-    t.assert.strictEqual(evaluate('"hello" ? "true" : "false"'), 'true')
-  })
-
-  test('should handle zero as truthy in ternary (CEL semantics)', (t) => {
-    t.assert.strictEqual(evaluate('0 ? "true" : "false"'), 'true')
-    t.assert.strictEqual(evaluate('1 ? "true" : "false"'), 'true')
+  test('does not allow non-boolean values', (t) => {
+    t.assert.throws(() => evaluate('"" ? "true" : "false"'), /Ternary condition must be a boolean/)
+    t.assert.throws(() => evaluate('0 ? "true" : "false"'), /Ternary condition must be a boolean/)
+    t.assert.throws(
+      () => evaluate('b"0" ? "true" : "false"'),
+      /Ternary condition must be a boolean/
+    )
+    t.assert.throws(
+      () => evaluate('null ? "true" : "false"'),
+      /Ternary condition must be a boolean/
+    )
   })
 })

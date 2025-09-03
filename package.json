@@ -41,6 +41,8 @@
     "index.js",
     "evaluator.js",
     "serialize.js",
+    "errors.js",
+    "functions.js",
     "*.d.ts",
     "LICENSE",
     "README.md"

@@ -1,60 +1,5 @@
-const TOKEN = {
-  EOF: 0,
-  NUMBER: 1,
-  STRING: 2,
-  BOOLEAN: 3,
-  NULL: 4,
-  IDENTIFIER: 5,
-  PLUS: 6,
-  MINUS: 7,
-  MULTIPLY: 8,
-  DIVIDE: 9,
-  MODULO: 10,
-  EQ: 11,
-  NE: 12,
-  LT: 13,
-  LE: 14,
-  GT: 15,
-  GE: 16,
-  AND: 17,
-  OR: 18,
-  NOT: 19,
-  IN: 20,
-  LPAREN: 21,
-  RPAREN: 22,
-  LBRACKET: 23,
-  RBRACKET: 24,
-  LBRACE: 25,
-  RBRACE: 26,
-  DOT: 27,
-  COMMA: 28,
-  COLON: 29,
-  QUESTION: 30,
-  BYTES: 31
-}
-
-const TOKEN_BY_NUMBER = {}
-for (const key in TOKEN) TOKEN_BY_NUMBER[TOKEN[key]] = key
-
-const RESERVED = new Set([
-  'as',
-  'break',
-  'const',
-  'continue',
-  'else',
-  'for',
-  'function',
-  'if',
-  'import',
-  'let',
-  'loop',
-  'package',
-  'namespace',
-  'return',
-  'var',
-  'void',
-  'while'
-])
+import {allFunctions, objectGet, RESERVED, TOKEN, TOKEN_BY_NUMBER} from './functions.js'
+import {EvaluationError, ParseError} from './errors.js'
 
 class Lexer {
   constructor(input) {
@@ -783,610 +728,308 @@ class Parser {
   }
 }
 
-function stringSize(str) {
-  let count = 0
-  for (const c of str) count++ // eslint-disable-line no-unused-vars
-  return count
-}
-
-function dateToLocale(d, timeZone) {
-  return d.toLocaleString('en-US', {timeZone})
-}
-
-function objectGetDeep(self, ast) {
-  if (typeof ast === 'object') {
-    if (ast[0] === 'id') {
-      return objectGet(self.ctx, ast[1])
-    } else if (ast[0] === '.') {
-      const obj = objectGetDeep(self, ast[1])
-      if (obj === undefined) return
-      return objectGet(obj, ast[2])
-    }
-  }
-
-  if (typeof ast !== 'object' || ast === null || ast[0] === 'array' || ast[0] === 'object') {
-    throw new EvaluationError('has() does not support atomic expressions')
-  }
-
-  throw new EvaluationError('has() requires a field selection')
-}
-
-const DEFAULT_MACROS = Object.assign(Object.create(null), {
-  has(args) {
-    if (args.length !== 1) throw new EvaluationError('has() requires exactly one argument')
-    return objectGetDeep(this, args[0]) !== undefined
-  },
-
-  // all(list, predicate) - Test if all elements match a predicate
-  // Supports both: all(list, var, predicate) and all(list, predicate)
-  all(args) {
-    const evaluator = new PredicateEvaluator(this, 'all', args)
-    let error = null
-    for (const item of evaluator.items) {
-      try {
-        if (evaluator.childEvaluateBool(item)) continue
-        return false
-      } catch (e) {
-        error ??= e
-      }
-    }
-    if (error) throw error
-    return true
-  },
-
-  // exists(list, predicate) - Test if any element matches a predicate
-  // Supports both: exists(list, var, predicate) and exists(list, predicate)
-  exists(args) {
-    const evaluator = new PredicateEvaluator(this, 'exists', args)
-    let error
-    for (const item of evaluator.items) {
-      try {
-        if (evaluator.childEvaluateBool(item)) return true
-      } catch (e) {
-        error ??= e
-      }
-    }
-    if (error) throw error
-    return false
-  },
-
-  // exists_one(list, predicate) - Test if exactly one element matches a predicate
-  // Supports both: exists_one(list, var, predicate) and exists_one(list, predicate)
-  exists_one(args) {
-    const evaluator = new PredicateEvaluator(this, 'exists_one', args)
-
-    let count = 0
-    for (const item of evaluator.items) {
-      if (evaluator.childEvaluateBool(item) === false) continue
-      if (++count > 1) return false
-    }
-
-    return count === 1
-  },
-
-  // map(list, transform) - Transform list/map elements
-  // Supports both: map(list, var, transform) and map(list, transform)
-  map(args) {
-    const evaluator = new PredicateEvaluator(this, 'map', args)
-    const results = []
-    for (const item of evaluator.items) results.push(evaluator.childEvaluate(item))
-    return results
-  },
-
-  // filter(list, predicate) - Filter list/map elements
-  // Supports both: filter(list, var, predicate) and filter(list, predicate)
-  filter(args) {
-    const evaluator = new PredicateEvaluator(this, 'filter', args)
-
-    const results = []
-    for (const item of evaluator.items) {
-      if (evaluator.childEvaluateBool(item) === false) continue
-      results.push(item)
-    }
-
-    return results
-  }
-})
-
-const ByteOpts =
-  typeof Buffer !== 'undefined'
-    ? {
-        fromString(str) {
-          return Buffer.from(str, 'utf8')
-        },
-        toHex(b) {
-          return Buffer.prototype.hexSlice.call(b, 0, b.length)
-        },
-        toBase64(b) {
-          return Buffer.prototype.base64Slice.call(b, 0, b.length)
-        },
-        toUtf8(b) {
-          return Buffer.prototype.utf8Slice.call(b, 0, b.length)
-        },
-        jsonParse(b) {
-          return JSON.parse(b)
-        }
-      }
-    : {
-        textEncoder: new TextEncoder('utf8'),
-        fromString(str) {
-          return this.textEncoder.encode(str)
-        },
-        toHex: Uint8Array.prototype.toHex
-          ? (b) => b.toHex()
-          : (b) => {
-              return Array.from(b)
-                .map((i) => i.toString(16).padStart(2, '0'))
-                .join('')
-            },
-        toBase64: Uint8Array.prototype.toBase64
-          ? (b) => b.toBase64()
-          : (b) => {
-              return btoa(Array.from(b, (i) => String.fromCodePoint(i)).join(''))
-            },
-        toUtf8(b) {
-          return this.textEncoder.decode(b)
-        },
-        jsonParse(b) {
-          return JSON.parse(this.textEncoder.decode(b))
-        }
-      }
-
-const DEFAULT_FUNCTIONS = Object.assign(Object.create(null), {
-  bool(v) {
-    if (typeof v === 'boolean') return v
-
-    if (typeof v === 'string') {
-      switch (v) {
-        case '1':
-        case 't':
-        case 'true':
-        case 'TRUE':
-        case 'True':
-          return true
-        case '0':
-        case 'f':
-        case 'false':
-        case 'FALSE':
-        case 'False':
-          return false
-        default:
-          throw new EvaluationError(`bool() conversion error: invalid string value "${v}"`)
-      }
-    }
-
-    throw new EvaluationError('bool() requires a boolean or string argument')
-  },
-  timestamp(v) {
-    if (typeof v !== 'string') {
-      throw new EvaluationError('timestamp() requires a string argument')
-    }
-
-    if (v.length !== 20 && v.length !== 23) {
-      throw new EvaluationError('timestamp() requires a string in ISO 8601 format')
-    }
-    return new Date(v)
-  },
-  size(v) {
-    if (typeof v === 'string') return stringSize(v)
-    if (v instanceof Uint8Array) return v.length
-    if (v instanceof Set) return v.size
-    if (v instanceof Map) return v.size
-    if (Array.isArray(v)) return v.length
-    if (typeof v === 'object' && v !== null) return Object.keys(v).length
-    throw new EvaluationError('size() type error')
-  },
-  bytes(str) {
-    if (typeof str !== 'string') throw new EvaluationError('bytes() requires a string argument')
-    return ByteOpts.fromString(str)
-  },
-  double(v) {
-    if (arguments.length !== 1) throw new EvaluationError('double() requires exactly one argument')
-    if (typeof v === 'number') return v
-    if (typeof v === 'string') {
-      if (v === 'NaN') return NaN
-      if (v && !v.includes(' ')) {
-        const parsed = Number(v)
-        if (!isNaN(parsed)) return parsed
-      }
-      throw new EvaluationError('double() conversion error: string is not a valid number')
-    }
-
-    if (typeof v === 'boolean') return v ? 1 : 0
-    if (v === null) return 0
-    if (typeof v === 'object')
-      throw new EvaluationError('double() type error: cannot convert to double')
-    throw new EvaluationError('double() type error: unsupported type')
-  },
-  string(v) {
-    switch (typeof v) {
-      case 'string':
-        return v
-      case 'number':
-      case 'boolean':
-        return String(v)
-      case 'undefined':
-        return 'undefined'
-      case 'object':
-        if (v === null) return 'null'
-        if (v instanceof Set) v = Array.from(v)
-        else if (v instanceof Map) v = Object.fromEntries(v.entries())
-        return JSON.stringify(v)
-      default:
-        return String(v)
-    }
-  },
-  // Type-specific method namespaces
-  String: {
-    size: stringSize,
-    startsWith(a, b) {
-      if (typeof b === 'string' && typeof a === 'string') return a.startsWith(b)
-      throw new EvaluationError('string.startsWith() requires a string argument')
-    },
-    endsWith(a, b) {
-      if (typeof b === 'string' && typeof a === 'string') return a.endsWith(b)
-      throw new EvaluationError('string.endsWith() requires a string argument')
-    },
-    contains(a, b) {
-      if (typeof b === 'string' && typeof a === 'string') return a.includes(b)
-      throw new EvaluationError('string.contains() requires a string argument')
-    },
-    matches(a, b) {
-      if (typeof b === 'string' && typeof a === 'string') {
-        try {
-          return new RegExp(b).test(a)
-        } catch (error) {
-          throw new EvaluationError(`Invalid regular expression: ${b}`)
-        }
-      }
-      throw new EvaluationError('string.matches() requires a string argument')
-    }
-  },
-  Bytes: {
-    json: ByteOpts.jsonParse,
-    hex: ByteOpts.toHex,
-    string: ByteOpts.toUtf8,
-    base64: ByteOpts.toBase64,
-    at(b, index) {
-      if (index < 0 || index >= b.length) throw new EvaluationError('Bytes index out of range')
-      return b[index]
-    }
-  },
-  Date: {
-    getDate(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getDate()
-      return dateObj.getUTCDate()
-    },
-    getDayOfMonth(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getDate() - 1
-      return dateObj.getUTCDate() - 1
-    },
-    getDayOfWeek(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getDay()
-      return dateObj.getUTCDay()
-    },
-    getDayOfYear(dateObj, timezone) {
-      let workingDate
-      if (timezone) {
-        workingDate = new Date(dateToLocale(dateObj, timezone))
-      } else {
-        workingDate = new Date(
-          dateObj.getUTCFullYear(),
-          dateObj.getUTCMonth(),
-          dateObj.getUTCDate()
-        )
-      }
-
-      const start = new Date(workingDate.getFullYear(), 0, 0)
-      const diff = workingDate - start
-      const oneDay = 1000 * 60 * 60 * 24
-      return Math.floor(diff / oneDay) - 1
-    },
-    getFullYear(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getFullYear()
-      return dateObj.getUTCFullYear()
-    },
-    getHours(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getHours()
-      return dateObj.getUTCHours()
-    },
-    getMilliseconds(dateObj) {
-      return dateObj.getUTCMilliseconds()
-    },
-    getMinutes(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getMinutes()
-      return dateObj.getUTCMinutes()
-    },
-    getMonth(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getMonth()
-      return dateObj.getUTCMonth()
-    },
-    getSeconds(dateObj, timezone) {
-      if (timezone) return new Date(dateToLocale(dateObj, timezone)).getSeconds()
-      return dateObj.getUTCSeconds()
-    }
-  }
-})
-
 class Evaluator {
-  macros = DEFAULT_MACROS
+  predicateEvaluator(receiver, functionName, args) {
+    return new PredicateEvaluator(this, receiver, functionName, args)
+  }
 
   eval(ast) {
-    // Primitive values
-    if (typeof ast !== 'object' || ast === null || !Array.isArray(ast)) return ast
-
-    switch (ast[0]) {
-      case 'id': {
-        const val = objectGet(this.ctx, ast[1])
-        if (val === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`)
-        return val
-      }
-      case '||': {
-        try {
-          const left = this.eval(ast[1])
-          if (left === true) return true
-          if (typeof left !== 'boolean')
-            throw new EvaluationError('Left operand of || is not a boolean')
-        } catch (err) {
-          const right = this.eval(ast[2])
-          if (right === true) return true
-          if (right === false) throw err
-          if (typeof right !== 'boolean')
-            throw new EvaluationError('Right operand of || is not a boolean')
+    if (typeof ast === 'object' && Array.isArray(ast)) {
+      switch (ast[0]) {
+        case 'id': {
+          const val = objectGet(this.ctx, ast[1])
+          if (val === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`)
+          return val
         }
+        case '||': {
+          try {
+            const left = this.eval(ast[1])
+            if (left === true) return true
+            if (typeof left !== 'boolean')
+              throw new EvaluationError('Left operand of || is not a boolean')
+          } catch (err) {
+            if (err.message.includes('Unknown variable')) throw err
+            if (err.message.includes('is not a boolean')) throw err
 
-        const right = this.eval(ast[2])
-        if (typeof right === 'boolean') return right
-        throw new EvaluationError('Right operand of || is not a boolean')
-      }
-      case '&&': {
-        try {
-          const left = this.eval(ast[1])
-          if (left === false) return false
-          if (typeof left !== 'boolean') {
-            throw new EvaluationError('Left operand of && is not a boolean')
+            const right = this.eval(ast[2])
+            if (right === true) return true
+            if (right === false) throw err
+
+            if (typeof right !== 'boolean')
+              throw new EvaluationError('Right operand of || is not a boolean')
           }
-        } catch (err) {
+
           const right = this.eval(ast[2])
-          if (right === false) return false
-          if (right === true) throw err
+          if (typeof right === 'boolean') return right
+          throw new EvaluationError('Right operand of || is not a boolean')
+        }
+        case '&&': {
+          try {
+            const left = this.eval(ast[1])
+            if (left === false) return false
+            if (typeof left !== 'boolean') {
+              throw new EvaluationError('Left operand of && is not a boolean')
+            }
+          } catch (err) {
+            if (err.message.includes('Unknown variable')) throw err
+            if (err.message.includes('is not a boolean')) throw err
+
+            const right = this.eval(ast[2])
+            if (right === false) return false
+            if (right === true) throw err
+            throw new EvaluationError('Right operand of && is not a boolean')
+          }
+
+          const right = this.eval(ast[2])
+          if (typeof right === 'boolean') return right
           throw new EvaluationError('Right operand of && is not a boolean')
         }
+        case '+': {
+          const left = this.eval(ast[1])
+          const right = this.eval(ast[2])
+          if (typeof left !== typeof right) {
+            throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`)
+          }
 
-        const right = this.eval(ast[2])
-        if (typeof right === 'boolean') return right
-        throw new EvaluationError('Right operand of && is not a boolean')
-      }
-      case '==': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left === 'object' && typeof right === 'object') return isEqual(left, right)
-        return left === right
-      }
-      case '!=': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left === 'object' && typeof right === 'object') return !isEqual(left, right)
-        return left !== right
-      }
-      case '<': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== typeof right) {
-          throw new EvaluationError(`no such overload: ${debugType(left)} < ${debugType(right)}`)
-        }
-        return left < right
-      }
-      case '<=': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== typeof right) {
-          throw new EvaluationError(`no such overload: ${debugType(left)} <= ${debugType(right)}`)
-        }
-        return left <= right
-      }
-      case '>': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== typeof right) {
-          throw new EvaluationError(`no such overload: ${debugType(left)} > ${debugType(right)}`)
-        }
-        return left > right
-      }
-      case '>=': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== typeof right) {
-          throw new EvaluationError(`no such overload: ${debugType(left)} >= ${debugType(right)}`)
-        }
-        return left >= right
-      }
-      case '+': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
+          switch (typeof left) {
+            case 'number':
+              if (Number.isFinite(right) && Number.isFinite(left)) return left + right
+              break
+            case 'string':
+              return left + right
+            case 'object':
+              if (!left || left.constructor !== right?.constructor) break
 
-        if (typeof left === 'string' || typeof right === 'string') {
-          const v = stringConcat(left, right)
-          if (v !== undefined) return v
+              if (left instanceof Uint8Array && right instanceof Uint8Array) {
+                const result = new Uint8Array(left.length + right.length)
+                result.set(left, 0)
+                result.set(right, left.length)
+                return result
+              }
+
+              if (
+                (Array.isArray(left) || left instanceof Set) &&
+                (Array.isArray(right) || right instanceof Set)
+              ) {
+                return [...left, ...right]
+              }
+          }
+
           throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`)
         }
-
-        switch (typeof left) {
-          case 'number':
-            if (Number.isFinite(left) && Number.isFinite(right)) return left + right
-            break
-          case 'object':
-            if (left === null || right === null || left.constructor !== right.constructor) {
-              break
+        case '-': {
+          const left = this.eval(ast[1])
+          if (ast.length === 2) {
+            if (typeof left !== 'number') {
+              throw new EvaluationError(`no such overload: -${debugType(left)}`)
             }
+            return -left
+          }
 
-            if (Array.isArray(left)) return [...left, ...right]
+          const right = this.eval(ast[2])
+          if (typeof left !== 'number' || typeof right !== 'number') {
+            throw new EvaluationError(`no such overload: ${debugType(left)} - ${debugType(right)}`)
+          }
+          return left - right
+        }
+        case '==':
+        case '!=':
+        case '<':
+        case '<=':
+        case '>':
+        case '>=': {
+          const left = this.eval(ast[1])
+          const right = this.eval(ast[2])
 
-            if (left instanceof Uint8Array) {
-              const result = new Uint8Array(left.length + right.length)
-              result.set(left, 0)
-              result.set(right, left.length)
-              return result
+          const op = ast[0]
+          if (
+            (typeof left === 'string' || typeof left === 'number') &&
+            typeof left !== typeof right
+          ) {
+            throw new EvaluationError(
+              `no such overload: ${debugType(left)} ${op} ${debugType(right)}`
+            )
+          }
+
+          switch (op) {
+            case '==':
+              return isEqual(left, right)
+            case '!=':
+              return !isEqual(left, right)
+            case '<':
+              return left < right
+            case '<=':
+              return left <= right
+            case '>':
+              return left > right
+            case '>=':
+              return left >= right
+            default:
+              throw new EvaluationError(`Unknown operator: ${op}`)
+          }
+        }
+        case '*':
+        case '/':
+        case '%': {
+          const left = this.eval(ast[1])
+          const right = this.eval(ast[2])
+          const op = ast[0]
+          if (typeof left !== 'number' || typeof right !== 'number') {
+            throw new EvaluationError(
+              `no such overload: ${debugType(left)} ${op} ${debugType(right)}`
+            )
+          }
+
+          switch (op) {
+            case '*':
+              return left * right
+            case '/':
+              if (right === 0) throw new EvaluationError('division by zero')
+              return left / right
+            case '%':
+              if (right === 0) throw new EvaluationError('modulo by zero')
+              return left % right
+            default:
+              throw new EvaluationError(`Unknown operator: ${op}`)
+          }
+        }
+        case '!': {
+          const right = this.eval(ast[1])
+          if (typeof right === 'boolean') return !right
+          throw new EvaluationError('NOT operator can only be applied to boolean values')
+        }
+        case 'in': {
+          const left = this.eval(ast[1])
+          const right = this.eval(ast[2])
+
+          if (typeof right === 'string') return typeof left === 'string' && right.includes(left)
+          if (right instanceof Set) return right.has(left)
+          if (Array.isArray(right)) return right.includes(left)
+          return objectGet(right, left) !== undefined
+        }
+        case '.':
+        case '[]': {
+          const left = this.eval(ast[1])
+          const right = this.eval(ast[2])
+          const value = objectGet(left, right)
+          if (value === undefined) {
+            if (Array.isArray(left)) {
+              if (right < 0)
+                throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`)
+              if (right >= left.length)
+                throw new EvaluationError(
+                  `No such key: index out of bounds, index ${right} >= size ${left.length}`
+                )
+              if (typeof right !== 'number')
+                throw new EvaluationError(`No such key: ${right} (${debugType(right)})`)
             }
-
-            if (left instanceof Set) return new Set([...left, ...right])
-        }
-        throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`)
-      }
-      case '-': {
-        const left = this.eval(ast[1])
-        if (ast.length === 2) {
-          if (typeof left !== 'number') {
-            throw new EvaluationError(`no such overload: -${debugType(left)}`)
+            throw new EvaluationError(`No such key: ${right}`)
           }
-          return -left
+          return value
         }
-
-        const right = this.eval(ast[2])
-        if (typeof left !== 'number' || typeof right !== 'number') {
-          throw new EvaluationError(`no such overload: ${debugType(left)} - ${debugType(right)}`)
-        }
-        return left - right
-      }
-      case '*': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== 'number' || typeof right !== 'number') {
-          throw new EvaluationError(`no such overload: ${debugType(left)} * ${debugType(right)}`)
-        }
-        return left * right
-      }
-      case '/': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== 'number' || typeof right !== 'number') {
-          throw new EvaluationError(`no such overload: ${debugType(left)} / ${debugType(right)}`)
-        }
-        if (right === 0) throw new EvaluationError('division by zero')
-        return left / right
-      }
-      case '%': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        if (typeof left !== 'number' || typeof right !== 'number') {
-          throw new EvaluationError(`no such overload: ${debugType(left)} % ${debugType(right)}`)
-        }
-        if (right === 0) throw new EvaluationError('modulo by zero')
-        return left % right
-      }
-      case '!': {
-        const operand = this.eval(ast[1])
-        return operand === false || operand === null
-      }
-      case 'in': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-
-        if (typeof right === 'string') return typeof left === 'string' && right.includes(left)
-        if (right instanceof Set) return right.has(left)
-        if (Array.isArray(right)) return right.includes(left)
-        return objectGet(right, left) !== undefined
-      }
-      case '.':
-      case '[]': {
-        const left = this.eval(ast[1])
-        const right = this.eval(ast[2])
-        const value = objectGet(left, right)
-        if (value === undefined) {
-          if (Array.isArray(left)) {
-            if (right < 0)
-              throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`)
-            if (right >= left.length)
-              throw new EvaluationError(
-                `No such key: index out of bounds, index ${right} >= size ${left.length}`
-              )
-            if (typeof right !== 'number')
-              throw new EvaluationError(`No such key: ${right} (${debugType(right)})`)
+        // Receiver call
+        case 'rcall': {
+          const functionName = ast[2]
+          const fn = this.fns.get(functionName)
+          const receiver = this.eval(ast[1])
+          const type = debugType(receiver)
+          if (!fn || !fn.instances.has(type)) {
+            throw new EvaluationError(
+              `Function not found: '${functionName}' for value of type '${type}'`
+            )
           }
-          throw new EvaluationError(`No such key: ${right}`)
-        }
-        return value
-      }
-      // Receiver call
-      case 'rcall': {
-        const functionName = ast[2]
-        if (this.macros[functionName]) {
-          return this.macros[functionName].call(this, [ast[1], ...ast[3]])
-        }
 
-        const value = this.eval(ast[1])
-        const fnNs = debugType(value)
-        const fn = this.fns[fnNs]?.[functionName]
-        if (typeof fn === 'function') return fn(value, ...ast[3].map((arg) => this.eval(arg)))
-        throw new EvaluationError(`Function not found: ${functionName} for ${fnNs}`)
-      }
-      case 'call': {
-        const functionName = ast[1]
-        if (this.macros[functionName] && functionName === 'has') {
-          return this.macros[functionName].call(this, ast[2])
+          if (fn.macro) {
+            return fn.handler.call(this, receiver, ...ast[3])
+          } else {
+            return fn.handler(receiver, ...ast[3].map((arg) => this.eval(arg)))
+          }
         }
-
-        const fn = this.fns[functionName]
-        if (typeof fn === 'function') return fn(...ast[2].map((arg) => this.eval(arg)))
-        throw new EvaluationError(`Function not found: ${functionName}`)
-      }
-      case 'array':
-        return ast[1].map((el) => this.eval(el))
-
-      case 'object': {
-        const result = {}
-        for (const [key, value] of ast[1]) {
-          if (key in result) throw new EvaluationError(`Duplicate key: ${key}`)
-          result[this.eval(key)] = this.eval(value)
+        case 'call': {
+          const functionName = ast[1]
+          const fn = this.fns.get(functionName)
+          if (!fn || !fn.standalone) {
+            throw new EvaluationError(`Function not found: '${functionName}'`)
+          }
+          if (fn.macro) return fn.handler.call(this, ...ast[2])
+          return fn.handler(...ast[2].map((arg) => this.eval(arg)))
         }
-        return result
+        case 'array':
+          return ast[1].map((el) => this.eval(el))
+
+        case 'object': {
+          const result = {}
+          for (const [key, value] of ast[1]) {
+            result[this.eval(key)] = this.eval(value)
+          }
+          return result
+        }
+        case '?:': {
+          const condition = this.eval(ast[1])
+          if (typeof condition !== 'boolean') {
+            throw new EvaluationError('Ternary condition must be a boolean')
+          }
+          return condition ? this.eval(ast[2]) : this.eval(ast[3])
+        }
+        default:
+          throw new EvaluationError(`Unknown operation: ${ast[0]}`)
       }
-      case '?:': {
-        const condition = this.eval(ast[1])
-        const isTruthy = condition !== false && condition !== null
-        return isTruthy ? this.eval(ast[2]) : this.eval(ast[3])
-      }
-      default:
-        throw new EvaluationError(`Unknown operation: ${ast[0]}`)
+    } else {
+      // Primitive values
+      return ast
     }
   }
 }
 
-const predicateVarsCache = new WeakMap()
+class InstanceFunctions {
+  constructor(fns) {
+    const normalized = Object.create(null)
+    for (const key in fns) {
+      const fn = fns[key]
+      if (typeof fn === 'function') {
+        normalized[key] = {
+          standalone: true,
+          instances: new Set(),
+          handler: fn
+        }
+      } else if (typeof fn === 'object') {
+        for (const sfn in fn) {
+          normalized[sfn] = {
+            standalone: false,
+            instances: new Set([key]),
+            handler: fn[sfn]
+          }
+        }
+      }
+    }
+
+    this.instanceFunctions = normalized
+  }
+
+  get(name) {
+    return this.instanceFunctions[name] || allFunctions[name]
+  }
+}
+
 class PredicateEvaluator extends Evaluator {
-  constructor(parent, functionName, args) {
+  constructor(parent, receiver, functionName, args) {
+    if (args.length !== 2) {
+      throw new EvaluationError(`${functionName}(var, predicate) requires exactly 2 arguments`)
+    }
+
+    if (args[0]?.[0] !== 'id') {
+      throw new EvaluationError(
+        `${functionName}(var, predicate) invalid predicate iteration variable`
+      )
+    }
+
     super()
     this.ctx = {...parent.ctx}
     this.fns = parent.fns
     this.functionName = functionName
-
-    if (
-      args.length < 2 ||
-      args.length > 3 ||
-      // If we have 2 args and the second is just an identifier, treat it as incomplete 3-arg form
-      (args.length === 2 && Array.isArray(args[1]) && args[1][0] === 'id')
-    ) {
-      throw new EvaluationError(`${functionName}(var, predicate) requires exactly 2 arguments`)
-    }
-
-    this.items = this.getIterableItems(functionName, parent.eval(args[0]))
-    const cached = predicateVarsCache.get(args[0])
-    if (cached) {
-      this.predicateExpression = cached[0]
-      this.predicateVars = cached[1]
-      return
-    }
-
-    if (args.length === 3) {
-      this.predicateExpression = args[2]
-      this.predicateVars = args[1]?.[0] === 'id' ? [args[1][1]] : []
-      if (!this.predicateVars.length) throw new EvaluationError('Invalid iteration variable')
-    } else {
-      this.predicateExpression = args[1]
-      this.predicateVars = [...this.extractVariablesOfExpression(this.predicateExpression)]
-    }
-
-    predicateVarsCache.set(args[0], [this.predicateExpression, this.predicateVars])
+    this.predicateVariable = args[0][1]
+    this.predicateExpression = args[1]
+    this.items = this.getIterableItems(functionName, receiver)
   }
 
   getIterableItems(functionName, collection) {
@@ -1414,32 +1057,13 @@ class PredicateEvaluator extends Evaluator {
   childEvaluateBool(item) {
     const bool = this.childEvaluate(item)
     if (typeof bool === 'boolean') return bool
-    throw new EvaluationError(`${this.functionName}() predicate must return a boolean`)
+    throw new EvaluationError(`${this.functionName}() predicate result is not a boolean`)
   }
 
   childEvaluate(item) {
-    for (let i = 0; i < this.predicateVars.length; i++) this.ctx[this.predicateVars[i]] = item
+    this.ctx[this.predicateVariable] = item
     return this.eval(this.predicateExpression)
   }
-}
-
-function toStringForConcat(v) {
-  switch (typeof v) {
-    case 'string':
-    case 'boolean':
-    case 'number':
-      return v
-    case 'object':
-      if (v === null) return null
-  }
-}
-
-function stringConcat(left, right) {
-  left = toStringForConcat(left)
-  if (left === undefined) return
-  right = toStringForConcat(right)
-  if (right === undefined) return
-  return left + right
 }
 
 // Get the type name for namespace lookup
@@ -1454,93 +1078,89 @@ function debugType(v) {
     case 'object':
       if (v === null) return 'null'
       if (v instanceof Uint8Array) return 'Bytes'
-      if (v instanceof Date) return 'Date'
-      if (Array.isArray(v)) return 'Array'
-      return 'Object'
+      if (v instanceof Date) return 'Timestamp'
+      if (Array.isArray(v)) return 'List'
+      return 'Map'
   }
   return typeof value
 }
 
 function isEqual(a, b) {
   if (a === b) return true
-  if (typeof a !== typeof b) return false
-  if (a == null || b == null) return false
-  if (typeof a !== 'object') return a !== a && b !== b // eslint-disable-line no-self-compare
-  if (a.constructor !== b.constructor) return false
+  switch (typeof a) {
+    case 'string':
+      return false
+    case 'number':
+      // isNaN check
+      // eslint-disable-next-line no-self-compare
+      return a === b || (a !== a && b !== b)
+    case 'boolean':
+      return false
+    case 'object': {
+      if (a === null || typeof b !== 'object' || a.constructor !== b.constructor) return a === b
 
-  if (!a.constructor || a.constructor === Object) {
-    const keysA = Object.keys(a)
-    const keysB = Object.keys(b)
-    if (keysA.length !== keysB.length) return false
+      if (a.constructor === Object || !a.constructor) {
+        const keysA = Object.keys(a)
+        const keysB = Object.keys(b)
+        if (keysA.length !== keysB.length) return false
 
-    for (let i = 0; i < keysA.length; i++) {
-      const key = keysA[i]
-      if (!(key in b) || !isEqual(a[key], b[key])) return false
+        for (let i = 0; i < keysA.length; i++) {
+          const key = keysA[i]
+          if (!(key in b) || !isEqual(a[key], b[key])) return false
+        }
+        return true
+      }
+
+      if (Array.isArray(a)) {
+        const length = a.length
+        if (length !== b.length) return false
+        for (let i = 0; i < length; i++) {
+          if (!isEqual(a[i], b[i])) return false
+        }
+        return true
+      }
+
+      if (a instanceof RegExp) {
+        return a.source === b.source && a.flags === b.flags
+      }
+
+      if (a instanceof Uint8Array) {
+        if (a.length !== b.length) return false
+        for (let i = 0; i < a.length; i++) {
+          if (a[i] !== b[i]) return false
+        }
+        return true
+      }
+
+      if (a instanceof Map) {
+        if (a.size !== b.size) return false
+        for (const [key, value] of a) if (!b.has(key) || !isEqual(value, b.get(key))) return false
+        return true
+      }
+
+      if (a instanceof Set) {
+        if (a.size !== b.size) return false
+        for (const value of a) if (!b.has(value)) return false
+        return true
+      }
+
+      throw new EvaluationError(`Cannot compare values of object ${a.constructor.name || b}`)
     }
-    return true
+    default:
+      if (a === null) return a === b
+      throw new EvaluationError(`Cannot compare values of type ${typeof a}`)
   }
-
-  if (Array.isArray(a)) {
-    const length = a.length
-    if (length !== b.length) return false
-    for (let i = 0; i < length; i++) {
-      if (!isEqual(a[i], b[i])) return false
-    }
-    return true
-  }
-
-  if (a instanceof RegExp) {
-    return a.source === b.source && a.flags === b.flags
-  }
-
-  if (a instanceof Uint8Array) {
-    if (a.length !== b.length) return false
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false
-    }
-    return true
-  }
-
-  if (a instanceof Map) {
-    if (a.size !== b.size) return false
-    for (const [key, value] of a) if (!b.has(key) || !isEqual(value, b.get(key))) return false
-    return true
-  }
-
-  if (a instanceof Set) {
-    if (a.size !== b.size) return false
-    for (const value of a) if (!b.has(value)) return false
-    return true
-  }
-
-  return false
 }
 
 const globalEvaluator = new Evaluator()
-function evaluateAST(ast, context, functions) {
+function evaluateAST(ast, context, instanceFunctions) {
   if (context !== undefined && typeof context !== 'object')
     throw new EvaluationError('Context must be an object')
 
   const evaluator = globalEvaluator
   evaluator.ctx = context
-  evaluator.fns = functions
-    ? Object.assign(Object.create(null), DEFAULT_FUNCTIONS, functions)
-    : DEFAULT_FUNCTIONS
-
+  evaluator.fns = new InstanceFunctions(instanceFunctions)
   return evaluator.eval(ast)
-}
-
-export class ParseError extends Error {
-  constructor(message) {
-    super(message)
-    this.name = 'ParseError'
-  }
-}
-export class EvaluationError extends Error {
-  constructor(message) {
-    super(message)
-    this.name = 'EvaluationError'
-  }
 }
 
 export function parse(expression) {
@@ -1556,13 +1176,7 @@ export function evaluate(expression, context, functions) {
   return evaluateAST(ast, context, functions)
 }
 
-function objectGet(obj, key) {
-  if (typeof obj !== 'object' || obj === null) return
-  if (Array.isArray(obj)) return typeof key === 'number' ? obj[key] : undefined
-  if (obj instanceof Map) return obj.get(key)
-  if (obj instanceof Uint8Array) return typeof key === 'number' ? obj[key] : undefined
-  return Object.hasOwn(obj, key) ? obj[key] : undefined
-}
+export {ParseError, EvaluationError}
 
 export default {
   parse,

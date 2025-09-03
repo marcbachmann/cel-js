@@ -14,11 +14,6 @@ describe('macros', () => {
       }
     }
 
-    test('should work on the root context', (t) => {
-      t.assert.strictEqual(evaluate('has(object)', context), true)
-      t.assert.strictEqual(evaluate('has(nonexistent)', context), false)
-    })
-
     test('should return true when nested property exists', (t) => {
       t.assert.strictEqual(evaluate('has(object.property)', context), true)
     })
@@ -51,6 +46,8 @@ describe('macros', () => {
 
     test('should throw when argument is not a field selection', (t) => {
       const error = /has\(\) requires a field selection/
+      t.assert.throws(() => evaluate('has(object)', context), error)
+      t.assert.throws(() => evaluate('has(nonexistent)', context), error)
       t.assert.throws(() => evaluate('has(size({}))', context), error)
       t.assert.throws(() => evaluate('has("foo".size())', context), error)
       t.assert.throws(() => evaluate('has(user["pro" + "file"].email)', context), error)
@@ -62,6 +59,10 @@ describe('macros', () => {
       t.assert.throws(() => evaluate('has([1][1])', context), error)
       t.assert.throws(() => evaluate('has({"foo":"bar"}["bar"])', context), error)
       t.assert.throws(() => evaluate('has(object[object.nonexistent])', context), error)
+    })
+
+    test('should throw when variable does not exist', (t) => {
+      t.assert.throws(() => evaluate('has(nonexistent.foo)'), /Unknown variable: nonexistent/)
     })
 
     describe('should throw when argument is an atomic expression', () => {
@@ -105,8 +106,16 @@ describe('macros', () => {
         {name: 'laptop', price: 999, inStock: true},
         {name: 'mouse', price: 25, inStock: false},
         {name: 'keyboard', price: 75, inStock: true}
-      ]
+      ],
+      number: 42
     }
+
+    test('is not supported on non-maps or lists', (t) => {
+      const err = /Function not found: 'all' for value of type/
+      t.assert.throws(() => evaluate('(true).all(x, x > 0)', context), err)
+      t.assert.throws(() => evaluate('"hello".all(x, x > 0)', context), err)
+      t.assert.throws(() => evaluate('b"hello".all(x, x <= 5)', context), err)
+    })
 
     test('should return true when all elements match predicate', (t) => {
       t.assert.strictEqual(evaluate('numbers.all(x, x > 0)', context), true)
@@ -142,7 +151,7 @@ describe('macros', () => {
       t.assert.throws(() => evaluate('numbers.all(x)', context), error)
       t.assert.throws(
         () => evaluate('numbers.all(x > 0, y < 10)', context),
-        /Invalid iteration variable/
+        /all\(var, predicate\) invalid predicate iteration variable/
       )
     })
 
@@ -154,7 +163,7 @@ describe('macros', () => {
 
       t.assert.throws(
         () => evaluate('"string".all(x, x > 0)', context),
-        /all\(\) cannot iterate over non-collection type\. argument must be a list, map, or object/
+        /Function not found: 'all' for value of type 'String'/
       )
     })
 
@@ -166,7 +175,7 @@ describe('macros', () => {
     })
 
     test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('all(numbers, x, x > 4)'), /Function not found: all/)
+      t.assert.throws(() => evaluate('all(numbers, x, x > 4)'), /Function not found: 'all'/)
     })
   })
 
@@ -204,7 +213,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /exists\(\) predicate must return a boolean/
+      const error = /exists\(\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.exists(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists(x, "")', context), error)
@@ -218,7 +227,7 @@ describe('macros', () => {
     })
 
     test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('exists(numbers, x, x > 4)'), /Function not found: exists/)
+      t.assert.throws(() => evaluate('exists(numbers, x, x > 4)'), /Function not found: 'exists'/)
     })
   })
 
@@ -256,7 +265,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /exists_one\(\) predicate must return a boolean/
+      const error = /exists_one\(\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.exists_one(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, "")', context), error)
@@ -272,7 +281,7 @@ describe('macros', () => {
     test('does not expose function for non-receiver call', (t) => {
       t.assert.throws(
         () => evaluate('exists_one(numbers, x, x > 4)'),
-        /Function not found: exists_one/
+        /Function not found: 'exists_one'/
       )
     })
   })
@@ -323,13 +332,13 @@ describe('macros', () => {
       )
 
       t.assert.deepStrictEqual(
-        evaluate('users.map(u, numbers.filter(x < 2).map(n + u.age)[0])', context),
+        evaluate('users.map(u, numbers.filter(x, x < 2).map(n, n + u.age)[0])', context),
         [26, 31]
       )
     })
 
     test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('map(numbers, x, x > 4)'), /Function not found: map/)
+      t.assert.throws(() => evaluate('map(numbers, x, x > 4)'), /Function not found: 'map'/)
     })
   })
 
@@ -349,7 +358,7 @@ describe('macros', () => {
     test('should filter elements based on predicate', (t) => {
       t.assert.deepStrictEqual(evaluate('numbers.filter(x, true)', context), context.numbers)
       t.assert.deepStrictEqual(evaluate('numbers.filter(x, false)', context), [])
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x > 5)', context), [6, 7, 8, 9, 10])
+      t.assert.deepStrictEqual(evaluate('numbers.filter(x, x > 5)', context), [6, 7, 8, 9, 10])
 
       t.assert.deepStrictEqual(
         evaluate('numbers.filter(number, number % 2 == 0)', context),
@@ -395,7 +404,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /filter\(\) predicate must return a boolean/
+      const error = /filter\(\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.filter(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].filter(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].filter(x, "")', context), error)
@@ -409,7 +418,7 @@ describe('macros', () => {
     })
 
     test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('filter(numbers, x, x > 4)'), /Function not found: filter/)
+      t.assert.throws(() => evaluate('filter(numbers, x, x > 4)'), /Function not found: 'filter'/)
     })
   })
 
@@ -430,7 +439,7 @@ describe('macros', () => {
 
       t.assert.deepStrictEqual(evaluate('numbers.filter(x, x % 2 == 0)', context), evenNumbers)
       t.assert.deepStrictEqual(
-        evaluate('numbers.filter(x, x % 2 == 0).map(x * 2)', context),
+        evaluate('numbers.filter(x, x % 2 == 0).map(x, x * 2)', context),
         doubledEvens
       )
     })
@@ -452,7 +461,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /all\(\) predicate must return a boolean/
+      const error = /all\(\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.all(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].all(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].all(x, "")', context), error)
@@ -463,15 +472,15 @@ describe('macros', () => {
   describe('macro error handling', () => {
     test('should handle invalid expressions in predicates', (t) => {
       t.assert.throws(
-        () => evaluate('[1, 2, 3].all(nonexistent > 0)'),
+        () => evaluate('[1, 2, 3].all(x, nonexistent > 0)'),
         /Unknown variable: nonexistent/
       )
     })
 
     test('should handle type errors in predicates', (t) => {
       t.assert.throws(
-        () => evaluate('[1, 2].filter(s.startsWith("w"))'),
-        /Function not found: startsWith for Number/
+        () => evaluate('[1, 2].filter(s, s.startsWith("w"))'),
+        /Function not found: 'startsWith' for value of type 'Number'/
       )
     })
   })

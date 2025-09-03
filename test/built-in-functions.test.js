@@ -297,7 +297,7 @@ describe('built-in functions', () => {
         test('should throw error when called on non-string', (t) => {
           t.assert.throws(
             () => evaluate('(123).startsWith("1")'),
-            /Function not found: startsWith for Number/
+            /Function not found: 'startsWith' for value of type 'Number'/
           )
         })
 
@@ -323,19 +323,19 @@ describe('built-in functions', () => {
 
           t.assert.throws(
             () => evaluate('num.startsWith("1")', context),
-            /Function not found: startsWith for Number/
+            /Function not found: 'startsWith' for value of type 'Number'/
           )
           t.assert.throws(
             () => evaluate('bool.startsWith("t")', context),
-            /Function not found: startsWith for Boolean/
+            /Function not found: 'startsWith' for value of type 'Boolean'/
           )
           t.assert.throws(
             () => evaluate('arr.startsWith("")', context),
-            /Function not found: startsWith for Array/
+            /Function not found: 'startsWith' for value of type 'List'/
           )
           t.assert.throws(
             () => evaluate('obj.startsWith("")', context),
-            /Function not found: startsWith for Object/
+            /Function not found: 'startsWith' for value of type 'Map'/
           )
         })
       })
