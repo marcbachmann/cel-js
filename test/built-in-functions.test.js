@@ -504,6 +504,21 @@ describe('built-in functions', () => {
     })
   })
 
+  describe('string function', () => {
+    describe('string identity', () => {
+      test('should return same string string(value)', (t) => {
+        t.assert.strictEqual(evaluate('string("something")'), 'something')
+      })
+
+      test('should return string(false)', (t) => {
+        t.assert.strictEqual(evaluate('string(false)'), 'false')
+        t.assert.strictEqual(evaluate('string(true)'), 'true')
+        t.assert.strictEqual(evaluate('string(1)'), '1')
+        t.assert.strictEqual(evaluate('string(1.0)'), '1')
+      })
+    })
+  })
+
   describe('bool function', () => {
     describe('boolean identity', () => {
       test('should return true for bool(true)', (t) => {

@@ -59,9 +59,8 @@ export const RESERVED = new Set([
 ])
 
 const allFunctions = Object.create(null)
-const standaloneFunctions = Object.create(null)
-const functionsByType = Object.create(null)
 const allTypes = ['String', 'Boolean', 'Number', 'Map', 'List', 'Bytes', 'Timestamp', 'Any']
+for (const t of allTypes) allFunctions[t] = Object.create(null)
 
 function registerFunction(opts) {
   const returns =
@@ -78,7 +77,7 @@ function registerFunction(opts) {
   const declaration = {
     name: opts.name,
     standalone: opts.standalone === true,
-    instances: new Set((opts.instances || ['Any']).includes('Any') ? allTypes : opts.instances),
+    instances: new Set((opts.instances || []).includes('Any') ? allTypes : opts.instances),
     returns: [...(returns || [])][0],
     minArgs: opts.minArgs ?? 0,
     maxArgs: opts.maxArgs || 3,
@@ -86,15 +85,22 @@ function registerFunction(opts) {
     handler: opts.handler
   }
 
-  allFunctions[declaration.name] = declaration
-
-  for (const t of declaration.instances) {
-    functionsByType[t] ??= Object.create(null)
-    functionsByType[t][declaration.name] = declaration
+  if (declaration.standalone === false && !declaration.instances.size) {
+    throw new Error(`Function ${opts.name} must be standalone or have instances`)
   }
 
-  if (declaration.standalone) {
-    standaloneFunctions[declaration.name] = declaration
+  if (allFunctions[declaration.name]?.standalone && declaration.standalone) {
+    throw new Error(`Standalone Function already registered: ${declaration.name}`)
+  }
+
+  if (declaration.standalone) allFunctions[declaration.name] = declaration
+
+  for (const type of declaration.instances) {
+    if (allFunctions[type][declaration.name]) {
+      throw new Error(`Function already registered: ${declaration.name} for type ${type}`)
+    }
+
+    allFunctions[type][declaration.name] = declaration
   }
 }
 
@@ -212,7 +218,7 @@ registerFunction({
 registerFunction({
   name: 'string',
   types: ['String', 'Boolean', 'Number', 'Bytes'],
-  returns: ['Number'],
+  returns: ['String'],
   standalone: true,
   minArgs: 1,
   maxArgs: 1,
@@ -643,7 +649,9 @@ function hasNestedField(self, ast) {
       const obj = objectGet(self.ctx, ast[1])
       if (obj === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`)
       return obj
-    } else if (ast[0] === '.') {
+    }
+
+    if (ast[0] === '.') {
       const obj = hasNestedField(self, ast[1])
       if (!obj) return
       return objectGet(obj, ast[2])

@@ -930,27 +930,25 @@ class Evaluator {
         // Receiver call
         case 'rcall': {
           const functionName = ast[2]
-          const fn = this.fns.get(functionName)
           const receiver = this.eval(ast[1])
           const type = debugType(receiver)
-          if (!fn || !fn.instances.has(type)) {
+          const fn = this.fns.get(functionName, type)
+          if (!fn) {
             throw new EvaluationError(
               `Function not found: '${functionName}' for value of type '${type}'`
             )
           }
 
-          if (fn.macro) {
-            return fn.handler.call(this, receiver, ...ast[3])
-          } else {
-            return fn.handler(receiver, ...ast[3].map((arg) => this.eval(arg)))
-          }
+          if (fn.macro) return fn.handler.call(this, receiver, ...ast[3])
+          return fn.handler(receiver, ...ast[3].map((arg) => this.eval(arg)))
         }
         case 'call': {
           const functionName = ast[1]
           const fn = this.fns.get(functionName)
-          if (!fn || !fn.standalone) {
+          if (!fn?.standalone) {
             throw new EvaluationError(`Function not found: '${functionName}'`)
           }
+
           if (fn.macro) return fn.handler.call(this, ...ast[2])
           return fn.handler(...ast[2].map((arg) => this.eval(arg)))
         }
@@ -1006,7 +1004,8 @@ class InstanceFunctions {
     this.instanceFunctions = normalized
   }
 
-  get(name) {
+  get(name, type) {
+    if (type) return this.instanceFunctions[type]?.[name] || allFunctions[type]?.[name]
     return this.instanceFunctions[name] || allFunctions[name]
   }
 }

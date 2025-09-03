@@ -1,31 +1,41 @@
 import {test, describe} from 'node:test'
 import {evaluate} from '../index.js'
 
+function strictEqualTest(expr, expected) {
+  test(expr, (t) => {
+    t.assert.strictEqual(evaluate(expr), expected)
+  })
+}
+
+function testThrows(expr, error) {
+  test(expr, (t) => {
+    t.assert.throws(() => evaluate(expr), {message: error})
+  })
+}
+
 describe('unary operators', () => {
   describe('logical NOT', () => {
-    test('should negate true', (t) => {
-      t.assert.strictEqual(evaluate('!true'), false)
-    })
-
-    test('should negate false', (t) => {
-      t.assert.strictEqual(evaluate('!false'), true)
-    })
-
-    test('should handle double negation', (t) => {
-      t.assert.strictEqual(evaluate('!!true'), true)
-    })
-
-    test('should handle triple negation', (t) => {
-      t.assert.strictEqual(evaluate('!!!true'), false)
-    })
-
-    test('should handle negation of expressions', (t) => {
-      t.assert.strictEqual(evaluate('!(1 == 1)'), false)
-    })
+    strictEqualTest('!true', false)
+    strictEqualTest('!false', true)
+    strictEqualTest('!!true', true)
+    strictEqualTest('!!!true', false)
+    strictEqualTest('!(1 == 1)', false)
 
     test('should handle negation with variables', (t) => {
       t.assert.strictEqual(evaluate('!isActive', {isActive: true}), false)
     })
+
+    strictEqualTest('!false', true)
+    strictEqualTest('!(false)', true)
+    strictEqualTest('!!false', false)
+    strictEqualTest('!true', false)
+    strictEqualTest('!(true)', false)
+    strictEqualTest('!!true', true)
+    strictEqualTest('!!!true', false)
+    testThrows(`!""`, 'NOT operator can only be applied to boolean values')
+    testThrows(`!1`, 'NOT operator can only be applied to boolean values')
+    testThrows(`![]`, 'NOT operator can only be applied to boolean values')
+    testThrows(`!{}`, 'NOT operator can only be applied to boolean values')
   })
 
   describe('unary minus', () => {
