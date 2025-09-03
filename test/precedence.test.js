@@ -17,13 +17,22 @@ describe('operator precedence', () => {
 
   test('ternary should be right-associative', (t) => {
     // This should parse as: a ? (b ? "ab" : "a") : "none"
-    const result = evaluate(`a ? b ? "ab" : "a" : "none"`, {a: true, b: true})
+    const result = evaluate(`a ? b ? "ab" : "a" : "none"`, {
+      a: true,
+      b: true
+    })
     t.assert.strictEqual(result, 'ab')
 
-    const result2 = evaluate(`a ? b ? "ab" : "a" : "none"`, {a: true, b: false})
+    const result2 = evaluate(`a ? b ? "ab" : "a" : "none"`, {
+      a: true,
+      b: false
+    })
     t.assert.strictEqual(result2, 'a')
 
-    const result3 = evaluate(`a ? b ? "ab" : "a" : "none"`, {a: false, b: true})
+    const result3 = evaluate(`a ? b ? "ab" : "a" : "none"`, {
+      a: false,
+      b: true
+    })
     t.assert.strictEqual(result3, 'none')
   })
 

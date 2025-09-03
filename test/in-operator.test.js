@@ -21,7 +21,10 @@ describe('in operator and membership tests', () => {
 
     test('should work with variables', (t) => {
       t.assert.strictEqual(
-        evaluate('item in items', {item: 'apple', items: ['apple', 'banana', 'orange']}),
+        evaluate('item in items', {
+          item: 'apple',
+          items: ['apple', 'banana', 'orange']
+        }),
         true
       )
     })
@@ -42,7 +45,10 @@ describe('in operator and membership tests', () => {
 
     test('should work with variables for objects', (t) => {
       t.assert.strictEqual(
-        evaluate('key in obj', {key: 'name', obj: {name: 'Alice', age: 25}}),
+        evaluate('key in obj', {
+          key: 'name',
+          obj: {name: 'Alice', age: 25}
+        }),
         true
       )
     })

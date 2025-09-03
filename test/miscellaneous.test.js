@@ -58,7 +58,15 @@ describe('miscellaneous', () => {
 
   describe('complex expressions', () => {
     test('should handle complex mixed operations', (t) => {
-      const context = {a: 1, b: 2, c: 3, d: 8, e: false, f: 'hello', g: 'hello'}
+      const context = {
+        a: 1,
+        b: 2,
+        c: 3,
+        d: 8,
+        e: false,
+        f: 'hello',
+        g: 'hello'
+      }
       t.assert.strictEqual(evaluate('(a + b) * c > d && e || f == g', context), true)
     })
 

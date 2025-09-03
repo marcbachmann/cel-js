@@ -140,7 +140,9 @@ describe('custom functions', () => {
       t.assert.strictEqual(evaluate('returnNumber()', {}, functions), 42)
       t.assert.strictEqual(evaluate('returnBoolean()', {}, functions), true)
       t.assert.deepStrictEqual(evaluate('returnArray()', {}, functions), [1, 2, 3])
-      t.assert.deepStrictEqual(evaluate('returnObject()', {}, functions), {key: 'value'})
+      t.assert.deepStrictEqual(evaluate('returnObject()', {}, functions), {
+        key: 'value'
+      })
       t.assert.strictEqual(evaluate('returnNull()', {}, functions), null)
     })
 

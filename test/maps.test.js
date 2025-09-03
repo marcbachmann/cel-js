@@ -20,11 +20,16 @@ describe('maps/objects expressions', () => {
     })
 
     test('should handle numeric keys', (t) => {
-      t.assert.deepStrictEqual(evaluate('{1: "one", 2: "two"}'), {1: 'one', 2: 'two'})
+      t.assert.deepStrictEqual(evaluate('{1: "one", 2: "two"}'), {
+        1: 'one',
+        2: 'two'
+      })
     })
 
     test('should handle computed keys', (t) => {
-      t.assert.deepStrictEqual(evaluate('{("key" + "1"): "value1"}'), {key1: 'value1'})
+      t.assert.deepStrictEqual(evaluate('{("key" + "1"): "value1"}'), {
+        key1: 'value1'
+      })
     })
 
     test('supports equality checks', (t) => {
@@ -44,7 +49,9 @@ describe('maps/objects expressions', () => {
     })
 
     test('should create deeply nested maps', (t) => {
-      t.assert.deepStrictEqual(evaluate('{"a": {"b": {"c": "deep"}}}'), {a: {b: {c: 'deep'}}})
+      t.assert.deepStrictEqual(evaluate('{"a": {"b": {"c": "deep"}}}'), {
+        a: {b: {c: 'deep'}}
+      })
     })
   })
 
@@ -67,7 +74,10 @@ describe('maps/objects expressions', () => {
   describe('with variables', () => {
     test('should use variables as values', (t) => {
       t.assert.deepStrictEqual(
-        evaluate('{"name": userName, "age": userAge}', {userName: 'Alice', userAge: 25}),
+        evaluate('{"name": userName, "age": userAge}', {
+          userName: 'Alice',
+          userAge: 25
+        }),
         {name: 'Alice', age: 25}
       )
     })

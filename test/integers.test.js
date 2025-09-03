@@ -142,13 +142,25 @@ describe('integer literals', () => {
 
 describe('integer parsing edge cases', () => {
   test('should throw error for invalid hex numbers', (t) => {
-    t.assert.throws(() => evaluate('0x'), {name: 'EvaluationError', message: /Invalid hex number/})
-    t.assert.throws(() => evaluate('0X'), {name: 'EvaluationError', message: /Invalid hex number/})
+    t.assert.throws(() => evaluate('0x'), {
+      name: 'EvaluationError',
+      message: /Invalid hex number/
+    })
+    t.assert.throws(() => evaluate('0X'), {
+      name: 'EvaluationError',
+      message: /Invalid hex number/
+    })
   })
 
   test('should throw error for incomplete hex numbers', (t) => {
-    t.assert.throws(() => evaluate('0xg'), {name: 'EvaluationError', message: /Invalid hex number/})
-    t.assert.throws(() => evaluate('0Xz'), {name: 'EvaluationError', message: /Invalid hex number/})
+    t.assert.throws(() => evaluate('0xg'), {
+      name: 'EvaluationError',
+      message: /Invalid hex number/
+    })
+    t.assert.throws(() => evaluate('0Xz'), {
+      name: 'EvaluationError',
+      message: /Invalid hex number/
+    })
   })
 
   test('should handle hex numbers at token boundaries', (t) => {

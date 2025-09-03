@@ -1,4 +1,4 @@
-import {test, describe} from 'node:test'
+import {describe, test} from 'node:test'
 import {evaluate} from '../index.js'
 
 // simulate an evaluation error

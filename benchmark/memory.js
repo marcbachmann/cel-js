@@ -33,7 +33,10 @@ const TEST_EXPRESSIONS = [
   // Complex expressions
   {name: 'Conditional', expr: 'score >= 90 ? "A" : score >= 80 ? "B" : "C"'},
   {name: 'List operations', expr: 'items.filter(x, x > 10).map(x, x * 2)'},
-  {name: 'Combined logic', expr: 'user.isActive && ("admin" in user.roles || user.level > 5)'},
+  {
+    name: 'Combined logic',
+    expr: 'user.isActive && ("admin" in user.roles || user.level > 5)'
+  },
 
   // Real-world example
   {

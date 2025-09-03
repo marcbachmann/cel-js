@@ -577,7 +577,13 @@ function displaySummary(parseResults, evalResults, combinedResults) {
 
   const calculateBenchmarkStats = (results) => {
     if (results.length === 0) {
-      return {avgSpeedup: 0, minSpeedup: 0, maxSpeedup: 0, fasterCount: 0, total: 0}
+      return {
+        avgSpeedup: 0,
+        minSpeedup: 0,
+        maxSpeedup: 0,
+        fasterCount: 0,
+        total: 0
+      }
     }
 
     const speedups = results.map((r) => r.speedup)
@@ -586,7 +592,13 @@ function displaySummary(parseResults, evalResults, combinedResults) {
     const maxSpeedup = Math.max(...speedups)
     const fasterCount = speedups.filter((s) => s > 1).length
 
-    return {avgSpeedup, minSpeedup, maxSpeedup, fasterCount, total: speedups.length}
+    return {
+      avgSpeedup,
+      minSpeedup,
+      maxSpeedup,
+      fasterCount,
+      total: speedups.length
+    }
   }
 
   const parseStats = calculateBenchmarkStats(parseResults)
