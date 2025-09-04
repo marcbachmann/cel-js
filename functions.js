@@ -80,7 +80,7 @@ function registerFunction(opts) {
     instances: new Set((opts.instances || []).includes('Any') ? allTypes : opts.instances),
     returns: [...(returns || [])][0],
     minArgs: opts.minArgs ?? 0,
-    maxArgs: opts.maxArgs || 3,
+    maxArgs: opts.maxArgs ?? 3,
     macro: opts.macro === true,
     handler: opts.handler
   }
@@ -282,7 +282,7 @@ registerFunction({
     if (typeof b === 'string' && typeof a === 'string') {
       try {
         return new RegExp(b).test(a)
-      } catch (error) {
+      } catch (_err) {
         throw new EvaluationError(`Invalid regular expression: ${b}`)
       }
     }
@@ -512,11 +512,14 @@ registerFunction({
   maxArgs: 1,
   returns: 'Boolean',
   handler(ast) {
-    if (arguments.length !== 1) throw new EvaluationError('has() requires exactly one argument')
+    if (arguments.length !== 1) {
+      throw new EvaluationError('has() requires exactly one argument', ast)
+    }
+
     if (typeof ast !== 'object' || ast[0] !== 'id') return hasNestedField(this, ast) !== undefined
 
     // short circuit to assert that we don't only have a variable like has(somevar)
-    throw new EvaluationError('has() requires a field selection')
+    throw new EvaluationError('has() requires a field selection', ast)
   }
 })
 
@@ -647,7 +650,7 @@ function hasNestedField(self, ast) {
   if (typeof ast === 'object') {
     if (ast[0] === 'id') {
       const obj = objectGet(self.ctx, ast[1])
-      if (obj === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`)
+      if (obj === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`, ast)
       return obj
     }
 
@@ -659,10 +662,10 @@ function hasNestedField(self, ast) {
   }
 
   if (typeof ast !== 'object' || ast === null || ast[0] === 'array' || ast[0] === 'object') {
-    throw new EvaluationError('has() does not support atomic expressions')
+    throw new EvaluationError('has() does not support atomic expressions', ast)
   }
 
-  throw new EvaluationError('has() requires a field selection')
+  throw new EvaluationError('has() requires a field selection', ast)
 }
 
 export {allFunctions, objectGet}

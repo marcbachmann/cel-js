@@ -19,7 +19,7 @@ function strictEqualTest(expr, expected) {
 
 function testThrows(expr, error) {
   test(expr, (t) => {
-    t.assert.throws(() => evaluate(expr, ctx), {message: error})
+    t.assert.throws(() => evaluate(expr, ctx), error)
   })
 }
 
@@ -37,14 +37,14 @@ describe('logical operators', () => {
     strictEqualTest(`${divByZero} || true`, true)
     strictEqualTest(`${nonexistentProp} || true`, true)
     strictEqualTest(`${nonexistentFunc} || true`, true)
-    testThrows(`${divByZero} || ${nonexistentVar}`, 'Unknown variable: something')
+    testThrows(`${divByZero} || ${nonexistentVar}`, /Unknown variable: something/)
     strictEqualTest(`false || false`, false)
-    testThrows(`true && ${divByZero}`, 'division by zero')
-    testThrows(`${divByZero} && true`, 'division by zero')
-    testThrows(`${divByZero} && ${nonexistentVar}`, 'Unknown variable: something')
-    testThrows(`false || ${divByZero}`, 'division by zero')
-    testThrows(`${divByZero} || false`, 'division by zero')
-    testThrows(`${divByZero} || ${nonexistentVar}`, 'Unknown variable: something')
+    testThrows(`true && ${divByZero}`, /division by zero/)
+    testThrows(`${divByZero} && true`, /division by zero/)
+    testThrows(`${divByZero} && ${nonexistentVar}`, /Unknown variable: something/)
+    testThrows(`false || ${divByZero}`, /division by zero/)
+    testThrows(`${divByZero} || false`, /division by zero/)
+    testThrows(`${divByZero} || ${nonexistentVar}`, /Unknown variable: something/)
   })
 
   describe('AND', () => {
@@ -77,8 +77,8 @@ describe('logical operators', () => {
   strictEqualTest('!(true)', false)
   strictEqualTest('!!true', true)
   strictEqualTest('!!!true', false)
-  testThrows(`!""`, 'NOT operator can only be applied to boolean values')
-  testThrows(`!1`, 'NOT operator can only be applied to boolean values')
-  testThrows(`![]`, 'NOT operator can only be applied to boolean values')
-  testThrows(`!{}`, 'NOT operator can only be applied to boolean values')
+  testThrows(`!""`, /NOT operator can only be applied to boolean values/)
+  testThrows(`!1`, /NOT operator can only be applied to boolean values/)
+  testThrows(`![]`, /NOT operator can only be applied to boolean values/)
+  testThrows(`!{}`, /NOT operator can only be applied to boolean values/)
 })

@@ -1,5 +1,5 @@
 import {allFunctions, objectGet, RESERVED, TOKEN, TOKEN_BY_NUMBER} from './functions.js'
-import {EvaluationError, ParseError} from './errors.js'
+import {EvaluationError, ParseError, nodePositionCache} from './errors.js'
 
 class Lexer {
   constructor(input) {
@@ -42,82 +42,52 @@ class Lexer {
     switch (ch) {
       case '=':
         if (next !== '=') break
-        this.pos += 2
-        return {type: TOKEN.EQ, value: '=='}
+        return {type: TOKEN.EQ, value: '==', pos: (this.pos += 2)}
       case '&':
         if (next !== '&') break
-        this.pos += 2
-        return {type: TOKEN.AND, value: '&&'}
+        return {type: TOKEN.AND, value: '&&', pos: (this.pos += 2)}
       case '|':
         if (next !== '|') break
-        this.pos += 2
-        return {type: TOKEN.OR, value: '||'}
+        return {type: TOKEN.OR, value: '||', pos: (this.pos += 2)}
       case '+':
-        this.pos++
-        return {type: TOKEN.PLUS, value: '+'}
+        return {type: TOKEN.PLUS, value: '+', pos: this.pos++}
       case '-':
-        this.pos++
-        return {type: TOKEN.MINUS, value: '-'}
+        return {type: TOKEN.MINUS, value: '-', pos: this.pos++}
       case '*':
-        this.pos++
-        return {type: TOKEN.MULTIPLY, value: '*'}
+        return {type: TOKEN.MULTIPLY, value: '*', pos: this.pos++}
       case '/':
-        this.pos++
-        return {type: TOKEN.DIVIDE, value: '/'}
+        return {type: TOKEN.DIVIDE, value: '/', pos: this.pos++}
       case '%':
-        this.pos++
-        return {type: TOKEN.MODULO, value: '%'}
+        return {type: TOKEN.MODULO, value: '%', pos: this.pos++}
       case '<':
-        if (next === '=') {
-          this.pos += 2
-          return {type: TOKEN.LE, value: '<='}
-        }
-        this.pos++
-        return {type: TOKEN.LT, value: '<'}
+        if (next === '=') return {type: TOKEN.LE, value: '<=', pos: (this.pos += 2)}
+        return {type: TOKEN.LT, value: '<', pos: this.pos++}
       case '>':
-        if (next === '=') {
-          this.pos += 2
-          return {type: TOKEN.GE, value: '>='}
-        }
-        this.pos++
-        return {type: TOKEN.GT, value: '>'}
+        if (next === '=') return {type: TOKEN.GE, value: '>=', pos: (this.pos += 2)}
+        return {type: TOKEN.GT, value: '>', pos: this.pos++}
       case '!':
-        if (next === '=') {
-          this.pos += 2
-          return {type: TOKEN.NE, value: '!='}
-        }
-        this.pos++
-        return {type: TOKEN.NOT, value: '!'}
+        if (next === '=') return {type: TOKEN.NE, value: '!=', pos: (this.pos += 2)}
+        return {type: TOKEN.NOT, value: '!', pos: this.pos++}
       case '(':
-        this.pos++
-        return {type: TOKEN.LPAREN, value: '('}
+        return {type: TOKEN.LPAREN, value: '(', pos: this.pos++}
       case ')':
-        this.pos++
-        return {type: TOKEN.RPAREN, value: ')'}
+        return {type: TOKEN.RPAREN, value: ')', pos: this.pos++}
       case '[':
-        this.pos++
-        return {type: TOKEN.LBRACKET, value: '['}
+        return {type: TOKEN.LBRACKET, value: '[', pos: this.pos++}
       case ']':
-        this.pos++
-        return {type: TOKEN.RBRACKET, value: ']'}
+        return {type: TOKEN.RBRACKET, value: ']', pos: this.pos++}
       case '{':
-        this.pos++
-        return {type: TOKEN.LBRACE, value: '{'}
+        return {type: TOKEN.LBRACE, value: '{', pos: this.pos++}
       case '}':
-        this.pos++
-        return {type: TOKEN.RBRACE, value: '}'}
+        return {type: TOKEN.RBRACE, value: '}', pos: this.pos++}
       case '.':
-        this.pos++
-        return {type: TOKEN.DOT, value: '.'}
+        return {type: TOKEN.DOT, value: '.', pos: this.pos++}
       case ',':
-        this.pos++
-        return {type: TOKEN.COMMA, value: ','}
+        return {type: TOKEN.COMMA, value: ',', pos: this.pos++}
       case ':':
-        this.pos++
-        return {type: TOKEN.COLON, value: ':'}
+        return {type: TOKEN.COLON, value: ':', pos: this.pos++}
       case '?':
-        this.pos++
-        return {type: TOKEN.QUESTION, value: '?'}
+        return {type: TOKEN.QUESTION, value: '?', pos: this.pos++}
 
       case `"`:
       case `'`:
@@ -143,7 +113,7 @@ class Lexer {
       return this.readIdentifier()
     }
 
-    throw new ParseError(`Unexpected character: ${ch}`)
+    throw new ParseError(`Unexpected character: ${ch}`, {pos: this.pos, lexer: this})
   }
 
   readNumber() {
@@ -163,12 +133,25 @@ class Lexer {
       if (ch >= '0' && ch <= '9') {
         this.pos++
       } else if (ch === '.') {
-        if (isHex) throw new EvaluationError('Invalid hex number: unexpected dot')
+        if (isHex) {
+          throw new EvaluationError('Invalid hex number: unexpected dot', {
+            pos: this.pos,
+            lexer: this
+          })
+        }
+        if (isFloat) {
+          throw new EvaluationError('Invalid number: multiple dots', {pos: this.pos, lexer: this})
+        }
         this.pos++
         if (!isFloat) isFloat = true
       } else if ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
         this.pos++
-        if (!isHex) throw new EvaluationError('Invalid number: unexpected hex digit')
+        if (!isHex) {
+          throw new EvaluationError('Invalid number: unexpected hex digit', {
+            pos: this.pos,
+            lexer: this
+          })
+        }
       } else {
         break
       }
@@ -188,7 +171,7 @@ class Lexer {
     else value = Number.parseInt(value, isHex ? 16 : 10)
     if (Number.isNaN(value))
       throw new EvaluationError(`Invalid ${isHex ? 'hex ' : ''}number: ${value}`)
-    return {type: TOKEN.NUMBER, value: isUnsigned ? value >>> 0 : value}
+    return {type: TOKEN.NUMBER, value: isUnsigned ? value >>> 0 : value, pos: start}
   }
 
   readString(prefix) {
@@ -220,10 +203,10 @@ class Lexer {
       for (let i = 0; i < processed.length; i++) {
         bytes[i] = processed.charCodeAt(i) & 0xff
       }
-      return {type: TOKEN.BYTES, value: bytes}
+      return {type: TOKEN.BYTES, value: bytes, pos: this.pos - chars.length - 2}
     }
     const value = prefix === 'r' ? rawValue : this.processEscapes(rawValue, false)
-    return {type: TOKEN.STRING, value}
+    return {type: TOKEN.STRING, value, pos: this.pos - chars.length}
   }
 
   readSingleQuotedString(delimiter, prefix) {
@@ -240,13 +223,21 @@ class Lexer {
 
       // No newlines allowed in single-quoted strings
       if (ch === '\n' || ch === '\r') {
-        throw new EvaluationError('Newlines not allowed in single-quoted strings')
+        throw new EvaluationError('Newlines not allowed in single-quoted strings', {
+          pos: this.pos - chars.length - 1,
+          lexer: this
+        })
       }
 
       // Handle escape sequences
       if (ch === '\\' && prefix !== 'r') {
         this.pos++ // Skip backslash
-        if (this.pos >= this.length) throw new EvaluationError('Unterminated escape sequence')
+        if (this.pos >= this.length) {
+          throw new EvaluationError('Unterminated escape sequence', {
+            pos: this.pos - chars.length - 1,
+            lexer: this
+          })
+        }
 
         chars.push('\\')
         chars.push(this.input[this.pos])
@@ -433,16 +424,19 @@ class Lexer {
     // Keywords
     switch (text) {
       case 'true':
-        return {type: TOKEN.BOOLEAN, value: true}
+        return {type: TOKEN.BOOLEAN, value: true, pos: start}
       case 'false':
-        return {type: TOKEN.BOOLEAN, value: false}
+        return {type: TOKEN.BOOLEAN, value: false, pos: start}
       case 'null':
-        return {type: TOKEN.NULL, value: null}
+        return {type: TOKEN.NULL, value: null, pos: start}
       case 'in':
-        return {type: TOKEN.IN, value: 'in'}
+        return {type: TOKEN.IN, value: 'in', pos: start}
       default:
-        if (!RESERVED.has(text)) return {type: TOKEN.IDENTIFIER, value: text}
-        throw new ParseError(`Reserved word not allowed as identifier: ${text}`)
+        if (!RESERVED.has(text)) return {type: TOKEN.IDENTIFIER, value: text, pos: start}
+        throw new ParseError(`Reserved word not allowed as identifier: ${text}`, {
+          pos: start,
+          lexer: this
+        })
     }
   }
 }
@@ -453,10 +447,16 @@ class Parser {
     this.currentToken = this.lexer.nextToken()
   }
 
+  createNode(pos, node) {
+    nodePositionCache.set(node, {pos, lexer: this.lexer})
+    return node
+  }
+
   consume(expectedType) {
     if (this.currentToken.type !== expectedType) {
       throw new ParseError(
-        `Expected ${TOKEN_BY_NUMBER[expectedType]}, got ${TOKEN_BY_NUMBER[this.currentToken.type]}`
+        `Expected ${TOKEN_BY_NUMBER[expectedType]}, got ${TOKEN_BY_NUMBER[this.currentToken.type]}`,
+        {pos: this.currentToken.pos, lexer: this.lexer}
       )
     }
     const token = this.currentToken
@@ -471,7 +471,12 @@ class Parser {
   // Parse entry point
   parse() {
     const result = this.parseExpression()
-    if (!this.match(TOKEN.EOF)) throw new ParseError('Expected end of input')
+    if (!this.match(TOKEN.EOF)) {
+      throw new ParseError(`Unexpected character: '${this.lexer.input[this.lexer.pos - 1]}'`, {
+        pos: this.currentToken.pos,
+        lexer: this.lexer
+      })
+    }
     return result
   }
 
@@ -480,11 +485,11 @@ class Parser {
     const expr = this.parseLogicalOr()
 
     if (this.match(TOKEN.QUESTION)) {
-      this.consume(TOKEN.QUESTION)
+      const token = this.consume(TOKEN.QUESTION)
       const consequent = this.parseExpression() // Right-associative: parse ternary, not expression
       this.consume(TOKEN.COLON)
       const alternate = this.parseExpression() // Right-associative: parse ternary, not expression
-      return ['?:', expr, consequent, alternate]
+      return this.createNode(token.pos, ['?:', expr, consequent, alternate])
     }
 
     return expr
@@ -495,9 +500,9 @@ class Parser {
     let expr = this.parseLogicalAnd()
 
     while (this.match(TOKEN.OR)) {
-      const op = this.consume(TOKEN.OR).value
+      const token = this.consume(TOKEN.OR)
       const right = this.parseLogicalAnd()
-      expr = [op, expr, right]
+      expr = this.createNode(token.pos, [token.value, expr, right])
     }
 
     return expr
@@ -508,9 +513,9 @@ class Parser {
     let expr = this.parseEquality()
 
     while (this.match(TOKEN.AND)) {
-      const op = this.consume(TOKEN.AND).value
+      const token = this.consume(TOKEN.AND)
       const right = this.parseEquality()
-      expr = [op, expr, right]
+      expr = this.createNode(token.pos, [token.value, expr, right])
     }
 
     return expr
@@ -521,10 +526,10 @@ class Parser {
     let expr = this.parseRelational()
 
     while (this.match(TOKEN.EQ) || this.match(TOKEN.NE)) {
-      const op = this.currentToken.value
+      const token = this.currentToken
       this.currentToken = this.lexer.nextToken()
       const right = this.parseRelational()
-      expr = [op, expr, right]
+      expr = this.createNode(token.pos, [token.value, expr, right])
     }
 
     return expr
@@ -541,10 +546,10 @@ class Parser {
       this.match(TOKEN.GE) ||
       this.match(TOKEN.IN)
     ) {
-      const op = this.currentToken.value
+      const token = this.currentToken
       this.currentToken = this.lexer.nextToken()
       const right = this.parseAdditive()
-      expr = [op, expr, right]
+      expr = this.createNode(token.pos, [token.value, expr, right])
     }
 
     return expr
@@ -555,10 +560,10 @@ class Parser {
     let expr = this.parseMultiplicative()
 
     while (this.match(TOKEN.PLUS) || this.match(TOKEN.MINUS)) {
-      const op = this.currentToken.value
+      const token = this.currentToken
       this.currentToken = this.lexer.nextToken()
       const right = this.parseMultiplicative()
-      expr = [op, expr, right]
+      expr = this.createNode(token.pos, [token.value, expr, right])
     }
 
     return expr
@@ -569,10 +574,10 @@ class Parser {
     let expr = this.parseUnary()
 
     while (this.match(TOKEN.MULTIPLY) || this.match(TOKEN.DIVIDE) || this.match(TOKEN.MODULO)) {
-      const op = this.currentToken.value
+      const token = this.currentToken
       this.currentToken = this.lexer.nextToken()
       const right = this.parseUnary()
-      expr = [op, expr, right]
+      expr = this.createNode(token.pos, [token.value, expr, right])
     }
 
     return expr
@@ -581,10 +586,10 @@ class Parser {
   // Unary ::= ('!' | '-' | '+')* Postfix
   parseUnary() {
     if (this.match(TOKEN.NOT) || this.match(TOKEN.MINUS)) {
-      const op = this.currentToken.value
+      const token = this.currentToken
       this.currentToken = this.lexer.nextToken()
       const operand = this.parseUnary()
-      return [op, operand]
+      return this.createNode(token.pos, [token.value, operand])
     }
 
     if (this.match(TOKEN.PLUS)) {
@@ -602,22 +607,22 @@ class Parser {
     while (true) {
       if (this.match(TOKEN.DOT)) {
         this.consume(TOKEN.DOT)
-        const property = this.consume(TOKEN.IDENTIFIER).value
+        const property = this.consume(TOKEN.IDENTIFIER)
 
         // Check for method call
         if (this.match(TOKEN.LPAREN)) {
           this.consume(TOKEN.LPAREN)
           const args = this.parseArgumentList()
           this.consume(TOKEN.RPAREN)
-          expr = ['rcall', expr, property, args]
+          expr = this.createNode(property.pos, ['rcall', expr, property.value, args])
         } else {
-          expr = ['.', expr, property]
+          expr = this.createNode(property.pos, ['.', expr, property.value])
         }
       } else if (this.match(TOKEN.LBRACKET)) {
-        this.consume(TOKEN.LBRACKET)
+        const token = this.consume(TOKEN.LBRACKET)
         const index = this.parseExpression()
         this.consume(TOKEN.RBRACKET)
-        expr = ['[]', expr, index]
+        expr = this.createNode(token.pos, ['[]', expr, index])
       } else {
         break
       }
@@ -642,16 +647,16 @@ class Parser {
         return null
 
       case TOKEN.IDENTIFIER: {
-        const identifier = this.consume(TOKEN.IDENTIFIER).value
+        const identifier = this.consume(TOKEN.IDENTIFIER)
         // Check if next token is LPAREN for function call
         if (this.match(TOKEN.LPAREN)) {
           this.consume(TOKEN.LPAREN)
           const args = this.parseArgumentList()
           this.consume(TOKEN.RPAREN)
-          return ['call', identifier, args]
+          return this.createNode(identifier.pos, ['call', identifier.value, args])
         }
 
-        return ['id', identifier]
+        return this.createNode(identifier.pos, ['id', identifier.value])
       }
       case TOKEN.LPAREN: {
         this.consume(TOKEN.LPAREN)
@@ -665,7 +670,10 @@ class Parser {
         return this.parseObject()
     }
 
-    throw new ParseError(`Unexpected token: ${TOKEN_BY_NUMBER[this.currentToken.type]}`)
+    throw new ParseError(`Unexpected token: ${TOKEN_BY_NUMBER[this.currentToken.type]}`, {
+      pos: this.currentToken.pos,
+      lexer: this.lexer
+    })
   }
 
   parseArray() {
@@ -729,17 +737,21 @@ class Parser {
   }
 }
 
+function firstNode(a, b) {
+  return Array.isArray(a) ? a : b
+}
+
 const handlers = {
   id(ast, s) {
     const val = objectGet(s.ctx, ast[1])
-    if (val === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`)
+    if (val === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`, ast)
     return val
   },
   '||'(ast, s) {
     try {
       const left = s.eval(ast[1])
       if (left === true) return true
-      if (left !== false) throw new EvaluationError('Left operand of || is not a boolean')
+      if (left !== false) throw new EvaluationError('Left operand of || is not a boolean', ast)
     } catch (err) {
       if (err.message.includes('Unknown variable')) throw err
       if (err.message.includes('is not a boolean')) throw err
@@ -747,18 +759,20 @@ const handlers = {
       const right = s.eval(ast[2])
       if (right === true) return true
       if (right === false) throw err
-      throw new EvaluationError('Right operand of || is not a boolean')
+      throw new EvaluationError('Right operand of || is not a boolean', ast)
     }
 
     const right = s.eval(ast[2])
     if (typeof right === 'boolean') return right
-    throw new EvaluationError('Right operand of || is not a boolean')
+    throw new EvaluationError('Right operand of || is not a boolean', ast)
   },
   '&&'(ast, s) {
     try {
       const left = s.eval(ast[1])
       if (left === false) return false
-      if (left !== true) throw new EvaluationError('Left operand of && is not a boolean')
+      if (left !== true) {
+        throw new EvaluationError('Left operand of && is not a boolean', firstNode(ast[1], ast))
+      }
     } catch (err) {
       if (err.message.includes('Unknown variable')) throw err
       if (err.message.includes('is not a boolean')) throw err
@@ -766,19 +780,19 @@ const handlers = {
       const right = s.eval(ast[2])
       if (right === false) return false
       if (right === true) throw err
-      throw new EvaluationError('Right operand of && is not a boolean')
+      throw new EvaluationError('Right operand of && is not a boolean', firstNode(ast[2], ast))
     }
 
     const right = s.eval(ast[2])
     if (typeof right === 'boolean') return right
-    throw new EvaluationError('Right operand of && is not a boolean')
+    throw new EvaluationError('Right operand of && is not a boolean', firstNode(ast[2], ast))
   },
   '+'(ast, s) {
     const left = s.eval(ast[1])
     const right = s.eval(ast[2])
     const leftType = debugType(left)
     if (leftType !== debugType(right)) {
-      throw new EvaluationError(`no such overload: ${leftType} + ${debugType(right)}`)
+      throw new EvaluationError(`no such overload: ${leftType} + ${debugType(right)}`, ast)
     }
 
     switch (leftType) {
@@ -797,20 +811,20 @@ const handlers = {
       }
     }
 
-    throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`)
+    throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`, ast)
   },
   '-'(ast, s) {
     const left = s.eval(ast[1])
     if (ast.length === 2) {
       if (typeof left !== 'number') {
-        throw new EvaluationError(`no such overload: -${debugType(left)}`)
+        throw new EvaluationError(`no such overload: -${debugType(left)}`, ast)
       }
       return -left
     }
 
     const right = s.eval(ast[2])
     if (typeof left !== 'number' || typeof right !== 'number') {
-      throw new EvaluationError(`no such overload: ${debugType(left)} - ${debugType(right)}`)
+      throw new EvaluationError(`no such overload: ${debugType(left)} - ${debugType(right)}`, ast)
     }
     return left - right
   },
@@ -872,16 +886,17 @@ const handlers = {
     const value = objectGet(left, right)
     if (value === undefined) {
       if (Array.isArray(left)) {
+        if (typeof right !== 'number')
+          throw new EvaluationError(`No such key: ${right} (${debugType(right)})`, ast)
         if (right < 0)
-          throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`)
+          throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`, ast)
         if (right >= left.length)
           throw new EvaluationError(
-            `No such key: index out of bounds, index ${right} >= size ${left.length}`
+            `No such key: index out of bounds, index ${right} >= size ${left.length}`,
+            ast
           )
-        if (typeof right !== 'number')
-          throw new EvaluationError(`No such key: ${right} (${debugType(right)})`)
       }
-      throw new EvaluationError(`No such key: ${right}`)
+      throw new EvaluationError(`No such key: ${right}`, ast)
     }
     return value
   },
@@ -891,7 +906,10 @@ const handlers = {
     const type = debugType(receiver)
     const fn = s.fns.get(functionName, type)
     if (!fn) {
-      throw new EvaluationError(`Function not found: '${functionName}' for value of type '${type}'`)
+      throw new EvaluationError(
+        `Function not found: '${functionName}' for value of type '${type}'`,
+        ast
+      )
     }
 
     if (fn.macro) return fn.handler.call(s, receiver, ...ast[3])
@@ -901,7 +919,7 @@ const handlers = {
     const functionName = ast[1]
     const fn = s.fns.get(functionName)
     if (!fn?.standalone) {
-      throw new EvaluationError(`Function not found: '${functionName}'`)
+      throw new EvaluationError(`Function not found: '${functionName}'`, ast)
     }
 
     if (fn.macro) return fn.handler.call(s, ...ast[2])
@@ -931,7 +949,8 @@ const handlers = {
 
     if (debugType(left) !== debugType(right)) {
       throw new EvaluationError(
-        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`
+        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`,
+        ast
       )
     }
     return [left, right]
@@ -949,7 +968,8 @@ const handlers = {
       )
     ) {
       throw new EvaluationError(
-        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`
+        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`,
+        ast
       )
     }
     return [left, right]
@@ -960,7 +980,8 @@ const handlers = {
 
     if (debugType(left) !== debugType(right) || typeof left !== 'number') {
       throw new EvaluationError(
-        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`
+        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`,
+        ast
       )
     }
     return [left, right]
@@ -981,7 +1002,7 @@ class Evaluator {
 
     const handler = this.handlers[ast[0]]
     if (handler) return handler.call(this.handlers, ast, this)
-    throw new EvaluationError(`Unknown operation: ${ast[0]}`)
+    throw new EvaluationError(`Unknown operation: ${ast[0]}`, ast)
   }
 }
 
@@ -1082,10 +1103,10 @@ function debugType(v) {
       return 'Boolean'
     case 'object':
       if (v === null) return 'null'
+      if (v.constructor === Object || v instanceof Map || !v.constructor) return 'Map'
+      if (Array.isArray(v)) return 'List'
       if (v instanceof Uint8Array) return 'Bytes'
       if (v instanceof Date) return 'Timestamp'
-      if (Array.isArray(v)) return 'List'
-      if (v.constructor === Object || v instanceof Map || !v.constructor) return 'Map'
   }
   throw new EvaluationError(`Unsupported type: ${v?.constructor?.name || typeof v}`)
 }
