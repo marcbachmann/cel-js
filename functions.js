@@ -159,7 +159,7 @@ registerFunction({
 registerFunction({
   name: 'size',
   types: ['String', 'Bytes', 'List', 'Map'],
-  instances: ['Bytes', 'String'],
+  instances: ['String', 'Bytes', 'List', 'Map'],
   standalone: true,
   returns: ['Number'],
   minArgs: 1,
@@ -177,7 +177,7 @@ registerFunction({
 
 registerFunction({
   name: 'bytes',
-  types: ['String', 'Bytes', 'List', 'Map'],
+  types: ['String', 'Bytes'],
   returns: ['Number'],
   standalone: true,
   minArgs: 1,
@@ -190,7 +190,7 @@ registerFunction({
 
 registerFunction({
   name: 'double',
-  types: ['String', 'Bytes', 'List', 'Map'],
+  types: ['String', 'Number'],
   returns: ['Number'],
   standalone: true,
   minArgs: 1,
@@ -199,7 +199,7 @@ registerFunction({
     if (arguments.length !== 1) throw new EvaluationError('double() requires exactly one argument')
     if (typeof v === 'number') return v
     if (typeof v === 'string') {
-      if (v === 'NaN') return NaN
+      if (v === 'NaN') return Number.NaN
       if (v && !v.includes(' ')) {
         const parsed = Number(v)
         if (!Number.isNaN(parsed)) return parsed
@@ -531,9 +531,9 @@ registerFunction({
   handler(receiver, ...args) {
     const evaluator = this.predicateEvaluator(receiver, 'all', args)
     let error = null
-    for (const item of evaluator.items) {
+    for (let i = 0; i < evaluator.items.length; i++) {
       try {
-        if (evaluator.childEvaluateBool(item)) continue
+        if (evaluator.childEvaluateBool(evaluator.items[i])) continue
         return false
       } catch (e) {
         if (e.message.includes('Unknown variable')) throw e
@@ -557,9 +557,9 @@ registerFunction({
   handler(receiver, ...args) {
     const evaluator = this.predicateEvaluator(receiver, 'exists', args)
     let error
-    for (const item of evaluator.items) {
+    for (let i = 0; i < evaluator.items.length; i++) {
       try {
-        if (evaluator.childEvaluateBool(item)) return true
+        if (evaluator.childEvaluateBool(evaluator.items[i])) return true
       } catch (e) {
         if (e.message.includes('Unknown variable')) throw e
         if (e.message.includes('predicate result is not a boolean')) throw e
@@ -583,8 +583,8 @@ registerFunction({
     const evaluator = this.predicateEvaluator(receiver, 'exists_one', args)
 
     let count = 0
-    for (const item of evaluator.items) {
-      if (evaluator.childEvaluateBool(item) === false) continue
+    for (let i = 0; i < evaluator.items.length; i++) {
+      if (evaluator.childEvaluateBool(evaluator.items[i]) === false) continue
       if (++count > 1) return false
     }
 
@@ -616,11 +616,11 @@ registerFunction({
     const evaluator = this.predicateEvaluator(receiver, 'filter', args)
 
     const results = []
-    for (const item of evaluator.items) {
+    for (let i = 0; i < evaluator.items.length; i++) {
+      const item = evaluator.items[i]
       if (evaluator.childEvaluateBool(item) === false) continue
       results.push(item)
     }
-
     return results
   }
 })
