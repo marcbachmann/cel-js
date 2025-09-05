@@ -5,7 +5,7 @@ export class ParseError extends Error {
     super(message)
     this.name = 'ParseError'
 
-    const pos = node && (node.pos ? node : nodePositionCache.get(node))
+    const pos = node && (node.input ? node : nodePositionCache.get(node))
     if (pos) this.message = formatErrorWithHighlight(this.message, pos)
   }
 }
@@ -15,7 +15,7 @@ export class EvaluationError extends Error {
     super(message)
     this.name = 'EvaluationError'
 
-    const pos = node && (node.pos ? node : nodePositionCache.get(node))
+    const pos = node && (node.input ? node : nodePositionCache.get(node))
     if (pos) this.message = formatErrorWithHighlight(this.message, pos)
   }
 }

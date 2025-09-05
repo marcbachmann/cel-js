@@ -113,7 +113,7 @@ class Lexer {
       return this.readIdentifier()
     }
 
-    throw new ParseError(`Unexpected character: ${ch}`, {pos: this.pos, lexer: this})
+    throw new ParseError(`Unexpected character: ${ch}`, {pos: this.pos, input: this.input})
   }
 
   readNumber() {
@@ -136,11 +136,14 @@ class Lexer {
         if (isHex) {
           throw new EvaluationError('Invalid hex number: unexpected dot', {
             pos: this.pos,
-            lexer: this
+            input: this.input
           })
         }
         if (isFloat) {
-          throw new EvaluationError('Invalid number: multiple dots', {pos: this.pos, lexer: this})
+          throw new EvaluationError('Invalid number: multiple dots', {
+            pos: this.pos,
+            input: this.input
+          })
         }
         this.pos++
         if (!isFloat) isFloat = true
@@ -149,7 +152,7 @@ class Lexer {
         if (!isHex) {
           throw new EvaluationError('Invalid number: unexpected hex digit', {
             pos: this.pos,
-            lexer: this
+            input: this.input
           })
         }
       } else {
@@ -225,7 +228,7 @@ class Lexer {
       if (ch === '\n' || ch === '\r') {
         throw new EvaluationError('Newlines not allowed in single-quoted strings', {
           pos: this.pos - chars.length - 1,
-          lexer: this
+          input: this.input
         })
       }
 
@@ -235,7 +238,7 @@ class Lexer {
         if (this.pos >= this.length) {
           throw new EvaluationError('Unterminated escape sequence', {
             pos: this.pos - chars.length - 1,
-            lexer: this
+            input: this.input
           })
         }
 
@@ -435,7 +438,7 @@ class Lexer {
         if (!RESERVED.has(text)) return {type: TOKEN.IDENTIFIER, value: text, pos: start}
         throw new ParseError(`Reserved word not allowed as identifier: ${text}`, {
           pos: start,
-          lexer: this
+          input: this.input
         })
     }
   }
@@ -448,7 +451,7 @@ class Parser {
   }
 
   createNode(pos, node) {
-    nodePositionCache.set(node, {pos, lexer: this.lexer})
+    nodePositionCache.set(node, {pos, input: this.lexer.input})
     return node
   }
 
@@ -456,7 +459,7 @@ class Parser {
     if (this.currentToken.type !== expectedType) {
       throw new ParseError(
         `Expected ${TOKEN_BY_NUMBER[expectedType]}, got ${TOKEN_BY_NUMBER[this.currentToken.type]}`,
-        {pos: this.currentToken.pos, lexer: this.lexer}
+        {pos: this.currentToken.pos, input: this.lexer.input}
       )
     }
     const token = this.currentToken
@@ -474,7 +477,7 @@ class Parser {
     if (!this.match(TOKEN.EOF)) {
       throw new ParseError(`Unexpected character: '${this.lexer.input[this.lexer.pos - 1]}'`, {
         pos: this.currentToken.pos,
-        lexer: this.lexer
+        input: this.lexer.input
       })
     }
     return result
@@ -672,7 +675,7 @@ class Parser {
 
     throw new ParseError(`Unexpected token: ${TOKEN_BY_NUMBER[this.currentToken.type]}`, {
       pos: this.currentToken.pos,
-      lexer: this.lexer
+      input: this.lexer.input
     })
   }
 
