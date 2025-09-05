@@ -21,9 +21,9 @@ export class EvaluationError extends Error {
 }
 
 function formatErrorWithHighlight(message, position) {
+  if (!position?.input) return message
   const pos = position.pos
-  const input = position.lexer.input
-  if (!input) return message
+  const input = position.input
 
   let lineNum = 1
   let currentPos = 0

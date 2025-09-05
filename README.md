@@ -400,33 +400,44 @@ This implementation is designed for high performance:
 Comparison with the `cel-js` package shows significant performance improvements:
 
 #### Parsing Performance
-- **7x faster** on average across all expressions
-- Simple literals: **2.5-6x faster**
-- Complex expressions: **5-16x faster**
-- Best performance on arithmetic operations and string methods
+- **Average speedup: 3.38x faster**
+- Range: 1.62x - 10.91x faster across different expression types
+- Fastest on array creation (10.91x) and map creation (6.69x)
+- Consistently faster on all 21 test expressions
 
 #### Evaluation Performance  
-- **12.5x faster** on average for supported operations
-- Simple value access: **15-21x faster**
-- Property access: **7-13x faster**
-- Complex logic: **8-17x faster**
+- **Average speedup: 12.94x faster**
+- Range: 5.88x - 28.54x faster
+- Array creation: **28.54x faster**
+- Map creation: **21.80x faster**
+- Simple primitives: **15-20x faster**
+- Complex authorization checks: **5.88x faster**
 
-#### Memory Usage
-- **8-13x less memory** for parsed ASTs
-- Number literals use 342 bytes vs 4.5KB (13x less)
-- Complex expressions use 5KB vs 34KB (7x less)
-- More stable memory growth patterns
+#### Combined Parse + Evaluate Performance
+- **Average speedup: 6.10x faster**
+- Range: 1.07x - 18.92x faster
+- Simple expressions: **17-19x faster**
+- Complex expressions: **2-4x faster**
+- List comprehensions: **3.59x faster**
 
-#### Combined Parse + Evaluate
-- **11x faster** on average
-- Simple expressions: **20x faster**
-- Complex authorization checks: **6x faster**
+#### Specific Operation Performance Highlights
+
+| Operation | Parse | Evaluate | Combined |
+|-----------|-------|----------|----------|
+| Simple Number (42) | 5.36x | 17.88x | 17.87x |
+| Simple Boolean (true) | 5.85x | 19.66x | 18.92x |
+| Array Creation [1,2,3,4,5] | 10.91x | 28.54x | 13.72x |
+| Map Creation {"foo": 1, ...} | 6.69x | 21.80x | 9.28x |
+| Property Access (user.name) | 2.70x | 10.28x | 4.23x |
+| Complex Logic | 2.24x | 11.47x | 2.21x |
+| Authorization Check | 1.63x | 5.88x | 2.16x |
+| List Comprehension | 2.29x | 7.46x | 3.59x |
 
 #### Feature Advantages
-@marcbachmann/cel-js supports many features not available in cel-js:
+@marcbachmann/cel-js supports features not available in cel-js:
 - ✅ String methods (`startsWith`, `endsWith`, `contains`, `matches`)
 - ✅ Macros (`has`, `all`, `exists`, `exists_one`, `map`, `filter`)
-- ✅ Type functions (`string`, `bytes`, `timestamp`)
+- ✅ Type functions (`string`, `bytes`, `timestamp`, `size`)
 - ✅ Bytes literals and operations
 - ✅ Raw strings and escape sequences
 - ✅ Triple-quoted strings
@@ -444,8 +455,8 @@ npm run benchmark:memory
 node --expose-gc benchmark/memory.js
 ```
 
-**Test Environment**: Node.js v24.1.0 on Apple Silicon (M1/M2) 
-**Iterations**: 10,000 parse operations, 10,000 evaluate operations
+**Test Environment**: Node.js v24.6.0 on Darwin ARM64 (Apple Silicon)
+**Benchmark Configuration**: 10,000 iterations each for parsing and evaluation, with 5,000 warmup iterations
 
 See the [benchmark directory](./benchmark/README.md) for detailed benchmark documentation and results.
 

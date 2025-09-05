@@ -5,29 +5,32 @@ This directory contains comprehensive benchmarks comparing the performance of @m
 ## Overview
 
 The benchmarks demonstrate that @marcbachmann/cel-js:
-- **Parses expressions 7x faster** than cel-js (average across all expressions)
-- **Evaluates expressions 12.5x faster** than cel-js (average for supported features)
-- **Uses 8-13x less memory** for AST representation
+- **Parses expressions 3.38x faster** on average (range: 1.62x - 10.91x)
+- **Evaluates expressions 12.94x faster** on average (range: 5.88x - 28.54x)
+- **Combined parse+eval 6.10x faster** on average (range: 1.07x - 18.92x)
 - **Supports more CEL features** including string methods, macros, and bytes operations
 
 ## Real-World Performance Examples
 
-From actual benchmark runs on Node.js v24.1.0 (Apple Silicon):
+From actual benchmark runs on Node.js v24.6.0 (Darwin ARM64):
 
 ### Simple Operations
-- Number literal `42`: **21x faster** evaluation
-- String literal `"hello"`: **15x faster** evaluation  
-- Property access `user.name`: **13x faster** evaluation
+- Number literal `42`: **5.36x faster** parsing, **17.88x faster** evaluation
+- Boolean literal `true`: **5.85x faster** parsing, **19.66x faster** evaluation
+- String literal `"hello world"`: **2.60x faster** parsing, **15.16x faster** evaluation
+- Property access `user.name`: **2.70x faster** parsing, **10.28x faster** evaluation
+
+### Collection Operations  
+- Array creation `[1,2,3,4,5]`: **10.91x faster** parsing, **28.54x faster** evaluation
+- Map creation `{"foo": 1, ...}`: **6.69x faster** parsing, **21.80x faster** evaluation
+- Array membership `"admin" in roles`: **1.91x faster** parsing, **12.07x faster** evaluation
+- Map access `config["timeout"]`: **2.31x faster** parsing, **11.04x faster** evaluation
 
 ### Complex Operations
-- Arithmetic `(a + b) * c - d / e`: **11x faster** parsing, **11x faster** evaluation
-- Authorization check with multiple conditions: **5.5x faster** parsing, **8x faster** evaluation
-- Nested ternary conditions: **8x faster** parsing, **15x faster** evaluation
-
-### Memory Efficiency
-- Simple number: 342 bytes vs 4.5KB (13x less memory)
-- Complex auth expression: 5KB vs 34KB (7x less memory)
-- Better memory allocation patterns with less GC pressure
+- Arithmetic `(a + b) * c - (d / e)`: **2.19x faster** parsing, **7.30x faster** evaluation
+- Authorization check: **1.63x faster** parsing, **5.88x faster** evaluation
+- Nested ternary conditions: **2.84x faster** parsing, **12.35x faster** evaluation
+- List comprehension `filter().map()`: **2.29x faster** parsing, **7.46x faster** evaluation
 
 ## Setup
 
@@ -96,33 +99,41 @@ node --expose-gc benchmark/memory.js
 Benchmark Configuration:
   Parse iterations:    10,000
   Evaluate iterations: 10,000
-  Warmup iterations:   1,000
-  Test expressions:    19
+  Warmup iterations:   5,000
+  Test expressions:    21
+
+Comparing against: cel-js package
+Platform: darwin arm64
+Node.js: v24.6.0
+
+============================================================
+EVALUATION PERFORMANCE
+============================================================
+
+▸ Array Creation
+  Expression: [1, 2, 3, 4, 5]
+
+  @marcbachmann/cel-js:
+    Total: 0.71ms (14,046,581 ops/sec)
+    Mean:  0.000ms
+
+  cel-js package:
+    Total: 20.32ms (492,192 ops/sec)
+    Mean:  0.002ms
+
+  Result: @marcbachmann/cel-js is 28.54x faster 🚀
 
 ▸ String Methods
   Expression: name.startsWith("John") && email.endsWith("@example.com")
 
   @marcbachmann/cel-js:
-    Total: 28.54ms (350,387 ops/sec)
-    Mean:  0.003ms
+    Total: 2.60ms (3,839,324 ops/sec)
+    Mean:  0.000ms
 
   cel-js package:
     Not Supported: 🔴
 
   Result: Only @marcbachmann/cel-js supports this expression ✅
-
-▸ Simple Arithmetic
-  Expression: 1 + 2 * 3
-
-  @marcbachmann/cel-js:
-    Total: 12.34ms (810,372 ops/sec)
-    Mean:  0.001ms
-
-  cel-js package:
-    Total: 45.67ms (218,993 ops/sec)
-    Mean:  0.005ms
-
-  Result: @marcbachmann/cel-js is 3.70x faster 🚀
 ```
 
 ## Performance Characteristics
@@ -153,14 +164,39 @@ Benchmark Configuration:
 
 | Feature | @marcbachmann/cel-js | cel-js |
 |---------|---------------------|---------|
+| **Basic Operations** | | |
 | Basic CEL syntax | ✅ | ✅ |
-| String methods | ✅ | ❌ |
-| Macros (has, all, exists) | ✅ | ❌ |
-| Bytes literals | ✅ | ❌ |
-| Type conversions | ✅ | ❌ |
-| Raw strings | ✅ | ❌ |
-| Unicode escapes | ✅ | Limited |
+| Arithmetic operators | ✅ | ✅ |
+| Logical operators | ✅ | ✅ |
+| Comparison operators | ✅ | ✅ |
+| **Advanced Features** | | |
+| String methods (`startsWith`, `endsWith`, `contains`, `matches`) | ✅ | ❌ |
+| Macros (`has`, `all`, `exists`, `exists_one`, `map`, `filter`) | ✅ | ❌ |
+| Bytes literals (e.g., `b"hello"`) | ✅ | ❌ |
+| Type conversions (`string()`, `bytes()`, `timestamp()`) | ✅ | ❌ |
+| Function calls (`size()`, etc.) | ✅ | ❌ |
+| Raw strings (e.g., `r"\n"`) | ✅ | ❌ |
+| Unicode escapes (`\u`, `\U`) | ✅ | Limited |
 | Triple-quoted strings | ✅ | ❌ |
+
+### Performance Summary Table
+
+| Expression Type | Parse Speedup | Evaluate Speedup | Combined Speedup |
+|----------------|---------------|------------------|------------------|
+| Simple Number (42) | 5.36x | 17.88x | 17.87x |
+| Simple Boolean (true) | 5.85x | 19.66x | 18.92x |
+| Simple String | 2.60x | 15.16x | 5.57x |
+| Basic Arithmetic | 2.77x | 11.08x | 5.63x |
+| Complex Arithmetic | 2.19x | 7.30x | 3.49x |
+| Variable Access | 2.70x | 10.28x | 4.23x |
+| Deep Property Access | 1.62x | 8.12x | 2.49x |
+| Array Index Access | 3.96x | 13.54x | 6.69x |
+| Array Creation | 10.91x | 28.54x | 13.72x |
+| Map Creation | 6.69x | 21.80x | 9.28x |
+| Logical Expression | 2.31x | 9.90x | 4.19x |
+| Complex Authorization | 1.63x | 5.88x | 2.16x |
+| List Comprehension | 2.29x | 7.46x | 3.59x |
+| **Average** | **3.38x** | **12.94x** | **6.10x** |
 
 ## Customizing Benchmarks
 

@@ -80,6 +80,11 @@ let TEST_EXPRESSIONS = [
     expression: '"admin" in roles',
     context: {roles: ['user', 'admin', 'moderator']}
   },
+  {
+    name: 'Array Creation',
+    expression: '[1, 2, 3, 4, 5]',
+    context: {roles: ['user', 'admin', 'moderator']}
+  },
 
   // Logical operations
   {
@@ -131,6 +136,10 @@ let TEST_EXPRESSIONS = [
     name: 'Map Access',
     expression: 'config["timeout"] > 30 && config["retries"] <= 3',
     context: {config: {timeout: 60, retries: 2}}
+  },
+  {
+    name: 'Map Creation',
+    expression: '{"foo": 1, "bar": 2, "baz": 3, "test": 4}'
   },
 
   // Complex real-world example

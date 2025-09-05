@@ -8,38 +8,23 @@ class Lexer {
     this.length = input.length
   }
 
-  // Skip whitespace and comments
-  skipWhitespace() {
-    while (this.pos < this.length) {
-      switch (this.input[this.pos]) {
-        case ' ':
-        case '\t':
-        case '\n':
-        case '\r':
-          this.pos++
-          continue
-
-        case '/':
-          if (this.input[this.pos + 1] === '/') {
-            // Skip comment
-            while (this.pos < this.length && this.input[this.pos] !== '\n') this.pos++
-            continue
-          }
-      }
-      break
-    }
-  }
-
   // Read next token
   nextToken() {
-    this.skipWhitespace()
-
     if (this.pos >= this.length) return {type: TOKEN.EOF, value: null}
 
     const ch = this.input[this.pos]
     const next = this.input[this.pos + 1]
 
     switch (ch) {
+      // Whitespaces
+      case ' ':
+      case '\t':
+      case '\n':
+      case '\r':
+        this.pos++
+        return this.nextToken()
+
+      // Operators
       case '=':
         if (next !== '=') break
         return {type: TOKEN.EQ, value: '==', pos: (this.pos += 2)}
@@ -56,6 +41,11 @@ class Lexer {
       case '*':
         return {type: TOKEN.MULTIPLY, value: '*', pos: this.pos++}
       case '/':
+        // Skip comment
+        if (next === '/') {
+          while (this.pos < this.length && this.input[this.pos] !== '\n') this.pos++
+          return this.nextToken()
+        }
         return {type: TOKEN.DIVIDE, value: '/', pos: this.pos++}
       case '%':
         return {type: TOKEN.MODULO, value: '%', pos: this.pos++}
@@ -103,14 +93,16 @@ class Lexer {
           this.pos++
           return this.readString(ch.toLowerCase())
         }
-    }
+        return this.readIdentifier()
+      default: {
+        // Numbers (including hex with 0x prefix)
+        if (ch >= '0' && ch <= '9') return this.readNumber()
 
-    // Numbers (including hex with 0x prefix)
-    if (ch >= '0' && ch <= '9') return this.readNumber()
-
-    // Identifiers and keywords
-    if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch === '_') {
-      return this.readIdentifier()
+        // Identifiers and keywords
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch === '_') {
+          return this.readIdentifier()
+        }
+      }
     }
 
     throw new ParseError(`Unexpected character: ${ch}`, {pos: this.pos, input: this.input})
@@ -929,7 +921,10 @@ const handlers = {
     return fn.handler(...ast[2].map((arg) => s.eval(arg)))
   },
   array(ast, s) {
-    return ast[1].map((el) => s.eval(el))
+    const elements = ast[1]
+    const result = new Array(elements.length)
+    for (let i = 0; i < elements.length; i++) result[i] = s.eval(elements[i])
+    return result
   },
   object(ast, s) {
     const result = {}
@@ -1001,7 +996,7 @@ class Evaluator {
   }
 
   eval(ast) {
-    if (typeof ast !== 'object' || !Array.isArray(ast)) return ast
+    if (!Array.isArray(ast)) return ast
 
     const handler = this.handlers[ast[0]]
     if (handler) return handler.call(this.handlers, ast, this)
