@@ -1189,22 +1189,26 @@ function isEqual(a, b) {
 }
 
 const globalEvaluator = new Evaluator()
+const globalInstanceFunctions = new InstanceFunctions({})
+
 function evaluateAST(ast, context, instanceFunctions) {
   if (context !== undefined && typeof context !== 'object')
     throw new EvaluationError('Context must be an object')
 
   const evaluator = globalEvaluator
   evaluator.ctx = context
-  evaluator.fns = new InstanceFunctions(instanceFunctions)
+  evaluator.fns = instanceFunctions
+    ? new InstanceFunctions(instanceFunctions)
+    : globalInstanceFunctions
+
   return evaluator.eval(ast)
 }
 
 export function parse(expression) {
   const ast = new Parser(expression).parse()
-  // eslint-disable-next-line no-shadow
-  const evaluate = (context, functions) => evaluateAST(ast, context, functions)
-  evaluate.ast = ast
-  return evaluate
+  const evaluateParsed = (context, functions) => evaluateAST(ast, context, functions)
+  evaluateParsed.ast = ast
+  return evaluateParsed
 }
 
 export function evaluate(expression, context, functions) {
