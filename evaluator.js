@@ -786,14 +786,13 @@ const handlers = {
     const left = s.eval(ast[1])
     const right = s.eval(ast[2])
     const leftType = debugType(left)
-    if (leftType !== debugType(right)) {
-      throw new EvaluationError(`no such overload: ${leftType} + ${debugType(right)}`, ast)
+    const rightType = debugType(right)
+    if (leftType !== rightType) {
+      throw new EvaluationError(`no such overload: ${leftType} + ${rightType}`, ast)
     }
 
     switch (leftType) {
       case 'Number':
-        if (Number.isFinite(right) && Number.isFinite(left)) return left + right
-        break
       case 'String':
         return left + right
       case 'List':
@@ -806,20 +805,20 @@ const handlers = {
       }
     }
 
-    throw new EvaluationError(`no such overload: ${debugType(left)} + ${debugType(right)}`, ast)
+    throw new EvaluationError(`no such overload: ${leftType} + ${rightType}`, ast)
   },
   '-'(ast, s) {
     const left = s.eval(ast[1])
+    const leftType = debugType(left)
     if (ast.length === 2) {
-      if (typeof left !== 'number') {
-        throw new EvaluationError(`no such overload: -${debugType(left)}`, ast)
-      }
+      if (leftType !== 'Number') throw new EvaluationError(`no such overload: -${leftType}`, ast)
       return -left
     }
 
     const right = s.eval(ast[2])
-    if (typeof left !== 'number' || typeof right !== 'number') {
-      throw new EvaluationError(`no such overload: ${debugType(left)} - ${debugType(right)}`, ast)
+    const rightType = debugType(right)
+    if (!(leftType === 'Number' && rightType === 'Number')) {
+      throw new EvaluationError(`no such overload: ${leftType} - ${rightType}`, ast)
     }
     return left - right
   },
