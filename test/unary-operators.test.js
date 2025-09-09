@@ -38,6 +38,40 @@ describe('unary operators', () => {
     testThrows(`!{}`, 'NOT operator can only be applied to boolean values')
   })
 
+  describe('unary plus', () => {
+    test('supports unary plus as operator', (t) => {
+      t.assert.strictEqual(evaluate('1 + 2'), 3)
+      t.assert.strictEqual(evaluate('1 +2'), 3)
+      t.assert.strictEqual(evaluate('1+2'), 3)
+    })
+
+    test('rejects unary plus in front of group', (t) => {
+      t.assert.throws(() => evaluate('+(1 + 2)'), {
+        name: 'ParseError',
+        message: /Unexpected token: PLUS/
+      })
+    })
+
+    test('rejects unary plus', (t) => {
+      t.assert.throws(() => evaluate('+2'), {
+        name: 'ParseError',
+        message: /Unexpected token: PLUS/
+      })
+    })
+
+    test('rejects unary plus after operator', (t) => {
+      t.assert.throws(() => evaluate('1 ++ 2'), {
+        name: 'ParseError',
+        message: /Unexpected token: PLUS/
+      })
+
+      t.assert.throws(() => evaluate('1 + + 2'), {
+        name: 'ParseError',
+        message: /Unexpected token: PLUS/
+      })
+    })
+  })
+
   describe('unary minus', () => {
     test('should negate positive number', (t) => {
       t.assert.strictEqual(evaluate('-5'), -5)
@@ -61,16 +95,6 @@ describe('unary operators', () => {
 
     test('should handle unary minus with floats', (t) => {
       t.assert.strictEqual(evaluate('-3.14'), -3.14)
-    })
-  })
-
-  describe('unary plus (should be ignored)', () => {
-    test('should handle unary plus with numbers', (t) => {
-      t.assert.strictEqual(evaluate('+5'), 5)
-    })
-
-    test('should handle unary plus with expressions', (t) => {
-      t.assert.strictEqual(evaluate('+(1 + 2)'), 3)
     })
   })
 

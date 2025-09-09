@@ -578,18 +578,13 @@ class Parser {
     return expr
   }
 
-  // Unary ::= ('!' | '-' | '+')* Postfix
+  // Unary ::= ('!' | '-')* Postfix
   parseUnary() {
     if (this.match(TOKEN.NOT) || this.match(TOKEN.MINUS)) {
       const token = this.currentToken
       this.currentToken = this.lexer.nextToken()
       const operand = this.parseUnary()
       return this.createNode(token.pos, [token.value, operand])
-    }
-
-    if (this.match(TOKEN.PLUS)) {
-      this.currentToken = this.lexer.nextToken() // Skip unary +
-      return this.parseUnary()
     }
 
     return this.parsePostfix()
