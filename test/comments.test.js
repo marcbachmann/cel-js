@@ -3,15 +3,15 @@ import {evaluate, parse} from '../index.js'
 
 describe('comments', () => {
   test('should ignore single line comments at the end', (t) => {
-    t.assert.strictEqual(evaluate('1 + 2 // This is a comment'), 3)
+    t.assert.strictEqual(evaluate('1 + 2 // This is a comment'), 3n)
   })
 
   test('should ignore single line comments at the beginning', (t) => {
-    t.assert.strictEqual(evaluate('// This is a comment\n1 + 2'), 3)
+    t.assert.strictEqual(evaluate('// This is a comment\n1 + 2'), 3n)
   })
 
   test('should ignore single line comments in the middle', (t) => {
-    t.assert.strictEqual(evaluate('1 + // comment\n2'), 3)
+    t.assert.strictEqual(evaluate('1 + // comment\n2'), 3n)
   })
 
   test('should handle multiple comments', (t) => {
@@ -20,7 +20,7 @@ describe('comments', () => {
       1 + // Second comment
       2   // Third comment
     `
-    t.assert.strictEqual(evaluate(expr), 3)
+    t.assert.strictEqual(evaluate(expr), 3n)
   })
 
   test('should handle comments with complex expressions', (t) => {
@@ -42,12 +42,12 @@ describe('comments', () => {
       // 
       * 3
     `
-    t.assert.strictEqual(evaluate(expr), 9)
+    t.assert.strictEqual(evaluate(expr), 9n)
   })
 
   test('should parse expressions with comments successfully', (t) => {
     const result = parse('42 // Ultimate answer')
     t.assert.strictEqual(typeof result, 'function')
-    t.assert.strictEqual(result.ast, 42)
+    t.assert.strictEqual(result.ast, 42n)
   })
 })

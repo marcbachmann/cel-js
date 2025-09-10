@@ -67,9 +67,9 @@ console.log('Access result:', evaluate(accessExpression, userContext))
 // Custom functions
 console.log('\n⚙️  Custom Functions:')
 const customFunctions = {
-  double: (x) => x * 2,
+  double: (x) => Number(x) * 2,
   greet: (name) => `Hello, ${name}!`,
-  max: (a, b) => Math.max(a, b)
+  max: (a, b) => (a > b ? a : b)
 }
 
 console.log('double(5) =', evaluate('double(5)', {}, customFunctions))
@@ -86,13 +86,13 @@ console.log(
 
 // Array operations
 console.log('\n📚 Array Operations:')
-console.log('[1, 2] + [3, 4] =', JSON.stringify(evaluate('[1, 2] + [3, 4]')))
+console.log('[1, 2] + [3, 4] =', evaluate('[1, 2] + [3, 4]'))
 console.log('size(user.roles) =', evaluate('size(user.roles)', userContext))
 
 // Parse and evaluate separately
 console.log('\n🔧 Parse and Evaluate Separately:')
 const evaluateResult = parse('1 + 2 * 3')
-console.log('Parse result:', JSON.stringify(evaluateResult.ast, null, 2))
+console.log('Parse result:', evaluateResult.ast)
 console.log('Evaluation result:', evaluateResult())
 
 // Error handling

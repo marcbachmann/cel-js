@@ -170,7 +170,7 @@ describe('macros', () => {
     test('should throw with invalid operation', (t) => {
       t.assert.throws(
         () => evaluate('mixed.all(x, x > 0)', context),
-        /no such overload: String > Number/
+        /no such overload: String > Integer/
       )
     })
 
@@ -298,25 +298,25 @@ describe('macros', () => {
     }
 
     test('should transform all elements', (t) => {
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x * 2)', context), [2, 4, 6, 8, 10])
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x + 10)', context), [11, 12, 13, 14, 15])
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, x * 2.0)', context), [2, 4, 6, 8, 10])
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, x + 10.0)', context), [11, 12, 13, 14, 15])
     })
 
     test('should work with string transformations', (t) => {
-      t.assert.deepStrictEqual(evaluate('strings.map(s, s.size())', context), [5, 5])
+      t.assert.deepStrictEqual(evaluate('strings.map(s, s.size())', context), [5n, 5n])
     })
 
     test('should work with object property access', (t) => {
       t.assert.deepStrictEqual(evaluate('users.map(u, u.name)', context), ['Alice', 'Bob'])
-      t.assert.deepStrictEqual(evaluate('users.map(u, u.age * 2)', context), [50, 60])
+      t.assert.deepStrictEqual(evaluate('users.map(u, u.age * 2.0)', context), [50, 60])
     })
 
     test('should work with complex transformations', (t) => {
-      t.assert.deepStrictEqual(evaluate('users.map(u, u.age > 25)', context), [false, true])
+      t.assert.deepStrictEqual(evaluate('users.map(u, u.age > 25.0)', context), [false, true])
     })
 
     test('should return empty list for empty input', (t) => {
-      t.assert.deepStrictEqual(evaluate('emptyList.map(x, x * 2)', context), [])
+      t.assert.deepStrictEqual(evaluate('emptyList.map(x, x * 2.0)', context), [])
     })
 
     test('should throw with wrong number of arguments', (t) => {
@@ -327,7 +327,7 @@ describe('macros', () => {
 
     test('supports combination with other macros', (t) => {
       t.assert.deepStrictEqual(
-        evaluate('numbers.filter(x, x < 5).map(x, x * 2)', context),
+        evaluate('numbers.filter(x, x < 5.0).map(x, x * 2.0)', context),
         [2, 4, 6, 8]
       )
 
@@ -361,7 +361,7 @@ describe('macros', () => {
       t.assert.deepStrictEqual(evaluate('numbers.filter(x, x > 5)', context), [6, 7, 8, 9, 10])
 
       t.assert.deepStrictEqual(
-        evaluate('numbers.filter(number, number % 2 == 0)', context),
+        evaluate('numbers.filter(number, int(number) % 2 == 0)', context),
         [0, 2, 4, 6, 8, 10]
       )
     })
@@ -435,11 +435,11 @@ describe('macros', () => {
     test('should chain filter and map', (t) => {
       // Filter even numbers then double them
       const evenNumbers = [2, 4, 6, 8, 10]
-      const doubledEvens = [4, 8, 12, 16, 20]
+      const doubledEvens = [4n, 8n, 12n, 16n, 20n]
 
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, x % 2 == 0)', context), evenNumbers)
+      t.assert.deepStrictEqual(evaluate('numbers.filter(x, int(x) % 2 == 0)', context), evenNumbers)
       t.assert.deepStrictEqual(
-        evaluate('numbers.filter(x, x % 2 == 0).map(x, x * 2)', context),
+        evaluate('numbers.filter(x, int(x) % 2 == 0).map(x, int(x) * 2)', context),
         doubledEvens
       )
     })
@@ -480,7 +480,7 @@ describe('macros', () => {
     test('should handle type errors in predicates', (t) => {
       t.assert.throws(
         () => evaluate('[1, 2].filter(s, s.startsWith("w"))'),
-        /Function not found: 'startsWith' for value of type 'Number'/
+        /Function not found: 'startsWith' for value of type 'Integer'/
       )
     })
   })

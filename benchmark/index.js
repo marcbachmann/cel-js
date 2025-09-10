@@ -13,9 +13,9 @@ import * as celJsPackage from 'cel-js'
 
 // Benchmark configuration
 const ITERATIONS = {
-  parse: 10000,
-  evaluate: 10000,
-  warmup: 5000
+  parse: 50000,
+  evaluate: 50000,
+  warmup: 10000
 }
 
 // Test expressions of varying complexity

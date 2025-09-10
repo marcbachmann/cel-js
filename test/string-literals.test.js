@@ -155,7 +155,7 @@ describe('string literals and escapes', () => {
 
     test('only allows numbers', (t) => {
       t.assert.throws(() => evaluate(`'this is ' + null`), /no such overload: String \+ null/)
-      t.assert.throws(() => evaluate(`'this is ' + 0`), /no such overload: String \+ Number/)
+      t.assert.throws(() => evaluate(`'this is ' + 0`), /no such overload: String \+ Integer/)
     })
   })
 
@@ -176,12 +176,12 @@ describe('string literals and escapes', () => {
     })
 
     test('should support size() on bytes', (t) => {
-      t.assert.strictEqual(evaluate('size(b"hello")'), 5)
+      t.assert.strictEqual(evaluate('size(b"hello")'), 5n)
     })
 
-    test('should support indexing bytes', (t) => {
-      t.assert.strictEqual(evaluate('b"hello"[0]'), 104) // 'h'
-      t.assert.strictEqual(evaluate('b"hello"[1]'), 101) // 'e'
+    test('does not support retrieval of bytes by index', (t) => {
+      t.assert.throws(() => evaluate('b"hello"[0]'), /No such key: 0/)
+      t.assert.throws(() => evaluate('b"hello"[1]'), /No such key: 1/)
     })
 
     test('should support bytes.string()', (t) => {
@@ -198,8 +198,8 @@ describe('string literals and escapes', () => {
     })
 
     test('should support bytes.at()', (t) => {
-      t.assert.strictEqual(evaluate('b"hello".at(0)'), 104) // 'h'
-      t.assert.strictEqual(evaluate('b"hello".at(4)'), 111) // 'o'
+      t.assert.strictEqual(evaluate('b"hello".at(0)'), 104n) // 'h'
+      t.assert.strictEqual(evaluate('b"hello".at(4)'), 111n) // 'o'
     })
 
     test('should throw on out of bounds bytes.at()', (t) => {

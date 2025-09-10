@@ -3,7 +3,7 @@ import {evaluate, parse} from '../index.js'
 
 describe('atomic expressions', () => {
   test('should evaluate a number', (t) => {
-    t.assert.strictEqual(evaluate('1'), 1)
+    t.assert.strictEqual(evaluate('1'), 1n)
   })
 
   test('should evaluate a true boolean literal', (t) => {
@@ -29,7 +29,7 @@ describe('atomic expressions', () => {
   test('should parse successfully', (t) => {
     const result = parse('42')
     t.assert.strictEqual(typeof result, 'function')
-    t.assert.strictEqual(result.ast, 42)
+    t.assert.strictEqual(result.ast, 42n)
   })
 
   test('should parse string successfully', (t) => {

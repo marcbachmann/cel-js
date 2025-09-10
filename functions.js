@@ -59,7 +59,17 @@ export const RESERVED = new Set([
 ])
 
 const allFunctions = Object.create(null)
-const allTypes = ['String', 'Boolean', 'Number', 'Map', 'List', 'Bytes', 'Timestamp', 'Any']
+const allTypes = [
+  'String',
+  'Boolean',
+  'Integer',
+  'Double',
+  'Map',
+  'List',
+  'Bytes',
+  'Timestamp',
+  'Any'
+]
 for (const t of allTypes) allFunctions[t] = Object.create(null)
 
 function registerFunction(opts) {
@@ -149,10 +159,13 @@ registerFunction({
       throw new EvaluationError('timestamp() requires a string argument')
     }
 
-    if (v.length !== 20 && v.length !== 23) {
+    if (v.length < 20 || v.length > 30) {
       throw new EvaluationError('timestamp() requires a string in ISO 8601 format')
     }
-    return new Date(v)
+
+    const d = new Date(v)
+    if (Number.isFinite(d.getTime())) return d
+    throw new EvaluationError('timestamp() requires a string in ISO 8601 format')
   }
 })
 
@@ -161,16 +174,16 @@ registerFunction({
   types: ['String', 'Bytes', 'List', 'Map'],
   instances: ['String', 'Bytes', 'List', 'Map'],
   standalone: true,
-  returns: ['Number'],
+  returns: ['Integer'],
   minArgs: 1,
   maxArgs: 1,
   handler(v) {
-    if (typeof v === 'string') return stringSize(v)
-    if (v instanceof Uint8Array) return v.length
-    if (v instanceof Set) return v.size
-    if (v instanceof Map) return v.size
-    if (Array.isArray(v)) return v.length
-    if (typeof v === 'object' && v !== null) return Object.keys(v).length
+    if (typeof v === 'string') return BigInt(stringSize(v))
+    if (v instanceof Uint8Array) return BigInt(v.length)
+    if (v instanceof Set) return BigInt(v.size)
+    if (v instanceof Map) return BigInt(v.size)
+    if (Array.isArray(v)) return BigInt(v.length)
+    if (typeof v === 'object' && v !== null) return BigInt(Object.keys(v).length)
     throw new EvaluationError('size() type error')
   }
 })
@@ -178,7 +191,7 @@ registerFunction({
 registerFunction({
   name: 'bytes',
   types: ['String', 'Bytes'],
-  returns: ['Number'],
+  returns: ['Integer'],
   standalone: true,
   minArgs: 1,
   maxArgs: 1,
@@ -190,34 +203,92 @@ registerFunction({
 
 registerFunction({
   name: 'double',
-  types: ['String', 'Number'],
-  returns: ['Number'],
+  types: ['String', 'Double', 'Integer'],
+  returns: ['Double'],
   standalone: true,
   minArgs: 1,
   maxArgs: 1,
-  handler(v) {
-    if (arguments.length !== 1) throw new EvaluationError('double() requires exactly one argument')
-    if (typeof v === 'number') return v
-    if (typeof v === 'string') {
-      if (v === 'NaN') return Number.NaN
-      if (v && !v.includes(' ')) {
-        const parsed = Number(v)
-        if (!Number.isNaN(parsed)) return parsed
-      }
-      throw new EvaluationError('double() conversion error: string is not a valid number')
-    }
+  handler(...args) {
+    if (args.length !== 1) throw new EvaluationError('double() requires exactly one argument')
 
-    if (typeof v === 'boolean') return v ? 1 : 0
-    if (v === null) return 0
-    if (typeof v === 'object')
-      throw new EvaluationError('double() type error: cannot convert to double')
-    throw new EvaluationError('double() type error: unsupported type')
+    const v = args[0]
+    switch (typeof v) {
+      case 'number':
+        return v
+      case 'bigint':
+        return Number(v)
+      case 'string': {
+        if (!v || v !== v.trim())
+          throw new EvaluationError('double() type error: cannot convert to double')
+
+        const s = v.toLowerCase()
+        switch (s) {
+          case 'inf':
+          case '+inf':
+          case 'infinity':
+          case '+infinity':
+            return Number.POSITIVE_INFINITY
+          case '-inf':
+          case '-infinity':
+            return Number.NEGATIVE_INFINITY
+          case 'nan':
+            return Number.NaN
+          default: {
+            const parsed = Number(v)
+            if (!Number.isNaN(parsed)) return parsed
+            throw new EvaluationError('double() type error: cannot convert to double')
+          }
+        }
+      }
+      default:
+        throw new EvaluationError('double() type error: cannot convert to double')
+    }
+  }
+})
+
+registerFunction({
+  name: 'int',
+  types: ['String', 'Integer', 'Double'],
+  returns: ['Integer'],
+  standalone: true,
+  minArgs: 1,
+  maxArgs: 1,
+  handler(...args) {
+    if (args.length !== 1) throw new EvaluationError('int() requires exactly one argument')
+
+    const v = args[0]
+    switch (typeof v) {
+      case 'bigint':
+        return v
+      case 'number': {
+        if (Number.isFinite(v)) return BigInt(Math.trunc(v))
+        throw new EvaluationError('int() type error: integer overflow')
+      }
+      case 'string': {
+        if (v !== v.trim() || v.length > 20 || v.includes('0x')) {
+          throw new EvaluationError('int() type error: cannot convert to int')
+        }
+
+        let num
+        try {
+          num = BigInt(v)
+        } catch (_e) {}
+
+        if (typeof num !== 'bigint' || num > 9223372036854775807n || num < -9223372036854775808n) {
+          throw new EvaluationError('int() type error: cannot convert to int')
+        }
+
+        return num
+      }
+      default:
+        throw new EvaluationError(`found no matching overload for 'int' applied to '(${typeof v})'`)
+    }
   }
 })
 
 registerFunction({
   name: 'string',
-  types: ['String', 'Boolean', 'Number', 'Bytes'],
+  types: ['String', 'Boolean', 'Integer', 'Double', 'Bytes'],
   returns: ['String'],
   standalone: true,
   minArgs: 1,
@@ -228,6 +299,7 @@ registerFunction({
       case 'string':
       case 'boolean':
       case 'number':
+      case 'bigint':
         return `${v}`
       default:
         throw new EvaluationError('string() type error: unsupported type')
@@ -343,6 +415,7 @@ registerFunction({
   name: 'json',
   types: ['Bytes'],
   instances: ['Bytes'],
+  returns: 'Map',
   minArgs: 1,
   maxArgs: 1,
   handler: ByteOpts.jsonParse
@@ -352,6 +425,7 @@ registerFunction({
   name: 'hex',
   types: ['Bytes'],
   instances: ['Bytes'],
+  returns: 'String',
   minArgs: 1,
   maxArgs: 1,
   handler: ByteOpts.toHex
@@ -360,6 +434,7 @@ registerFunction({
   name: 'string',
   types: ['Bytes'],
   instances: ['Bytes'],
+  returns: 'String',
   minArgs: 1,
   maxArgs: 1,
   handler: ByteOpts.toUtf8
@@ -368,6 +443,7 @@ registerFunction({
   name: 'base64',
   types: ['Bytes'],
   instances: ['Bytes'],
+  returns: 'String',
   minArgs: 1,
   maxArgs: 1,
   handler: ByteOpts.toBase64
@@ -376,11 +452,12 @@ registerFunction({
   name: 'at',
   types: ['Bytes'],
   instances: ['Bytes'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(b, index) {
     if (index < 0 || index >= b.length) throw new EvaluationError('Bytes index out of range')
-    return b[index]
+    return BigInt(b[index])
   }
 })
 
@@ -388,39 +465,43 @@ registerFunction({
   name: 'getDate',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getDate()
-    return dateObj.getUTCDate()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getDate())
+    return BigInt(dateObj.getUTCDate())
   }
 })
 registerFunction({
   name: 'getDayOfMonth',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getDate() - 1
-    return dateObj.getUTCDate() - 1
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getDate() - 1)
+    return BigInt(dateObj.getUTCDate() - 1)
   }
 })
 registerFunction({
   name: 'getDayOfWeek',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getDay()
-    return dateObj.getUTCDay()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getDay())
+    return BigInt(dateObj.getUTCDay())
   }
 })
 registerFunction({
   name: 'getDayOfYear',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
@@ -434,61 +515,66 @@ registerFunction({
     const start = new Date(workingDate.getFullYear(), 0, 0)
     const diff = workingDate - start
     const oneDay = 1000 * 60 * 60 * 24
-    return Math.floor(diff / oneDay) - 1
+    return BigInt(Math.floor(diff / oneDay) - 1)
   }
 })
 registerFunction({
   name: 'getFullYear',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getFullYear()
-    return dateObj.getUTCFullYear()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getFullYear())
+    return BigInt(dateObj.getUTCFullYear())
   }
 })
 registerFunction({
   name: 'getHours',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getHours()
-    return dateObj.getUTCHours()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getHours())
+    return BigInt(dateObj.getUTCHours())
   }
 })
 registerFunction({
   name: 'getMilliseconds',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj) {
-    return dateObj.getUTCMilliseconds()
+    return BigInt(dateObj.getUTCMilliseconds())
   }
 })
 registerFunction({
   name: 'getMinutes',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getMinutes()
-    return dateObj.getUTCMinutes()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getMinutes())
+    return BigInt(dateObj.getUTCMinutes())
   }
 })
 registerFunction({
   name: 'getMonth',
   types: ['Timestamp'],
   instances: ['Timestamp'],
+  returns: 'Integer',
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getMonth()
-    return dateObj.getUTCMonth()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getMonth())
+    return BigInt(dateObj.getUTCMonth())
   }
 })
 registerFunction({
@@ -498,8 +584,8 @@ registerFunction({
   minArgs: 2,
   maxArgs: 2,
   handler(dateObj, timezone) {
-    if (timezone) return new Date(dateToLocale(dateObj, timezone)).getSeconds()
-    return dateObj.getUTCSeconds()
+    if (timezone) return BigInt(new Date(dateToLocale(dateObj, timezone)).getSeconds())
+    return BigInt(dateObj.getUTCSeconds())
   }
 })
 
@@ -630,10 +716,15 @@ registerFunction({
 
 function objectGet(obj, key) {
   if (typeof obj !== 'object' || obj === null) return
-  if (Array.isArray(obj)) return typeof key === 'number' ? obj[key] : undefined
+
+  if (Array.isArray(obj)) {
+    if (typeof key === 'number' || typeof key === 'bigint') return obj[key]
+    return
+  }
+
+  if (obj instanceof Uint8Array) return
   if (obj instanceof Map) return obj.get(key)
-  if (obj instanceof Uint8Array) return typeof key === 'number' ? obj[key] : undefined
-  return Object.hasOwn(obj, key) ? obj[key] : undefined
+  if (Object.hasOwn(obj, key)) return obj[key]
 }
 
 function stringSize(str) {

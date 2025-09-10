@@ -3,8 +3,8 @@ import {evaluate} from '../index.js'
 
 describe('conditional ternary operator', () => {
   test('should handle simple ternary expressions', (t) => {
-    t.assert.strictEqual(evaluate('true ? 1 : 2'), 1)
-    t.assert.strictEqual(evaluate('false ? 1 : 2'), 2)
+    t.assert.strictEqual(evaluate('true ? 1 : 2'), 1n)
+    t.assert.strictEqual(evaluate('false ? 1 : 2'), 2n)
   })
 
   test('should handle complex conditions in ternary expressions', (t) => {
@@ -14,22 +14,22 @@ describe('conditional ternary operator', () => {
   })
 
   test('should handle nested ternary expressions - true case', (t) => {
-    t.assert.strictEqual(evaluate('true ? (true ? 1 : 2) : 3'), 1)
-    t.assert.strictEqual(evaluate('true ? true ? 1 : 2 : 3'), 1)
-    t.assert.strictEqual(evaluate('true ? (false ? 1 : 2) : 3'), 2)
-    t.assert.strictEqual(evaluate('true ? false ? 1 : 2 : 3'), 2)
+    t.assert.strictEqual(evaluate('true ? (true ? 1 : 2) : 3'), 1n)
+    t.assert.strictEqual(evaluate('true ? true ? 1 : 2 : 3'), 1n)
+    t.assert.strictEqual(evaluate('true ? (false ? 1 : 2) : 3'), 2n)
+    t.assert.strictEqual(evaluate('true ? false ? 1 : 2 : 3'), 2n)
   })
 
   test('should handle nested ternary expressions - false case', (t) => {
-    t.assert.strictEqual(evaluate('false ? 1 : (true ? 2 : 3)'), 2)
-    t.assert.strictEqual(evaluate('false ? 1 : true ? 2 : 3'), 2)
-    t.assert.strictEqual(evaluate('false ? 1 : (false ? 2 : 3)'), 3)
-    t.assert.strictEqual(evaluate('false ? 1 : false ? 2 : 3'), 3)
+    t.assert.strictEqual(evaluate('false ? 1 : (true ? 2 : 3)'), 2n)
+    t.assert.strictEqual(evaluate('false ? 1 : true ? 2 : 3'), 2n)
+    t.assert.strictEqual(evaluate('false ? 1 : (false ? 2 : 3)'), 3n)
+    t.assert.strictEqual(evaluate('false ? 1 : false ? 2 : 3'), 3n)
   })
 
   test('should handle complex expressions in all parts of the ternary', (t) => {
-    t.assert.strictEqual(evaluate('1 + 1 == 2 ? 3 * 2 : 5 * 2'), 6)
-    t.assert.strictEqual(evaluate('1 + 1 != 2 ? 3 * 2 : 5 * 2'), 10)
+    t.assert.strictEqual(evaluate('1 + 1 == 2 ? 3 * 2 : 5 * 2'), 6n)
+    t.assert.strictEqual(evaluate('1 + 1 != 2 ? 3 * 2 : 5 * 2'), 10n)
   })
 
   test('should work with variables', (t) => {
