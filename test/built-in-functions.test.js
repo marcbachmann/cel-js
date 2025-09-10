@@ -5,45 +5,45 @@ describe('built-in functions', () => {
   describe('size function', () => {
     describe('arrays', () => {
       test('should return 0 for empty array', (t) => {
-        t.assert.strictEqual(evaluate('size([])'), 0)
+        t.assert.strictEqual(evaluate('size([])'), 0n)
       })
 
       test('should return 1 for one element array', (t) => {
-        t.assert.strictEqual(evaluate('size([1])'), 1)
+        t.assert.strictEqual(evaluate('size([1])'), 1n)
       })
 
       test('should return 3 for three element array', (t) => {
-        t.assert.strictEqual(evaluate('size([1, 2, 3])'), 3)
+        t.assert.strictEqual(evaluate('size([1, 2, 3])'), 3n)
       })
     })
 
     describe('objects', () => {
       test('should return 0 for empty object', (t) => {
-        t.assert.strictEqual(evaluate('size({})'), 0)
+        t.assert.strictEqual(evaluate('size({})'), 0n)
       })
 
       test('should return 1 for one property object', (t) => {
-        t.assert.strictEqual(evaluate('size({"a": 1})'), 1)
+        t.assert.strictEqual(evaluate('size({"a": 1})'), 1n)
       })
 
       test('should return 3 for three property object', (t) => {
         const result = evaluate('size({"a": 1, "b": 2, "c": 3})')
-        t.assert.strictEqual(result, 3)
+        t.assert.strictEqual(result, 3n)
       })
     })
 
     describe('strings', () => {
       test('should return 0 for empty string', (t) => {
-        t.assert.strictEqual(evaluate('size("")'), 0)
+        t.assert.strictEqual(evaluate('size("")'), 0n)
       })
 
       test('should return length of string', (t) => {
-        t.assert.strictEqual(evaluate('size("abc")'), 3)
+        t.assert.strictEqual(evaluate('size("abc")'), 3n)
       })
 
       test('should handle unicode characters', (t) => {
-        t.assert.strictEqual(evaluate('size("hello 😄")'), 7)
-        t.assert.strictEqual(evaluate('size("hello 👨‍❤️‍💋‍👨")'), 14)
+        t.assert.strictEqual(evaluate('size("hello 😄")'), 7n)
+        t.assert.strictEqual(evaluate('size("hello 👨‍❤️‍💋‍👨")'), 14n)
       })
     })
 
@@ -55,138 +55,152 @@ describe('built-in functions', () => {
   })
 
   describe('Date/Time functions', () => {
-    const christmas = new Date('2023-12-25T12:30:45.500Z') // Monday
-    const newyear = new Date('2024-01-01T00:00:00Z')
-    const context = {christmas, newyear}
+    const christmasTs = '2023-12-25T12:30:45.500Z'
+    const newyearTs = '2024-01-01T00:00:00Z'
+    const christmas = new Date(christmasTs) // Monday
+    const newyear = new Date(newyearTs)
+    const context = {christmas, christmasTs, newyear, newyearTs}
+
+    describe('timestamp function', () => {
+      test('should parse valid RFC 3339 timestamp', (t) => {
+        t.assert.strictEqual(
+          evaluate(`timestamp(christmasTs) == timestamp(christmasTs)`, context),
+          true
+        )
+      })
+    })
 
     describe('getDate function', () => {
       test('should return day of month (1-based) in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getDate()', context), 25)
+        t.assert.strictEqual(evaluate('christmas.getDate()', context), 25n)
       })
 
       test('should return day of month with timezone', (t) => {
         // Christmas at midnight UTC is Dec 24 in Los Angeles
         const utcMidnight = {date: new Date('2023-12-25T00:00:00Z')}
-        t.assert.strictEqual(evaluate('date.getDate("America/Los_Angeles")', utcMidnight), 24)
+        t.assert.strictEqual(evaluate('date.getDate("America/Los_Angeles")', utcMidnight), 24n)
       })
     })
 
     describe('getDayOfMonth function', () => {
       test('should return day of month (0-based) in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getDayOfMonth()', context), 24)
+        t.assert.strictEqual(evaluate('christmas.getDayOfMonth()', context), 24n)
       })
 
       test('should return day of month with timezone', (t) => {
         const utcMidnight = {date: new Date('2023-12-25T00:00:00Z')}
-        t.assert.strictEqual(evaluate('date.getDayOfMonth("America/Los_Angeles")', utcMidnight), 23)
+        t.assert.strictEqual(
+          evaluate('date.getDayOfMonth("America/Los_Angeles")', utcMidnight),
+          23n
+        )
       })
     })
 
     describe('getDayOfWeek function', () => {
       test('should return day of week (0=Sunday) in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getDayOfWeek()', context), 1) // Monday
+        t.assert.strictEqual(evaluate('christmas.getDayOfWeek()', context), 1n) // Monday
       })
 
       test('should return day of week with timezone', (t) => {
         const utcMidnight = {date: new Date('2023-12-25T00:00:00Z')}
-        t.assert.strictEqual(evaluate('date.getDayOfWeek("America/Los_Angeles")', utcMidnight), 0) // Sunday
+        t.assert.strictEqual(evaluate('date.getDayOfWeek("America/Los_Angeles")', utcMidnight), 0n) // Sunday
       })
     })
 
     describe('getDayOfYear function', () => {
       test('should return day of year (0-based) in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getDayOfYear()', context), 358)
+        t.assert.strictEqual(evaluate('christmas.getDayOfYear()', context), 358n)
       })
 
       test('should return 0 for January 1st', (t) => {
-        t.assert.strictEqual(evaluate('newyear.getDayOfYear()', context), 0)
+        t.assert.strictEqual(evaluate('newyear.getDayOfYear()', context), 0n)
       })
 
       test('should handle leap year', (t) => {
         const leapYear = {date: new Date('2024-12-31T12:00:00Z')}
-        t.assert.strictEqual(evaluate('date.getDayOfYear()', leapYear), 365) // 366 days total, 0-based
+        t.assert.strictEqual(evaluate('date.getDayOfYear()', leapYear), 365n) // 366 days total, 0-based
       })
     })
 
     describe('getFullYear function', () => {
       test('should return full year in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getFullYear()', context), 2023)
+        t.assert.strictEqual(evaluate('christmas.getFullYear()', context), 2023n)
       })
 
       test('should return full year with timezone', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getFullYear("Europe/London")', context), 2023)
+        t.assert.strictEqual(evaluate('christmas.getFullYear("Europe/London")', context), 2023n)
       })
     })
 
     describe('getHours function', () => {
       test('should return hours in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getHours()', context), 12)
+        t.assert.strictEqual(evaluate('christmas.getHours()', context), 12n)
       })
 
       test('should return hours with timezone', (t) => {
         // 12:30 UTC = 04:30 PST (8 hours behind)
-        t.assert.strictEqual(evaluate('christmas.getHours("America/Los_Angeles")', context), 4)
+        t.assert.strictEqual(evaluate('christmas.getHours("America/Los_Angeles")', context), 4n)
       })
     })
 
     describe('getMinutes function', () => {
       test('should return minutes in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getMinutes()', context), 30)
+        t.assert.strictEqual(evaluate('christmas.getMinutes()', context), 30n)
       })
 
       test('should return minutes with timezone', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getMinutes("Asia/Tokyo")', context), 30)
+        t.assert.strictEqual(evaluate('christmas.getMinutes("Asia/Tokyo")', context), 30n)
       })
     })
 
     describe('getSeconds function', () => {
       test('should return seconds in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getSeconds()', context), 45)
+        t.assert.strictEqual(evaluate('christmas.getSeconds()', context), 45n)
       })
 
       test('should return seconds with timezone', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getSeconds("Europe/Paris")', context), 45)
+        t.assert.strictEqual(evaluate('christmas.getSeconds("Europe/Paris")', context), 45n)
       })
     })
 
     describe('getMilliseconds function', () => {
       test('should return milliseconds in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getMilliseconds()', context), 500)
+        t.assert.strictEqual(evaluate('christmas.getMilliseconds()', context), 500n)
       })
 
       test('should return milliseconds with timezone', (t) => {
         t.assert.strictEqual(
           evaluate('christmas.getMilliseconds("Australia/Sydney")', context),
-          500
+          500n
         )
       })
     })
 
     describe('getMonth function', () => {
       test('should return month (0-based) in UTC', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getMonth()', context), 11) // December
+        t.assert.strictEqual(evaluate('christmas.getMonth()', context), 11n) // December
       })
 
       test('should return 0 for January', (t) => {
-        t.assert.strictEqual(evaluate('newyear.getMonth()', context), 0) // January
+        t.assert.strictEqual(evaluate('newyear.getMonth()', context), 0n) // January
       })
 
       test('should return month with timezone', (t) => {
-        t.assert.strictEqual(evaluate('christmas.getMonth("America/New_York")', context), 11)
+        t.assert.strictEqual(evaluate('christmas.getMonth("America/New_York")', context), 11n)
       })
     })
 
     describe('integration with timestamp function', () => {
       test('should work with timestamp() function', (t) => {
-        t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getFullYear()'), 2023)
-        t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getMonth()'), 11)
-        t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getDayOfWeek()'), 1)
+        t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getFullYear()'), 2023n)
+        t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getMonth()'), 11n)
+        t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getDayOfWeek()'), 1n)
       })
 
       test('should work with timestamp and timezone', (t) => {
         t.assert.strictEqual(
           evaluate('timestamp("2023-12-25T00:00:00Z").getDate("America/Los_Angeles")'),
-          24
+          24n
         )
       })
     })
@@ -204,7 +218,7 @@ describe('built-in functions', () => {
 
       test('should work in arithmetic expressions', (t) => {
         const result = evaluate('christmas.getFullYear() * 100 + christmas.getMonth() + 1', context)
-        t.assert.strictEqual(result, 202312)
+        t.assert.strictEqual(result, 202312n)
       })
     })
   })
@@ -297,7 +311,7 @@ describe('built-in functions', () => {
         test('should throw error when called on non-string', (t) => {
           t.assert.throws(
             () => evaluate('(123).startsWith("1")'),
-            /Function not found: 'startsWith' for value of type 'Number'/
+            /Function not found: 'startsWith' for value of type 'Integer'/
           )
         })
 
@@ -323,7 +337,7 @@ describe('built-in functions', () => {
 
           t.assert.throws(
             () => evaluate('num.startsWith("1")', context),
-            /Function not found: 'startsWith' for value of type 'Number'/
+            /Function not found: 'startsWith' for value of type 'Double'/
           )
           t.assert.throws(
             () => evaluate('bool.startsWith("t")', context),
@@ -422,16 +436,46 @@ describe('built-in functions', () => {
     })
   })
 
+  describe('int function', () => {
+    test('should return bigint', (t) => {
+      t.assert.strictEqual(evaluate('int(42)'), 42n)
+      t.assert.strictEqual(evaluate('int(3.14)'), 3n)
+      t.assert.strictEqual(evaluate(`int('-5')`), -5n)
+      t.assert.strictEqual(evaluate(`int('0')`), 0n)
+      t.assert.strictEqual(evaluate(`int('-0')`), 0n)
+      t.assert.strictEqual(evaluate(`int('9223372036854775807')`), 9223372036854775807n)
+    })
+
+    test('errors on integer overflow', (t) => {
+      t.assert.throws(() => evaluate(`int(double('inf'))`), /integer overflow/)
+      t.assert.throws(() => evaluate(`int(double('-inf'))`), /integer overflow/)
+      t.assert.throws(() => evaluate(`int(double('nan'))`), /integer overflow/)
+    })
+
+    test('throws invalid integer', (t) => {
+      t.assert.throws(() => evaluate(`int('9223372036854775808')`), /cannot convert to int/)
+      t.assert.throws(() => evaluate(`int('0x01')`), /cannot convert to int/)
+      t.assert.throws(() => evaluate(`int('1e10')`), /cannot convert to int/)
+      t.assert.throws(() => evaluate(`int('3.1')`), /cannot convert to int/)
+    })
+  })
+
   describe('double function', () => {
     test('should return numbers as-is', (t) => {
       t.assert.strictEqual(evaluate('double(42)'), 42)
       t.assert.strictEqual(evaluate('double(3.14)'), 3.14)
       t.assert.strictEqual(evaluate('double(-5)'), -5)
       t.assert.strictEqual(evaluate('double(0)'), 0)
-      t.assert.strictEqual(evaluate('double(-0)'), -0)
-      t.assert.strictEqual(evaluate('double(inf)', {inf: Infinity}), Infinity)
-      t.assert.strictEqual(evaluate('double(inf)', {inf: -Infinity}), -Infinity)
-      t.assert.ok(Number.isNaN(evaluate('double(nan)', {nan: NaN})))
+      t.assert.strictEqual(evaluate('double(-0)'), 0)
+      t.assert.strictEqual(
+        evaluate('double(inf)', {inf: Number.POSITIVE_INFINITY}),
+        Number.POSITIVE_INFINITY
+      )
+      t.assert.strictEqual(
+        evaluate('double(inf)', {inf: Number.NEGATIVE_INFINITY}),
+        Number.NEGATIVE_INFINITY
+      )
+      t.assert.ok(Number.isNaN(evaluate('double(nan)', {nan: Number.NaN})))
     })
 
     test('should convert valid numeric strings to numbers', (t) => {
@@ -442,22 +486,13 @@ describe('built-in functions', () => {
       t.assert.strictEqual(evaluate('double("123.456")'), 123.456)
       t.assert.strictEqual(evaluate('double("1e5")'), 100000)
       t.assert.strictEqual(evaluate('double("1.23e-4")'), 0.000123)
-      t.assert.strictEqual(evaluate('double("Infinity")'), Infinity)
-      t.assert.strictEqual(evaluate('double("-Infinity")'), -Infinity)
+      t.assert.strictEqual(evaluate('double("Infinity")'), Number.POSITIVE_INFINITY)
+      t.assert.strictEqual(evaluate('double("-Infinity")'), Number.NEGATIVE_INFINITY)
       t.assert.ok(Number.isNaN(evaluate('double("NaN")')))
     })
 
-    test('should convert booleans to 1.0 and 0.0', (t) => {
-      t.assert.strictEqual(evaluate('double(true)'), 1.0)
-      t.assert.strictEqual(evaluate('double(false)'), 0.0)
-    })
-
-    test('should convert null to 0.0', (t) => {
-      t.assert.strictEqual(evaluate('double(null)'), 0.0)
-    })
-
     test('should throw error for invalid string conversions', (t) => {
-      const error = /double\(\) conversion error: string is not a valid number/
+      const error = /double\(\) type error: cannot convert to double/
       t.assert.throws(() => evaluate('double("not a number")'), error)
       t.assert.throws(() => evaluate('double("abc")'), error)
       t.assert.throws(() => evaluate('double("")'), error)
@@ -466,14 +501,16 @@ describe('built-in functions', () => {
       t.assert.throws(() => evaluate('double("1 ")'), error)
       t.assert.throws(() => evaluate('double("1.1.1")'), error)
       t.assert.throws(() => evaluate('double("1 0")'), error)
+      t.assert.throws(() => evaluate('double(null)'), error)
+      t.assert.throws(() => evaluate('double(true)'), error)
+      t.assert.throws(() => evaluate('double(false)'), error)
     })
 
-    test('should throw error for objects, arrays, and bytes', (t) => {
-      const typeError = /double\(\) type error: cannot convert to double/
-      t.assert.throws(() => evaluate('double({})'), typeError)
-      t.assert.throws(() => evaluate('double([])'), typeError)
-      t.assert.throws(() => evaluate('double([1, 2, 3])'), typeError)
-      t.assert.throws(() => evaluate('double(bytes("test"))'), typeError)
+    test('supports addition with number and bigint', (t) => {
+      t.assert.strictEqual(
+        evaluate(`int('999999999999999999') + 50000000`),
+        BigInt('1000000000049999999')
+      )
     })
 
     test('should work with variables from context', (t) => {
@@ -485,14 +522,28 @@ describe('built-in functions', () => {
       }
       t.assert.strictEqual(evaluate('double(num)', context), 42)
       t.assert.strictEqual(evaluate('double(str)', context), 3.14)
-      t.assert.strictEqual(evaluate('double(bool)', context), 1.0)
-      t.assert.strictEqual(evaluate('double(nullVal)', context), 0.0)
+    })
+
+    test('should throw error for objects, arrays, and bytes', (t) => {
+      const typeError = /double\(\) type error: cannot convert to double/
+      t.assert.throws(() => evaluate('double({})'), typeError)
+      t.assert.throws(() => evaluate('double([])'), typeError)
+      t.assert.throws(() => evaluate('double([1, 2, 3])'), typeError)
+      t.assert.throws(() => evaluate('double(bytes("test"))'), typeError)
+
+      const context = {
+        num: 42,
+        str: '3.14',
+        bool: true,
+        nullVal: null
+      }
+      t.assert.throws(() => evaluate('double(bool)', context), typeError)
+      t.assert.throws(() => evaluate('double(nullVal)', context), typeError)
     })
 
     test('should work in expressions', (t) => {
       t.assert.strictEqual(evaluate('double("5") + double("3")'), 8)
-      t.assert.strictEqual(evaluate('double("3.14") * 2'), 6.28)
-      t.assert.strictEqual(evaluate('double(true) + double(false)'), 1)
+      t.assert.strictEqual(evaluate('double("3.14") * 2.0'), 6.28)
     })
 
     test('should throw with no arguments', (t) => {
@@ -626,8 +677,8 @@ describe('built-in functions', () => {
       })
 
       test('should work with conditional expressions', (t) => {
-        t.assert.strictEqual(evaluate('bool("true") ? 1 : 0'), 1)
-        t.assert.strictEqual(evaluate('bool("false") ? 1 : 0'), 0)
+        t.assert.strictEqual(evaluate('bool("true") ? 1 : 0'), 1n)
+        t.assert.strictEqual(evaluate('bool("false") ? 1 : 0'), 0n)
       })
 
       test('should work with logical operators', (t) => {

@@ -14,7 +14,7 @@ describe('maps/objects expressions', () => {
     test('should create a map with multiple properties', (t) => {
       t.assert.deepStrictEqual(evaluate('{"name": "John", "age": 30, "active": true}'), {
         name: 'John',
-        age: 30,
+        age: 30n,
         active: true
       })
     })
@@ -44,7 +44,7 @@ describe('maps/objects expressions', () => {
   describe('nested maps', () => {
     test('should create nested maps', (t) => {
       t.assert.deepStrictEqual(evaluate('{"user": {"name": "John", "age": 30}}'), {
-        user: {name: 'John', age: 30}
+        user: {name: 'John', age: 30n}
       })
     })
 
@@ -58,7 +58,7 @@ describe('maps/objects expressions', () => {
   describe('maps with arrays', () => {
     test('should create map with array values', (t) => {
       t.assert.deepStrictEqual(evaluate('{"items": [1, 2, 3], "empty": []}'), {
-        items: [1, 2, 3],
+        items: [1n, 2n, 3n],
         empty: []
       })
     })

@@ -8,6 +8,7 @@ export function serialize(ast) {
   if (ast === null) return 'null'
   if (typeof ast === 'boolean') return String(ast)
   if (typeof ast === 'number') return String(ast)
+  if (typeof ast === 'bigint') return String(ast)
   if (typeof ast === 'string') return serializeString(ast)
   if (ast instanceof Uint8Array) return serializeBytes(ast)
 

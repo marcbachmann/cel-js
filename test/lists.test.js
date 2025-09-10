@@ -8,25 +8,25 @@ describe('lists expressions', () => {
     })
 
     test('should create a one element list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1]'), [1])
+      t.assert.deepStrictEqual(evaluate('[1]'), [1n])
     })
 
     test('should create a many element list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, 2, 3]'), [1, 2, 3])
+      t.assert.deepStrictEqual(evaluate('[1, 2, 3]'), [1n, 2n, 3n])
     })
 
     test('should create a list with mixed types', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, "hello", true, null]'), [1, 'hello', true, null])
+      t.assert.deepStrictEqual(evaluate('[1, "hello", true, null]'), [1n, 'hello', true, null])
     })
   })
 
   describe('nested lists', () => {
     test('should create a one element nested list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[[1]]'), [[1]])
+      t.assert.deepStrictEqual(evaluate('[[1]]'), [[1n]])
     })
 
     test('should create a many element nested list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[[1], [2], [3]]'), [[1], [2], [3]])
+      t.assert.deepStrictEqual(evaluate('[[1], [2], [3]]'), [[1n], [2n], [3n]])
     })
   })
 
@@ -36,11 +36,11 @@ describe('lists expressions', () => {
     })
 
     test('should access list by index if literal used', (t) => {
-      t.assert.strictEqual(evaluate('[1, 2, 3][1]'), 2)
+      t.assert.strictEqual(evaluate('[1, 5678, 3][1]'), 5678n)
     })
 
     test('should access list on zero index', (t) => {
-      t.assert.strictEqual(evaluate('[7, 8, 9][0]'), 7)
+      t.assert.strictEqual(evaluate('[7, 8, 9][0]'), 7n)
     })
 
     test('should access list a singleton', (t) => {
@@ -48,11 +48,11 @@ describe('lists expressions', () => {
     })
 
     test('should access list on the last index', (t) => {
-      t.assert.strictEqual(evaluate('[7, 8, 9][2]'), 9)
+      t.assert.strictEqual(evaluate('[7, 8, 9][2]'), 9n)
     })
 
     test('should access the list on middle values', (t) => {
-      t.assert.strictEqual(evaluate('[0, 1, 1, 2, 3, 5, 8, 13][4]'), 3)
+      t.assert.strictEqual(evaluate('[0, 1, 1, 2, 3, 5, 8, 13][4]'), 3n)
     })
 
     test('throws on string lookup', (t) => {
@@ -98,11 +98,11 @@ describe('lists expressions', () => {
 
   describe('concatenation with arrays', () => {
     test('should concatenate two lists', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, 2] + [3, 4]'), [1, 2, 3, 4])
+      t.assert.deepStrictEqual(evaluate('[1, 2] + [3, 4]'), [1n, 2n, 3n, 4n])
     })
 
     test('should concatenate two lists with the same element', (t) => {
-      t.assert.deepStrictEqual(evaluate('[2] + [2]'), [2, 2])
+      t.assert.deepStrictEqual(evaluate('[2] + [2]'), [2n, 2n])
     })
 
     test('should return empty list if both elements are empty', (t) => {
@@ -110,11 +110,11 @@ describe('lists expressions', () => {
     })
 
     test('should return correct list if left side is empty', (t) => {
-      t.assert.deepStrictEqual(evaluate('[] + [1, 2]'), [1, 2])
+      t.assert.deepStrictEqual(evaluate('[] + [1, 2]'), [1n, 2n])
     })
 
     test('should return correct list if right side is empty', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, 2] + []'), [1, 2])
+      t.assert.deepStrictEqual(evaluate('[1, 2] + []'), [1n, 2n])
     })
   })
 

@@ -108,65 +108,95 @@ class Lexer {
     throw new ParseError(`Unexpected character: ${ch}`, {pos: this.pos, input: this.input})
   }
 
-  readNumber() {
+  _parseAsBigInt(start, end, isHex, unsigned) {
+    const string = this.input.substring(start, end)
+    if (unsigned === 'u' || unsigned === 'U') {
+      this.pos++
+      try {
+        return {
+          type: TOKEN.NUMBER,
+          value: BigInt(Number(BigInt(string)) >>> 0),
+          pos: start
+        }
+      } catch (_err) {}
+    } else {
+      try {
+        return {
+          type: TOKEN.NUMBER,
+          value: BigInt(string),
+          pos: start
+        }
+      } catch (_err) {}
+    }
+
+    throw new EvaluationError(
+      isHex ? `Invalid hex integer: ${string}` : `Invalid integer: ${string}`,
+      {pos: start, input: this.input}
+    )
+  }
+
+  readHex() {
     const input = this.input
     const start = this.pos
-
-    let isFloat = false
-    const isHex =
-      input[start] === '0' &&
-      start + 1 < this.length &&
-      (input[start + 1] === 'x' || input[start + 1] === 'X')
-
-    if (isHex) this.pos += 2
+    this.pos += 2
 
     while (this.pos < this.length) {
       const ch = input[this.pos]
-      if (ch >= '0' && ch <= '9') {
+      if ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
         this.pos++
       } else if (ch === '.') {
-        if (isHex) {
-          throw new EvaluationError('Invalid hex number: unexpected dot', {
-            pos: this.pos,
-            input: this.input
-          })
-        }
-        if (isFloat) {
-          throw new EvaluationError('Invalid number: multiple dots', {
-            pos: this.pos,
-            input: this.input
-          })
-        }
-        this.pos++
-        if (!isFloat) isFloat = true
-      } else if ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
-        this.pos++
-        if (!isHex) {
-          throw new EvaluationError('Invalid number: unexpected hex digit', {
-            pos: this.pos,
-            input: this.input
-          })
-        }
+        throw new EvaluationError('Invalid hex integer: unexpected dot', {
+          pos: this.pos,
+          input: this.input
+        })
       } else {
         break
       }
     }
 
-    const isUnsigned = input[this.pos] === 'u' || input[this.pos] === 'U'
-    let value = input.substring(isHex ? start + 2 : start, this.pos)
+    return this._parseAsBigInt(start, this.pos, true, input[this.pos])
+  }
 
-    if (isUnsigned) {
-      this.pos++
-      if (isFloat) {
-        throw new EvaluationError('Invalid float number: unsigned suffix not allowed')
+  readNumber() {
+    const input = this.input
+    const start = this.pos
+
+    const isHex =
+      input[start] === '0' &&
+      start + 1 < this.length &&
+      (input[start + 1] === 'x' || input[start + 1] === 'X')
+
+    if (isHex) return this.readHex()
+
+    let isDouble = false
+    while (this.pos < this.length) {
+      const ch = input[this.pos]
+      if (ch >= '0' && ch <= '9') {
+        this.pos++
+      } else if (ch === '.') {
+        if (isDouble) {
+          throw new EvaluationError('Invalid number: unexpected dot', {
+            pos: this.pos,
+            input: this.input
+          })
+        }
+        isDouble = true
+        this.pos++
+      } else if ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
+        throw new EvaluationError('Invalid number: unexpected hex digit', {
+          pos: this.pos,
+          input: this.input
+        })
+      } else {
+        break
       }
     }
 
-    if (isFloat) value = Number.parseFloat(value)
-    else value = Number.parseInt(value, isHex ? 16 : 10)
-    if (Number.isNaN(value))
-      throw new EvaluationError(`Invalid ${isHex ? 'hex ' : ''}number: ${value}`)
-    return {type: TOKEN.NUMBER, value: isUnsigned ? value >>> 0 : value, pos: start}
+    if (!isDouble) return this._parseAsBigInt(start, this.pos, false, input[this.pos])
+    const string = input.substring(start, this.pos)
+    const value = Number(string)
+    if (Number.isFinite(value)) return {type: TOKEN.NUMBER, value, pos: start}
+    throw new EvaluationError(`Invalid number: ${value}`, {pos: start, input: this.input})
   }
 
   readString(prefix) {
@@ -787,7 +817,8 @@ const handlers = {
     }
 
     switch (leftType) {
-      case 'Number':
+      case 'Integer':
+      case 'Double':
       case 'String':
         return left + right
       case 'List':
@@ -806,39 +837,39 @@ const handlers = {
     const left = s.eval(ast[1])
     const leftType = debugType(left)
     if (ast.length === 2) {
-      if (leftType !== 'Number') throw new EvaluationError(`no such overload: -${leftType}`, ast)
-      return -left
+      if (leftType === 'Double' || leftType === 'Integer') return -left
+      throw new EvaluationError(`no such overload: -${leftType}`, ast)
     }
 
     const right = s.eval(ast[2])
     const rightType = debugType(right)
-    if (!(leftType === 'Number' && rightType === 'Number')) {
+    if (leftType !== rightType || !(leftType === 'Integer' || leftType === 'Double')) {
       throw new EvaluationError(`no such overload: ${leftType} - ${rightType}`, ast)
     }
     return left - right
   },
   '=='(ast, s) {
-    const v = this.__verifyOverload(ast, s)
+    const v = this.__supportsEqualityOperator(ast, s)
     return isEqual(v[0], v[1])
   },
   '!='(ast, s) {
-    const v = this.__verifyOverload(ast, s)
+    const v = this.__supportsEqualityOperator(ast, s)
     return !isEqual(v[0], v[1])
   },
   '<'(ast, s) {
-    const v = this.__verifyStringOrNumberOverload(ast, s)
+    const v = this.__supportsRelationalOperator(ast, s)
     return v[0] < v[1]
   },
   '<='(ast, s) {
-    const v = this.__verifyStringOrNumberOverload(ast, s)
+    const v = this.__supportsRelationalOperator(ast, s)
     return v[0] <= v[1]
   },
   '>'(ast, s) {
-    const v = this.__verifyStringOrNumberOverload(ast, s)
+    const v = this.__supportsRelationalOperator(ast, s)
     return v[0] > v[1]
   },
   '>='(ast, s) {
-    const v = this.__verifyStringOrNumberOverload(ast, s)
+    const v = this.__supportsRelationalOperator(ast, s)
     return v[0] >= v[1]
   },
   '*'(ast, s) {
@@ -847,12 +878,13 @@ const handlers = {
   },
   '/'(ast, s) {
     const v = this.__verifyNumberOverload(ast, s)
-    if (v[1] === 0) throw new EvaluationError('division by zero')
+    if (v[1] === 0 || v[1] === 0n) throw new EvaluationError('division by zero')
     return v[0] / v[1]
   },
   '%'(ast, s) {
     const v = this.__verifyNumberOverload(ast, s)
-    if (v[1] === 0) throw new EvaluationError('modulo by zero')
+    if (typeof v[1] === 'bigint' && typeof v[0] !== 'bigint') v[1] = Number(v[1])
+    if (v[1] === 0 || v[1] === 0n) throw new EvaluationError('modulo by zero')
     return v[0] % v[1]
   },
   '!'(ast, s) {
@@ -866,28 +898,33 @@ const handlers = {
 
     if (typeof right === 'string') return typeof left === 'string' && right.includes(left)
     if (right instanceof Set) return right.has(left)
-    if (Array.isArray(right)) return right.includes(left)
+    if (Array.isArray(right)) {
+      if (typeof left === 'bigint') return right.includes(left) || right.includes(Number(left))
+      return right.includes(left)
+    }
     return objectGet(right, left) !== undefined
   },
   '[]'(ast, s) {
     const left = s.eval(ast[1])
     const right = s.eval(ast[2])
     const value = objectGet(left, right)
-    if (value === undefined) {
-      if (Array.isArray(left)) {
-        if (typeof right !== 'number')
-          throw new EvaluationError(`No such key: ${right} (${debugType(right)})`, ast)
-        if (right < 0)
-          throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`, ast)
-        if (right >= left.length)
-          throw new EvaluationError(
-            `No such key: index out of bounds, index ${right} >= size ${left.length}`,
-            ast
-          )
+    if (value !== undefined) return value
+
+    if (Array.isArray(left)) {
+      if (!(typeof right === 'number' || typeof right === 'bigint')) {
+        throw new EvaluationError(`No such key: ${right} (${debugType(right)})`, ast)
       }
-      throw new EvaluationError(`No such key: ${right}`, ast)
+      if (right < 0) {
+        throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`, ast)
+      }
+      if (right >= left.length) {
+        throw new EvaluationError(
+          `No such key: index out of bounds, index ${right} >= size ${left.length}`,
+          ast
+        )
+      }
     }
-    return value
+    throw new EvaluationError(`No such key: ${right}`, ast)
   },
   rcall(ast, s) {
     const functionName = ast[2]
@@ -935,48 +972,56 @@ const handlers = {
     }
     return condition ? s.eval(ast[2]) : s.eval(ast[3])
   },
-  __verifyOverload(ast, s) {
+  __supportsEqualityOperator(ast, s) {
     const left = s.eval(ast[1])
     const right = s.eval(ast[2])
+    const leftType = debugType(left)
+    const rightType = debugType(right)
+    if (leftType === rightType) return [left, right]
 
-    if (debugType(left) !== debugType(right)) {
-      throw new EvaluationError(
-        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`,
-        ast
-      )
-    }
-    return [left, right]
-  },
-  __verifyStringOrNumberOverload(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
-
+    // Allow numeric type cross-compatibility for equality/inequality operators
+    // when at least one operand is dynamic (contains variable references)
     if (
-      debugType(left) !== debugType(right) ||
-      !(
-        typeof left === 'string' ||
-        typeof left === 'number' ||
-        (left instanceof Date && right instanceof Date)
-      )
+      (leftType === 'Double' || leftType === 'Integer') &&
+      (rightType === 'Double' || rightType === 'Integer') &&
+      (s.isDynamic(ast[1]) || s.isDynamic(ast[2]))
     ) {
-      throw new EvaluationError(
-        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`,
-        ast
-      )
+      return [left, right]
     }
-    return [left, right]
+
+    throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
+  },
+  __supportsRelationalOperator(ast, s) {
+    const left = s.eval(ast[1])
+    const right = s.eval(ast[2])
+    const leftType = debugType(left)
+    const rightType = debugType(right)
+
+    switch (leftType) {
+      case 'Integer':
+      case 'Double':
+        // Always allow Integer/Double cross-compatibility for relational operators
+        if (rightType === 'Integer' || rightType === 'Double') return [left, right]
+        break
+      case 'String':
+        if (rightType === 'String') return [left, right]
+        break
+      case 'Timestamp':
+        if (rightType === 'Timestamp') return [left, right]
+        break
+    }
+
+    throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   },
   __verifyNumberOverload(ast, s) {
     const left = s.eval(ast[1])
     const right = s.eval(ast[2])
+    const leftType = debugType(left)
+    const rightType = debugType(right)
+    if (leftType === rightType && (leftType === 'Integer' || leftType === 'Double'))
+      return [left, right]
 
-    if (debugType(left) !== debugType(right) || typeof left !== 'number') {
-      throw new EvaluationError(
-        `no such overload: ${debugType(left)} ${ast[0]} ${debugType(right)}`,
-        ast
-      )
-    }
-    return [left, right]
+    throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
 }
 
@@ -995,6 +1040,35 @@ class Evaluator {
     const handler = this.handlers[ast[0]]
     if (handler) return handler.call(this.handlers, ast, this)
     throw new EvaluationError(`Unknown operation: ${ast[0]}`, ast)
+  }
+
+  // Check if an AST node contains any variable references (making it dynamic)
+  isDynamic(ast) {
+    if (!Array.isArray(ast)) return false
+
+    switch (ast[0]) {
+      case 'id':
+        return true
+      case '+':
+      case '-':
+      case '[]':
+        return this.isDynamic(ast[1]) || this.isDynamic(ast[2])
+      case '?:':
+        return this.isDynamic(ast[2]) || this.isDynamic(ast[3])
+      case 'rcall':
+      case 'call': {
+        for (let i = 1; i < ast.length; i++) {
+          if (this.isDynamic(ast[i])) return true
+        }
+        return false
+      }
+      case 'array':
+        return true
+      case 'object':
+        return true
+    }
+
+    return false
   }
 }
 
@@ -1089,8 +1163,10 @@ function debugType(v) {
   switch (typeof v) {
     case 'string':
       return 'String'
+    case 'bigint':
+      return 'Integer'
     case 'number':
-      return 'Number'
+      return 'Double'
     case 'boolean':
       return 'Boolean'
     case 'object':
@@ -1108,8 +1184,13 @@ function isEqual(a, b) {
   switch (debugType(a)) {
     case 'String':
       return false
-    case 'Number':
-      return Number.isNaN(a)
+    case 'Double':
+      // eslint-disable-next-line eqeqeq
+      if (typeof b === 'bigint') return a == b
+      return false
+    case 'Integer':
+      // eslint-disable-next-line eqeqeq
+      return a == b
     case 'Boolean':
       return false
     case 'null':
@@ -1135,7 +1216,7 @@ function isEqual(a, b) {
       }
 
       const keysA = Object.keys(a)
-      const keysB = Object.keys(a)
+      const keysB = Object.keys(b)
       if (keysA.length !== keysB.length) return false
 
       for (let i = 0; i < keysA.length; i++) {

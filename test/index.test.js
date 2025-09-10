@@ -19,7 +19,7 @@ describe('CEL Implementation Integration Tests', () => {
   })
 
   test('should work with parse function directly', (t) => {
-    const evalFn = parse('x * 2')
+    const evalFn = parse('x * 2.0')
     t.assert.strictEqual(evalFn({x: 10}), 20)
   })
 
@@ -49,13 +49,13 @@ describe('CEL Implementation Integration Tests', () => {
 
   test('should handle all data types correctly', (t) => {
     const expressions = [
-      {expr: '42', expected: 42},
+      {expr: '42', expected: 42n},
       {expr: '3.14', expected: 3.14},
       {expr: '"hello"', expected: 'hello'},
       {expr: 'true', expected: true},
       {expr: 'false', expected: false},
       {expr: 'null', expected: null},
-      {expr: '[1, 2, 3]', expected: [1, 2, 3]},
+      {expr: '[1, 2, 3]', expected: [1n, 2n, 3n]},
       {expr: '{"key": "value"}', expected: {key: 'value'}}
     ]
 

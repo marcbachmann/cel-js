@@ -40,9 +40,9 @@ describe('unary operators', () => {
 
   describe('unary plus', () => {
     test('supports unary plus as operator', (t) => {
-      t.assert.strictEqual(evaluate('1 + 2'), 3)
-      t.assert.strictEqual(evaluate('1 +2'), 3)
-      t.assert.strictEqual(evaluate('1+2'), 3)
+      t.assert.strictEqual(evaluate('1 + 2'), 3n)
+      t.assert.strictEqual(evaluate('1 +2'), 3n)
+      t.assert.strictEqual(evaluate('1+2'), 3n)
     })
 
     test('rejects unary plus in front of group', (t) => {
@@ -74,19 +74,19 @@ describe('unary operators', () => {
 
   describe('unary minus', () => {
     test('should negate positive number', (t) => {
-      t.assert.strictEqual(evaluate('-5'), -5)
+      t.assert.strictEqual(evaluate('-5'), -5n)
     })
 
     test('should negate negative number', (t) => {
-      t.assert.strictEqual(evaluate('-(-5)'), 5)
+      t.assert.strictEqual(evaluate('-(-5)'), 5n)
     })
 
     test('should handle double negation', (t) => {
-      t.assert.strictEqual(evaluate('--5'), 5)
+      t.assert.strictEqual(evaluate('--5'), 5n)
     })
 
     test('should handle unary minus with expressions', (t) => {
-      t.assert.strictEqual(evaluate('-(1 + 2)'), -3)
+      t.assert.strictEqual(evaluate('-(1 + 2)'), -3n)
     })
 
     test('should handle unary minus with variables', (t) => {
@@ -109,6 +109,6 @@ describe('unary operators', () => {
   })
 
   test('supports many repetitions', (t) => {
-    t.assert.strictEqual(evaluate(' + 1'.repeat(40).replace(' + ', '')), 40)
+    t.assert.strictEqual(evaluate(' + 1'.repeat(40).replace(' + ', '')), 40n)
   })
 })

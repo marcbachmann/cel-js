@@ -3,34 +3,34 @@ import {evaluate} from '../index.js'
 
 describe('miscellaneous', () => {
   test('order of arithmetic operations', (t) => {
-    t.assert.strictEqual(evaluate('1 + 2 * 3 + 1'), 8)
+    t.assert.strictEqual(evaluate('1 + 2 * 3 + 1'), 8n)
   })
 
   describe('parentheses', () => {
     test('should prioritize parentheses expression', (t) => {
-      t.assert.strictEqual(evaluate('(1 + 2) * 3 + 1'), 10)
+      t.assert.strictEqual(evaluate('(1 + 2) * 3 + 1'), 10n)
     })
 
     test('should allow multiple expressions', (t) => {
-      t.assert.strictEqual(evaluate('(1 + 2) * (3 + 1)'), 12)
+      t.assert.strictEqual(evaluate('(1 + 2) * (3 + 1)'), 12n)
     })
 
     test('should handle nested parentheses', (t) => {
-      t.assert.strictEqual(evaluate('((1 + 2) * 3) + (4 / 2)'), 11)
+      t.assert.strictEqual(evaluate('((1 + 2) * 3) + (4 / 2)'), 11n)
     })
 
     test('should handle complex nested expressions', (t) => {
-      t.assert.strictEqual(evaluate('(1 + (2 * (3 + 4))) - (5 - 3)'), 13)
+      t.assert.strictEqual(evaluate('(1 + (2 * (3 + 4))) - (5 - 3)'), 13n)
     })
   })
 
   describe('operator precedence', () => {
     test('multiplication before addition', (t) => {
-      t.assert.strictEqual(evaluate('2 + 3 * 4'), 14)
+      t.assert.strictEqual(evaluate('2 + 3 * 4'), 14n)
     })
 
     test('division before subtraction', (t) => {
-      t.assert.strictEqual(evaluate('10 - 8 / 2'), 6)
+      t.assert.strictEqual(evaluate('10 - 8 / 2'), 6n)
     })
 
     test('comparison operators', (t) => {
@@ -44,15 +44,15 @@ describe('miscellaneous', () => {
 
   describe('whitespace handling', () => {
     test('should handle extra whitespace', (t) => {
-      t.assert.strictEqual(evaluate('  1   +   2  '), 3)
+      t.assert.strictEqual(evaluate('  1   +   2  '), 3n)
     })
 
     test('should handle tabs and newlines', (t) => {
-      t.assert.strictEqual(evaluate('1\t+\n2'), 3)
+      t.assert.strictEqual(evaluate('1\t+\n2'), 3n)
     })
 
     test('should handle no whitespace', (t) => {
-      t.assert.strictEqual(evaluate('1+2*3'), 7)
+      t.assert.strictEqual(evaluate('1+2*3'), 7n)
     })
   })
 
