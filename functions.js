@@ -1,5 +1,19 @@
 import {EvaluationError} from './errors.js'
 
+export const TYPES = {
+  string: Symbol('String'),
+  bool: Symbol('Boolean'),
+  int: Symbol('Integer'),
+  double: Symbol('Double'),
+  map: Symbol('Map'),
+  list: Symbol('List'),
+  bytes: Symbol('Bytes'),
+  null_type: Symbol('null'),
+  type: Symbol('Type')
+}
+
+export const ALL_TYPES = new Set(Object.values(TYPES))
+
 export const TOKEN = {
   EOF: 0,
   NUMBER: 1,
@@ -68,7 +82,7 @@ const allTypes = [
   'List',
   'Bytes',
   'Timestamp',
-  'Any'
+  'Type'
 ]
 for (const t of allTypes) allFunctions[t] = Object.create(null)
 
@@ -144,6 +158,37 @@ registerFunction({
     }
 
     throw new EvaluationError('bool() requires a boolean or string argument')
+  }
+})
+
+registerFunction({
+  name: 'type',
+  types: ['Any'],
+  returns: ['Type'],
+  standalone: true,
+  minArgs: 1,
+  maxArgs: 1,
+  handler(v) {
+    switch (typeof v) {
+      case 'string':
+        return TYPES.string
+      case 'bigint':
+        return TYPES.int
+      case 'number':
+        return TYPES.double
+      case 'boolean':
+        return TYPES.bool
+      case 'symbol':
+        if (ALL_TYPES.has(v)) return TYPES.type
+        break
+      case 'object':
+        if (v === null) return TYPES.null_type
+        if (v.constructor === Object || v instanceof Map || !v.constructor) return TYPES.map
+        if (Array.isArray(v)) return TYPES.list
+        if (v instanceof Uint8Array) return TYPES.bytes
+        if (v instanceof Date) return TYPES.TIMESTAMP
+    }
+    throw new EvaluationError(`Unsupported type: ${v?.constructor?.name || typeof v}`)
   }
 })
 

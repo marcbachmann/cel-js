@@ -328,7 +328,7 @@ describe('built-in functions', () => {
           const context = {
             str: 'hello world',
             num: 123,
-            bool: true,
+            boolean: true,
             arr: [],
             obj: {}
           }
@@ -340,7 +340,7 @@ describe('built-in functions', () => {
             /Function not found: 'startsWith' for value of type 'Double'/
           )
           t.assert.throws(
-            () => evaluate('bool.startsWith("t")', context),
+            () => evaluate('boolean.startsWith("t")', context),
             /Function not found: 'startsWith' for value of type 'Boolean'/
           )
           t.assert.throws(
@@ -433,6 +433,54 @@ describe('built-in functions', () => {
       test('should handle strings with null bytes', (t) => {
         t.assert.strictEqual(evaluate('"hello\\x00world".startsWith("hello")', {}), true)
       })
+    })
+  })
+
+  describe('type function', () => {
+    test('supports equality', (t) => {
+      t.assert.strictEqual(evaluate('int == int'), true)
+      t.assert.strictEqual(evaluate('type(1) == int'), true)
+      t.assert.strictEqual(evaluate('double == double'), true)
+      t.assert.strictEqual(evaluate('type(1.0) == double'), true)
+      t.assert.strictEqual(evaluate(`string == string`), true)
+      t.assert.strictEqual(evaluate(`type('string') == string`), true)
+      t.assert.strictEqual(evaluate('bool == bool'), true)
+      t.assert.strictEqual(evaluate('type(true) == bool'), true)
+      t.assert.strictEqual(evaluate('type(false) == bool'), true)
+      t.assert.strictEqual(evaluate('null_type == null_type'), true)
+      t.assert.strictEqual(evaluate('type(null) == null_type'), true)
+      t.assert.strictEqual(evaluate('bytes == bytes'), true)
+      t.assert.strictEqual(evaluate('type(bytes("test")) == bytes'), true)
+      t.assert.strictEqual(evaluate('list == list'), true)
+      t.assert.strictEqual(evaluate('type([]) == list'), true)
+      t.assert.strictEqual(evaluate('map == map'), true)
+      t.assert.strictEqual(evaluate('type({}) == map'), true)
+      t.assert.strictEqual(evaluate('type == type'), true)
+      t.assert.strictEqual(evaluate('type(string) == type'), true)
+    })
+
+    test('supports inequality', (t) => {
+      t.assert.strictEqual(evaluate('type(1) != type'), true)
+      t.assert.strictEqual(evaluate('type(1.0) != type'), true)
+      t.assert.strictEqual(evaluate(`type('string') != type`), true)
+      t.assert.strictEqual(evaluate('type(true) != type'), true)
+      t.assert.strictEqual(evaluate('type(false) != type'), true)
+      t.assert.strictEqual(evaluate('type(null) != type'), true)
+      t.assert.strictEqual(evaluate('type(bytes("test")) != type'), true)
+      t.assert.strictEqual(evaluate('type([]) != type'), true)
+      t.assert.strictEqual(evaluate('type({}) != type'), true)
+    })
+
+    test('throws on invalid comparisons', (t) => {
+      t.assert.throws(() => evaluate('int > int'), /no such overload: Type > Type/)
+      t.assert.throws(() => evaluate('int >= int'), /no such overload: Type >= Type/)
+      t.assert.throws(() => evaluate('int < int'), /no such overload: Type < Type/)
+      t.assert.throws(() => evaluate('int <= int'), /no such overload: Type <= Type/)
+      t.assert.throws(() => evaluate('int + int'), /no such overload: Type \+ Type/)
+      t.assert.throws(() => evaluate('int - int'), /no such overload: Type - Type/)
+      t.assert.throws(() => evaluate('int * int'), /no such overload: Type \* Type/)
+      t.assert.throws(() => evaluate('int / int'), /no such overload: Type \/ Type/)
+      t.assert.throws(() => evaluate('int % int'), /no such overload: Type % Type/)
     })
   })
 
