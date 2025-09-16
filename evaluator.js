@@ -1,4 +1,12 @@
-import {allFunctions, objectGet, RESERVED, TOKEN, TOKEN_BY_NUMBER} from './functions.js'
+import {
+  allFunctions,
+  objectGet,
+  RESERVED,
+  TOKEN,
+  TOKEN_BY_NUMBER,
+  TYPES,
+  ALL_TYPES
+} from './functions.js'
 import {EvaluationError, ParseError, nodePositionCache} from './errors.js'
 
 class Lexer {
@@ -1169,6 +1177,9 @@ function debugType(v) {
       return 'Double'
     case 'boolean':
       return 'Boolean'
+    case 'symbol':
+      if (ALL_TYPES.has(v)) return 'Type'
+      break
     case 'object':
       if (v === null) return 'null'
       if (v.constructor === Object || v instanceof Map || !v.constructor) return 'Map'
@@ -1192,6 +1203,8 @@ function isEqual(a, b) {
       // eslint-disable-next-line eqeqeq
       return a == b
     case 'Boolean':
+      return false
+    case 'Type':
       return false
     case 'null':
       return false
@@ -1271,7 +1284,7 @@ function evaluateAST(ast, context, instanceFunctions) {
     throw new EvaluationError('Context must be an object')
 
   const evaluator = globalEvaluator
-  evaluator.ctx = context
+  evaluator.ctx = context ? {...context, ...TYPES} : TYPES
   evaluator.fns = instanceFunctions
     ? new InstanceFunctions(instanceFunctions)
     : globalInstanceFunctions
