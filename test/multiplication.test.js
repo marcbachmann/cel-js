@@ -26,11 +26,30 @@ describe('multiplication and division', () => {
     t.assert.strictEqual(evaluate('(2 + 3) * 4'), 20n)
   })
 
-  test.skip('should handle float multiplication', (t) => {
-    t.assert.strictEqual(evaluate('2.5 * 2'), 5n)
+  test('should handle float multiplication', (t) => {
+    t.assert.strictEqual(evaluate('2.5 * 2.0'), 5)
   })
 
-  test.skip('should handle float division', (t) => {
-    t.assert.strictEqual(evaluate('5.5 / 2'), 2.75)
+  test('should handle float division', (t) => {
+    t.assert.strictEqual(evaluate('5.5 / 2.0'), 2.75)
+  })
+
+  test('rejects int and double combinations', (t) => {
+    t.assert.throws(
+      () => evaluate('2.5 * 2'),
+      /EvaluationError: no such overload: Double \* Integer/
+    )
+  })
+
+  test('rejects double modulo', (t) => {
+    t.assert.throws(
+      () => evaluate('5.5 % 2.0'),
+      /EvaluationError: no such overload: Double % Double/
+    )
+
+    t.assert.throws(
+      () => evaluate('2 % 2.0'),
+      /EvaluationError: no such overload: Integer % Double/
+    )
   })
 })

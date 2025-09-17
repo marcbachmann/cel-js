@@ -769,239 +769,253 @@ function firstNode(a, b) {
   return Array.isArray(a) ? a : b
 }
 
-const handlers = {
-  id(ast, s) {
-    const val = objectGet(s.ctx, ast[1])
-    if (val === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`, ast)
-    return val
-  },
-  '||'(ast, s) {
-    try {
-      const left = s.eval(ast[1])
-      if (left === true) return true
-      if (left !== false) throw new EvaluationError('Left operand of || is not a boolean', ast)
-    } catch (err) {
-      if (err.message.includes('Unknown variable')) throw err
-      if (err.message.includes('is not a boolean')) throw err
+const handlers = new Map(
+  Object.entries({
+    id(ast, s) {
+      const val = objectGet(s.ctx, ast[1])
+      if (val === undefined) throw new EvaluationError(`Unknown variable: ${ast[1]}`, ast)
+      return val
+    },
+    '||'(ast, s) {
+      try {
+        const left = s.eval(ast[1])
+        if (left === true) return true
+        if (left !== false) throw new EvaluationError('Left operand of || is not a boolean', ast)
+      } catch (err) {
+        if (err.message.includes('Unknown variable')) throw err
+        if (err.message.includes('is not a boolean')) throw err
+
+        const right = s.eval(ast[2])
+        if (right === true) return true
+        if (right === false) throw err
+        throw new EvaluationError('Right operand of || is not a boolean', ast)
+      }
 
       const right = s.eval(ast[2])
-      if (right === true) return true
-      if (right === false) throw err
+      if (typeof right === 'boolean') return right
       throw new EvaluationError('Right operand of || is not a boolean', ast)
-    }
+    },
+    '&&'(ast, s) {
+      try {
+        const left = s.eval(ast[1])
+        if (left === false) return false
+        if (left !== true) {
+          throw new EvaluationError('Left operand of && is not a boolean', firstNode(ast[1], ast))
+        }
+      } catch (err) {
+        if (err.message.includes('Unknown variable')) throw err
+        if (err.message.includes('is not a boolean')) throw err
 
-    const right = s.eval(ast[2])
-    if (typeof right === 'boolean') return right
-    throw new EvaluationError('Right operand of || is not a boolean', ast)
-  },
-  '&&'(ast, s) {
-    try {
-      const left = s.eval(ast[1])
-      if (left === false) return false
-      if (left !== true) {
-        throw new EvaluationError('Left operand of && is not a boolean', firstNode(ast[1], ast))
+        const right = s.eval(ast[2])
+        if (right === false) return false
+        if (right === true) throw err
+        throw new EvaluationError('Right operand of && is not a boolean', firstNode(ast[2], ast))
       }
-    } catch (err) {
-      if (err.message.includes('Unknown variable')) throw err
-      if (err.message.includes('is not a boolean')) throw err
 
       const right = s.eval(ast[2])
-      if (right === false) return false
-      if (right === true) throw err
+      if (typeof right === 'boolean') return right
       throw new EvaluationError('Right operand of && is not a boolean', firstNode(ast[2], ast))
-    }
+    },
+    '+'(ast, s) {
+      const left = s.eval(ast[1])
+      const right = s.eval(ast[2])
+      const leftType = debugType(left)
+      const rightType = debugType(right)
+      if (leftType !== rightType) {
+        throw new EvaluationError(`no such overload: ${leftType} + ${rightType}`, ast)
+      }
 
-    const right = s.eval(ast[2])
-    if (typeof right === 'boolean') return right
-    throw new EvaluationError('Right operand of && is not a boolean', firstNode(ast[2], ast))
-  },
-  '+'(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
-    const leftType = debugType(left)
-    const rightType = debugType(right)
-    if (leftType !== rightType) {
+      switch (leftType) {
+        case 'Integer':
+        case 'Double':
+        case 'String':
+          return left + right
+        case 'List':
+          return [...left, ...right]
+        case 'Bytes': {
+          const result = new Uint8Array(left.length + right.length)
+          result.set(left, 0)
+          result.set(right, left.length)
+          return result
+        }
+      }
+
       throw new EvaluationError(`no such overload: ${leftType} + ${rightType}`, ast)
-    }
-
-    switch (leftType) {
-      case 'Integer':
-      case 'Double':
-      case 'String':
-        return left + right
-      case 'List':
-        return [...left, ...right]
-      case 'Bytes': {
-        const result = new Uint8Array(left.length + right.length)
-        result.set(left, 0)
-        result.set(right, left.length)
-        return result
+    },
+    '-'(ast, s) {
+      const left = s.eval(ast[1])
+      const leftType = debugType(left)
+      if (ast.length === 2) {
+        if (leftType === 'Double' || leftType === 'Integer') return -left
+        throw new EvaluationError(`no such overload: -${leftType}`, ast)
       }
-    }
 
-    throw new EvaluationError(`no such overload: ${leftType} + ${rightType}`, ast)
-  },
-  '-'(ast, s) {
-    const left = s.eval(ast[1])
-    const leftType = debugType(left)
-    if (ast.length === 2) {
-      if (leftType === 'Double' || leftType === 'Integer') return -left
-      throw new EvaluationError(`no such overload: -${leftType}`, ast)
-    }
-
-    const right = s.eval(ast[2])
-    const rightType = debugType(right)
-    if (leftType !== rightType || !(leftType === 'Integer' || leftType === 'Double')) {
-      throw new EvaluationError(`no such overload: ${leftType} - ${rightType}`, ast)
-    }
-    return left - right
-  },
-  '=='(ast, s) {
-    const v = this.__supportsEqualityOperator(ast, s)
-    return isEqual(v[0], v[1])
-  },
-  '!='(ast, s) {
-    const v = this.__supportsEqualityOperator(ast, s)
-    return !isEqual(v[0], v[1])
-  },
-  '<'(ast, s) {
-    const v = this.__supportsRelationalOperator(ast, s)
-    return v[0] < v[1]
-  },
-  '<='(ast, s) {
-    const v = this.__supportsRelationalOperator(ast, s)
-    return v[0] <= v[1]
-  },
-  '>'(ast, s) {
-    const v = this.__supportsRelationalOperator(ast, s)
-    return v[0] > v[1]
-  },
-  '>='(ast, s) {
-    const v = this.__supportsRelationalOperator(ast, s)
-    return v[0] >= v[1]
-  },
-  '*'(ast, s) {
-    const v = this.__verifyNumberOverload(ast, s)
-    return v[0] * v[1]
-  },
-  '/'(ast, s) {
-    const v = this.__verifyNumberOverload(ast, s)
-    if (v[1] === 0 || v[1] === 0n) throw new EvaluationError('division by zero')
-    return v[0] / v[1]
-  },
-  '%'(ast, s) {
-    const v = this.__verifyNumberOverload(ast, s)
-    if (typeof v[1] === 'bigint' && typeof v[0] !== 'bigint') v[1] = Number(v[1])
-    if (v[1] === 0 || v[1] === 0n) throw new EvaluationError('modulo by zero')
-    return v[0] % v[1]
-  },
-  '!'(ast, s) {
-    const right = s.eval(ast[1])
-    if (typeof right === 'boolean') return !right
-    throw new EvaluationError('NOT operator can only be applied to boolean values')
-  },
-  in(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
-
-    if (typeof right === 'string') return typeof left === 'string' && right.includes(left)
-    if (right instanceof Set) return right.has(left)
-    if (Array.isArray(right)) {
-      if (typeof left === 'bigint') return right.includes(left) || right.includes(Number(left))
-      return right.includes(left)
-    }
-    return objectGet(right, left) !== undefined
-  },
-  '[]'(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
-    const value = objectGet(left, right)
-    if (value !== undefined) return value
-
-    if (Array.isArray(left)) {
-      if (!(typeof right === 'number' || typeof right === 'bigint')) {
-        throw new EvaluationError(`No such key: ${right} (${debugType(right)})`, ast)
+      const right = s.eval(ast[2])
+      const rightType = debugType(right)
+      if (leftType !== rightType || !(leftType === 'Integer' || leftType === 'Double')) {
+        throw new EvaluationError(`no such overload: ${leftType} - ${rightType}`, ast)
       }
-      if (right < 0) {
-        throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`, ast)
+      return left - right
+    },
+    '=='(ast, s) {
+      s.__supportsEqualityOperator(ast)
+      return isEqual(s.left, s.right)
+    },
+    '!='(ast, s) {
+      s.__supportsEqualityOperator(ast)
+      return !isEqual(s.left, s.right)
+    },
+    '<'(ast, s) {
+      s.__supportsRelationalOperator(ast)
+      return s.left < s.right
+    },
+    '<='(ast, s) {
+      s.__supportsRelationalOperator(ast)
+      return s.left <= s.right
+    },
+    '>'(ast, s) {
+      s.__supportsRelationalOperator(ast)
+      return s.left > s.right
+    },
+    '>='(ast, s) {
+      s.__supportsRelationalOperator(ast)
+      return s.left >= s.right
+    },
+    '*'(ast, s) {
+      s.__verifyNumberOverload(ast)
+      return s.left * s.right
+    },
+    '/'(ast, s) {
+      s.__verifyNumberOverload(ast)
+      if (s.right === 0 || s.right === 0n) throw new EvaluationError('division by zero')
+      return s.left / s.right
+    },
+    '%'(ast, s) {
+      s.__verifyIntOverload(ast)
+      if (s.right === 0 || s.right === 0n) throw new EvaluationError('modulo by zero')
+      return s.left % s.right
+    },
+    '!'(ast, s) {
+      const right = s.eval(ast[1])
+      if (typeof right === 'boolean') return !right
+      throw new EvaluationError('NOT operator can only be applied to boolean values')
+    },
+    in(ast, s) {
+      const left = s.eval(ast[1])
+      const right = s.eval(ast[2])
+
+      if (typeof right === 'string') return typeof left === 'string' && right.includes(left)
+      if (right instanceof Set) return right.has(left)
+      if (Array.isArray(right)) {
+        if (typeof left === 'bigint') return right.includes(left) || right.includes(Number(left))
+        return right.includes(left)
       }
-      if (right >= left.length) {
+      return objectGet(right, left) !== undefined
+    },
+    '[]'(ast, s) {
+      const left = s.eval(ast[1])
+      const right = s.eval(ast[2])
+      const value = objectGet(left, right)
+      if (value !== undefined) return value
+
+      if (Array.isArray(left)) {
+        if (!(typeof right === 'number' || typeof right === 'bigint')) {
+          throw new EvaluationError(`No such key: ${right} (${debugType(right)})`, ast)
+        }
+        if (right < 0) {
+          throw new EvaluationError(`No such key: index out of bounds, index ${right} < 0`, ast)
+        }
+        if (right >= left.length) {
+          throw new EvaluationError(
+            `No such key: index out of bounds, index ${right} >= size ${left.length}`,
+            ast
+          )
+        }
+      }
+      throw new EvaluationError(`No such key: ${right}`, ast)
+    },
+    rcall(ast, s) {
+      const functionName = ast[2]
+      const receiver = s.eval(ast[1])
+      const type = debugType(receiver)
+      const fn = s.fns.get(functionName, type)
+      if (!fn) {
         throw new EvaluationError(
-          `No such key: index out of bounds, index ${right} >= size ${left.length}`,
+          `Function not found: '${functionName}' for value of type '${type}'`,
           ast
         )
       }
-    }
-    throw new EvaluationError(`No such key: ${right}`, ast)
-  },
-  rcall(ast, s) {
-    const functionName = ast[2]
-    const receiver = s.eval(ast[1])
-    const type = debugType(receiver)
-    const fn = s.fns.get(functionName, type)
-    if (!fn) {
-      throw new EvaluationError(
-        `Function not found: '${functionName}' for value of type '${type}'`,
-        ast
-      )
-    }
 
-    if (fn.macro) return fn.handler.call(s, receiver, ...ast[3])
-    return fn.handler(receiver, ...ast[3].map((arg) => s.eval(arg)))
-  },
-  call(ast, s) {
-    const functionName = ast[1]
-    const fn = s.fns.get(functionName)
-    if (!fn?.standalone) {
-      throw new EvaluationError(`Function not found: '${functionName}'`, ast)
-    }
+      if (fn.macro) return fn.handler.call(s, receiver, ...ast[3])
+      return fn.handler(receiver, ...ast[3].map((arg) => s.eval(arg)))
+    },
+    call(ast, s) {
+      const functionName = ast[1]
+      const fn = s.fns.get(functionName)
+      if (!fn?.standalone) {
+        throw new EvaluationError(`Function not found: '${functionName}'`, ast)
+      }
 
-    if (fn.macro) return fn.handler.call(s, ...ast[2])
-    return fn.handler(...ast[2].map((arg) => s.eval(arg)))
-  },
-  array(ast, s) {
-    const elements = ast[1]
-    const result = new Array(elements.length)
-    for (let i = 0; i < elements.length; i++) result[i] = s.eval(elements[i])
-    return result
-  },
-  object(ast, s) {
-    const result = {}
-    for (let i = 0; i < ast[1].length; i++) {
-      const e = ast[1][i]
-      result[s.eval(e[0])] = s.eval(e[1])
+      if (fn.macro) return fn.handler.call(s, ...ast[2])
+      return fn.handler(...ast[2].map((arg) => s.eval(arg)))
+    },
+    array(ast, s) {
+      const elements = ast[1]
+      const result = new Array(elements.length)
+      for (let i = 0; i < elements.length; i++) result[i] = s.eval(elements[i])
+      return result
+    },
+    object(ast, s) {
+      const result = {}
+      for (let i = 0; i < ast[1].length; i++) {
+        const e = ast[1][i]
+        result[s.eval(e[0])] = s.eval(e[1])
+      }
+      return result
+    },
+    '?:'(ast, s) {
+      const condition = s.eval(ast[1])
+      if (typeof condition !== 'boolean') {
+        throw new EvaluationError('Ternary condition must be a boolean')
+      }
+      return condition ? s.eval(ast[2]) : s.eval(ast[3])
     }
-    return result
-  },
-  '?:'(ast, s) {
-    const condition = s.eval(ast[1])
-    if (typeof condition !== 'boolean') {
-      throw new EvaluationError('Ternary condition must be a boolean')
-    }
-    return condition ? s.eval(ast[2]) : s.eval(ast[3])
-  },
-  __supportsEqualityOperator(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
+  })
+)
+
+// handler aliases
+handlers.set('.', handlers.get('[]'))
+
+class Evaluator {
+  handlers = handlers
+  left = undefined
+  right = undefined
+  predicateEvaluator(receiver, functionName, args) {
+    return new PredicateEvaluator(this, receiver, functionName, args)
+  }
+
+  __supportsEqualityOperator(ast) {
+    const left = (this.left = this.eval(ast[1]))
+    const right = (this.right = this.eval(ast[2]))
     const leftType = debugType(left)
     const rightType = debugType(right)
-    if (leftType === rightType) return [left, right]
+    if (leftType === rightType) return
 
     // Allow numeric type cross-compatibility for equality/inequality operators
     // when at least one operand is dynamic (contains variable references)
     if (
       (leftType === 'Double' || leftType === 'Integer') &&
       (rightType === 'Double' || rightType === 'Integer') &&
-      (s.isDynamic(ast[1]) || s.isDynamic(ast[2]))
+      (this.isDynamic(ast[1]) || this.isDynamic(ast[2]))
     ) {
-      return [left, right]
+      return
     }
 
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
-  },
-  __supportsRelationalOperator(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
+  }
+  __supportsRelationalOperator(ast) {
+    const left = (this.left = this.eval(ast[1]))
+    const right = (this.right = this.eval(ast[2]))
     const leftType = debugType(left)
     const rightType = debugType(right)
 
@@ -1009,44 +1023,40 @@ const handlers = {
       case 'Integer':
       case 'Double':
         // Always allow Integer/Double cross-compatibility for relational operators
-        if (rightType === 'Integer' || rightType === 'Double') return [left, right]
+        if (rightType === 'Integer' || rightType === 'Double') return
         break
       case 'String':
-        if (rightType === 'String') return [left, right]
+        if (rightType === 'String') return
         break
       case 'Timestamp':
-        if (rightType === 'Timestamp') return [left, right]
+        if (rightType === 'Timestamp') return
         break
     }
 
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
-  },
-  __verifyNumberOverload(ast, s) {
-    const left = s.eval(ast[1])
-    const right = s.eval(ast[2])
+  }
+  __verifyNumberOverload(ast) {
+    const left = (this.left = this.eval(ast[1]))
+    const right = (this.right = this.eval(ast[2]))
     const leftType = debugType(left)
     const rightType = debugType(right)
-    if (leftType === rightType && (leftType === 'Integer' || leftType === 'Double'))
-      return [left, right]
-
+    if (leftType === rightType && (leftType === 'Integer' || leftType === 'Double')) return
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
-}
-
-// handler aliases
-handlers['.'] = handlers['[]']
-
-class Evaluator {
-  handlers = handlers
-  predicateEvaluator(receiver, functionName, args) {
-    return new PredicateEvaluator(this, receiver, functionName, args)
+  __verifyIntOverload(ast) {
+    const left = (this.left = this.eval(ast[1]))
+    const right = (this.right = this.eval(ast[2]))
+    const leftType = debugType(left)
+    const rightType = debugType(right)
+    if (leftType === rightType && leftType === 'Integer') return
+    throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
 
   eval(ast) {
     if (!Array.isArray(ast)) return ast
 
-    const handler = this.handlers[ast[0]]
-    if (handler) return handler.call(this.handlers, ast, this)
+    const handler = this.handlers.get(ast[0])
+    if (handler) return handler(ast, this)
     throw new EvaluationError(`Unknown operation: ${ast[0]}`, ast)
   }
 
