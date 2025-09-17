@@ -13,7 +13,7 @@ import * as celJsPackage from 'cel-js'
 
 // Benchmark configuration
 const ITERATIONS = {
-  parse: 50000,
+  parse: 10000,
   evaluate: 50000,
   warmup: 10000
 }
@@ -176,7 +176,7 @@ let TEST_EXPRESSIONS = [
   // Macro operations (may not be supported by cel-js)
   {
     name: 'List Comprehension',
-    expression: 'items.filter(x, x > 10).map(x, x * 2)',
+    expression: 'items.filter(x, x > 10).map(x, x > 2)',
     context: {items: [5, 10, 15, 20, 25]}
   },
 
@@ -212,47 +212,22 @@ function formatNumber(num) {
 }
 
 /**
- * Calculate statistics for a set of measurements
- */
-function calculateStats(measurements) {
-  const sorted = [...measurements].sort((a, b) => a - b)
-  const len = sorted.length
-
-  return {
-    min: sorted[0],
-    max: sorted[len - 1],
-    median:
-      len % 2 === 0 ? (sorted[len / 2 - 1] + sorted[len / 2]) / 2 : sorted[Math.floor(len / 2)],
-    mean: measurements.reduce((a, b) => a + b, 0) / len,
-    p95: sorted[Math.floor(len * 0.95)]
-  }
-}
-
-/**
  * Run a single benchmark with error handling
  */
 function runBenchmark(name, fn, iterations) {
   try {
     for (let i = 0; i < ITERATIONS.warmup; i++) fn()
 
-    const measurements = []
     const totalStart = performance.now()
 
-    for (let i = 0; i < iterations; i++) {
-      const start = performance.now()
-      fn()
-      const end = performance.now()
-      measurements.push(end - start)
-    }
+    for (let i = 0; i < iterations; i++) fn()
 
     const totalTime = performance.now() - totalStart
-    const stats = calculateStats(measurements)
     const opsPerSec = Math.round((iterations / totalTime) * 1000)
 
     return {
       totalTime,
       opsPerSec,
-      stats,
       supported: true
     }
   } catch (error) {
@@ -306,7 +281,6 @@ function benchmarkParsing() {
           localResults.opsPerSec
         )} ops/sec)`
       )
-      console.log(`    Mean:  ${localResults.stats.mean.toFixed(3)}ms`)
     } else {
       console.log(`    Not Supported: 🔴`)
       console.log(`    Error: ${localResults.error}`)
@@ -319,7 +293,6 @@ function benchmarkParsing() {
           packageResults.opsPerSec
         )} ops/sec)`
       )
-      console.log(`    Mean:  ${packageResults.stats.mean.toFixed(3)}ms`)
     } else {
       console.log(`    Not Supported: 🔴`)
     }
@@ -427,7 +400,6 @@ function benchmarkEvaluation() {
           localResults.opsPerSec
         )} ops/sec)`
       )
-      console.log(`    Mean:  ${localResults.stats.mean.toFixed(3)}ms`)
     } else {
       console.log(`    Not Supported: 🔴`)
       console.log(`    Error: ${localResults.error}`)
@@ -440,105 +412,6 @@ function benchmarkEvaluation() {
           packageResults.opsPerSec
         )} ops/sec)`
       )
-      console.log(`    Mean:  ${packageResults.stats.mean.toFixed(3)}ms`)
-    } else {
-      console.log(`    Not Supported: 🔴`)
-    }
-
-    if (localResults.supported && packageResults.supported) {
-      console.log(
-        `\n  Result: @marcbachmann/cel-js is ${speedup}x ${faster ? 'faster 🚀' : 'slower'}`
-      )
-      supportedByBoth++
-    } else if (localResults.supported && !packageResults.supported) {
-      console.log(`\n  Result: Only @marcbachmann/cel-js supports this expression ✅`)
-      onlyLocal++
-    } else if (!localResults.supported && packageResults.supported) {
-      console.log(`\n  Result: Only cel-js package supports this expression`)
-      onlyPackage++
-    }
-
-    if (localResults.supported && packageResults.supported) {
-      results.push({
-        name: test.name,
-        localTime: localResults.totalTime,
-        packageTime: packageResults.totalTime,
-        speedup: parseFloat(speedup),
-        localOpsPerSec: localResults.opsPerSec,
-        packageOpsPerSec: packageResults.opsPerSec
-      })
-    }
-  }
-
-  console.log(`\n\nSupport Summary:`)
-  console.log(`  Supported by both: ${supportedByBoth}`)
-  console.log(`  Only @marcbachmann/cel-js: ${onlyLocal}`)
-  console.log(`  Only cel-js package: ${onlyPackage}`)
-
-  return results
-}
-
-/**
- * Benchmark combined parse + evaluate performance
- */
-function benchmarkCombined() {
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('COMBINED PARSE + EVALUATE PERFORMANCE')
-  console.log(`${'='.repeat(60)}\n`)
-
-  const results = []
-  let supportedByBoth = 0
-  let onlyLocal = 0
-  let onlyPackage = 0
-
-  for (const test of TEST_EXPRESSIONS) {
-    console.log(`\n▸ ${test.name}`)
-    const expr = serialize(celJsLocal.parse(test.expression).ast)
-    console.log(`  Expression: ${expr}`)
-
-    // Benchmark @marcbachmann/cel-js
-    const localResults = runBenchmark(
-      '@marcbachmann/cel-js',
-      () => celJsLocal.evaluate(test.expression, test.context),
-      ITERATIONS.evaluate
-    )
-
-    // Benchmark cel-js package
-    const packageResults = test.skipThirdParty
-      ? {supported: false}
-      : runBenchmark(
-          'cel-js',
-          () => celJsPackage.evaluate(test.expression, test.context),
-          ITERATIONS.evaluate
-        )
-
-    const speedup =
-      localResults.supported && packageResults.supported
-        ? (packageResults.totalTime / localResults.totalTime).toFixed(2)
-        : null
-    const faster = speedup && speedup > 1
-
-    console.log(`\n  @marcbachmann/cel-js:`)
-    if (localResults.supported) {
-      console.log(
-        `    Total: ${localResults.totalTime.toFixed(2)}ms (${formatNumber(
-          localResults.opsPerSec
-        )} ops/sec)`
-      )
-      console.log(`    Mean:  ${localResults.stats.mean.toFixed(3)}ms`)
-    } else {
-      console.log(`    Not Supported: 🔴`)
-      console.log(`    Error: ${localResults.error}`)
-    }
-
-    console.log(`\n  cel-js package:`)
-    if (packageResults.supported) {
-      console.log(
-        `    Total: ${packageResults.totalTime.toFixed(2)}ms (${formatNumber(
-          packageResults.opsPerSec
-        )} ops/sec)`
-      )
-      console.log(`    Mean:  ${packageResults.stats.mean.toFixed(3)}ms`)
     } else {
       console.log(`    Not Supported: 🔴`)
     }
@@ -579,7 +452,7 @@ function benchmarkCombined() {
 /**
  * Display summary statistics
  */
-function displaySummary(parseResults, evalResults, combinedResults) {
+function displaySummary(parseResults, evalResults) {
   console.log(`\n${'='.repeat(60)}`)
   console.log('PERFORMANCE SUMMARY')
   console.log(`${'='.repeat(60)}\n`)
@@ -612,7 +485,6 @@ function displaySummary(parseResults, evalResults, combinedResults) {
 
   const parseStats = calculateBenchmarkStats(parseResults)
   const evalStats = calculateBenchmarkStats(evalResults)
-  const combinedStats = calculateBenchmarkStats(combinedResults)
 
   if (parseStats.total > 0) {
     console.log('PARSING PERFORMANCE (for expressions supported by both):')
@@ -632,21 +504,12 @@ function displaySummary(parseResults, evalResults, combinedResults) {
     console.log(`  Faster in ${evalStats.fasterCount}/${evalStats.total} tests`)
   }
 
-  if (combinedStats.total > 0) {
-    console.log('\nCOMBINED PERFORMANCE (for expressions supported by both):')
-    console.log(`  Average speedup: ${combinedStats.avgSpeedup.toFixed(2)}x`)
-    console.log(
-      `  Range: ${combinedStats.minSpeedup.toFixed(2)}x - ${combinedStats.maxSpeedup.toFixed(2)}x`
-    )
-    console.log(`  Faster in ${combinedStats.fasterCount}/${combinedStats.total} tests`)
-  }
-
   console.log(`\n📊 Note: Speedup > 1.0 means @marcbachmann/cel-js is faster than cel-js package`)
 
   // Overall verdict
-  const totalTests = parseStats.total + evalStats.total + combinedStats.total
+  const totalTests = parseStats.total + evalStats.total
   if (totalTests > 0) {
-    const overallAvg = (parseStats.avgSpeedup + evalStats.avgSpeedup + combinedStats.avgSpeedup) / 3
+    const overallAvg = (parseStats.avgSpeedup + evalStats.avgSpeedup) / 2
     if (overallAvg > 1.5) {
       console.log('✅ Overall: @marcbachmann/cel-js shows significant performance improvements!')
     } else if (overallAvg > 1.1) {
@@ -679,9 +542,8 @@ async function runBenchmarks() {
 
   const parseResults = benchmarkParsing()
   const evalResults = benchmarkEvaluation()
-  const combinedResults = benchmarkCombined()
 
-  displaySummary(parseResults, evalResults, combinedResults)
+  displaySummary(parseResults, evalResults)
 
   const totalTime = ((performance.now() - startTime) / 1000).toFixed(1)
   console.log(`⏱️  Total benchmark time: ${totalTime}s\n`)
