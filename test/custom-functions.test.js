@@ -94,7 +94,13 @@ describe('custom functions', () => {
     test('should throw when an unknown function is called', (t) => {
       t.assert.throws(
         () => evaluate('unknownFunction("")'),
-        /Function not found: 'unknownFunction'/
+        // with line number and error highlight
+        /Function not found: 'unknownFunction'\n\n> {4}1 | unknownFunction\(""\)\n {9}^/
+      )
+
+      t.assert.throws(
+        () => evaluate('\n unknownFunction("")'),
+        /Function not found: 'unknownFunction'\n\n> {4}2 | {2}unknownFunction\(""\)\n {10}^/
       )
     })
 

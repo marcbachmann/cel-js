@@ -6,7 +6,7 @@
  * across various expression types and complexity levels.
  */
 
-import {performance} from 'perf_hooks'
+import {performance} from 'node:perf_hooks'
 import * as celJsLocal from '../index.js'
 import {serialize} from '../serialize.js'
 import * as celJsPackage from 'cel-js'

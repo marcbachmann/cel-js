@@ -21,7 +21,7 @@ export class EvaluationError extends Error {
 }
 
 function formatErrorWithHighlight(message, position) {
-  if (!position?.input) return message
+  if (position?.pos === undefined) return message
   const pos = position.pos
   const input = position.input
 
@@ -32,9 +32,10 @@ function formatErrorWithHighlight(message, position) {
     if (input[currentPos] === '\n') {
       lineNum++
       columnNum = 0
+    } else {
+      columnNum++
     }
     currentPos++
-    columnNum++
   }
 
   // Show a few lines of context
@@ -46,6 +47,6 @@ function formatErrorWithHighlight(message, position) {
   const line = input.slice(contextStart, contextEnd)
 
   const lineNumber = `${lineNum}`.padStart(4, ' ')
-  const spaces = ' '.repeat(8 + columnNum + 1)
+  const spaces = ' '.repeat(9 + columnNum)
   return `${message}\n\n> ${lineNumber} | ${line}\n${spaces}^`
 }

@@ -18,7 +18,7 @@ class Lexer {
 
   // Read next token
   nextToken() {
-    if (this.pos >= this.length) return {type: TOKEN.EOF, value: null}
+    if (this.pos >= this.length) return {type: TOKEN.EOF, value: null, pos: this.pos}
 
     const ch = this.input[this.pos]
     const next = this.input[this.pos + 1]
@@ -35,13 +35,13 @@ class Lexer {
       // Operators
       case '=':
         if (next !== '=') break
-        return {type: TOKEN.EQ, value: '==', pos: (this.pos += 2)}
+        return {type: TOKEN.EQ, value: '==', pos: (this.pos += 2) - 2}
       case '&':
         if (next !== '&') break
-        return {type: TOKEN.AND, value: '&&', pos: (this.pos += 2)}
+        return {type: TOKEN.AND, value: '&&', pos: (this.pos += 2) - 2}
       case '|':
         if (next !== '|') break
-        return {type: TOKEN.OR, value: '||', pos: (this.pos += 2)}
+        return {type: TOKEN.OR, value: '||', pos: (this.pos += 2) - 2}
       case '+':
         return {type: TOKEN.PLUS, value: '+', pos: this.pos++}
       case '-':
@@ -58,13 +58,13 @@ class Lexer {
       case '%':
         return {type: TOKEN.MODULO, value: '%', pos: this.pos++}
       case '<':
-        if (next === '=') return {type: TOKEN.LE, value: '<=', pos: (this.pos += 2)}
+        if (next === '=') return {type: TOKEN.LE, value: '<=', pos: (this.pos += 2) - 2}
         return {type: TOKEN.LT, value: '<', pos: this.pos++}
       case '>':
-        if (next === '=') return {type: TOKEN.GE, value: '>=', pos: (this.pos += 2)}
+        if (next === '=') return {type: TOKEN.GE, value: '>=', pos: (this.pos += 2) - 2}
         return {type: TOKEN.GT, value: '>', pos: this.pos++}
       case '!':
-        if (next === '=') return {type: TOKEN.NE, value: '!=', pos: (this.pos += 2)}
+        if (next === '=') return {type: TOKEN.NE, value: '!=', pos: (this.pos += 2) - 2}
         return {type: TOKEN.NOT, value: '!', pos: this.pos++}
       case '(':
         return {type: TOKEN.LPAREN, value: '(', pos: this.pos++}
@@ -780,7 +780,9 @@ const handlers = new Map(
       try {
         const left = s.eval(ast[1])
         if (left === true) return true
-        if (left !== false) throw new EvaluationError('Left operand of || is not a boolean', ast)
+        if (left !== false) {
+          throw new EvaluationError('Left operand of || is not a boolean', firstNode(ast[1], ast))
+        }
       } catch (err) {
         if (err.message.includes('Unknown variable')) throw err
         if (err.message.includes('is not a boolean')) throw err
@@ -788,12 +790,12 @@ const handlers = new Map(
         const right = s.eval(ast[2])
         if (right === true) return true
         if (right === false) throw err
-        throw new EvaluationError('Right operand of || is not a boolean', ast)
+        throw new EvaluationError('Right operand of || is not a boolean', firstNode(ast[2], ast))
       }
 
       const right = s.eval(ast[2])
       if (typeof right === 'boolean') return right
-      throw new EvaluationError('Right operand of || is not a boolean', ast)
+      throw new EvaluationError('Right operand of || is not a boolean', firstNode(ast[2], ast))
     },
     '&&'(ast, s) {
       try {
