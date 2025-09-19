@@ -5,7 +5,7 @@ import {
   TOKEN,
   TOKEN_BY_NUMBER,
   TYPES,
-  ALL_TYPES
+  Type
 } from './functions.js'
 import {EvaluationError, ParseError, nodePositionCache} from './errors.js'
 
@@ -997,10 +997,8 @@ class Evaluator {
   }
 
   __supportsEqualityOperator(ast) {
-    const left = (this.left = this.eval(ast[1]))
-    const right = (this.right = this.eval(ast[2]))
-    const leftType = debugType(left)
-    const rightType = debugType(right)
+    const leftType = debugType((this.left = this.eval(ast[1])))
+    const rightType = debugType((this.right = this.eval(ast[2])))
     if (leftType === rightType) return
 
     // Allow numeric type cross-compatibility for equality/inequality operators
@@ -1016,10 +1014,8 @@ class Evaluator {
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
   __supportsRelationalOperator(ast) {
-    const left = (this.left = this.eval(ast[1]))
-    const right = (this.right = this.eval(ast[2]))
-    const leftType = debugType(left)
-    const rightType = debugType(right)
+    const leftType = debugType((this.left = this.eval(ast[1])))
+    const rightType = debugType((this.right = this.eval(ast[2])))
 
     switch (leftType) {
       case 'Integer':
@@ -1038,18 +1034,14 @@ class Evaluator {
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
   __verifyNumberOverload(ast) {
-    const left = (this.left = this.eval(ast[1]))
-    const right = (this.right = this.eval(ast[2]))
-    const leftType = debugType(left)
-    const rightType = debugType(right)
+    const leftType = debugType((this.left = this.eval(ast[1])))
+    const rightType = debugType((this.right = this.eval(ast[2])))
     if (leftType === rightType && (leftType === 'Integer' || leftType === 'Double')) return
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
   __verifyIntOverload(ast) {
-    const left = (this.left = this.eval(ast[1]))
-    const right = (this.right = this.eval(ast[2]))
-    const leftType = debugType(left)
-    const rightType = debugType(right)
+    const leftType = debugType((this.left = this.eval(ast[1])))
+    const rightType = debugType((this.right = this.eval(ast[2])))
     if (leftType === rightType && leftType === 'Integer') return
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
@@ -1189,15 +1181,13 @@ function debugType(v) {
       return 'Double'
     case 'boolean':
       return 'Boolean'
-    case 'symbol':
-      if (ALL_TYPES.has(v)) return 'Type'
-      break
     case 'object':
       if (v === null) return 'null'
       if (v.constructor === Object || v instanceof Map || !v.constructor) return 'Map'
       if (Array.isArray(v)) return 'List'
       if (v instanceof Uint8Array) return 'Bytes'
       if (v instanceof Date) return 'Timestamp'
+      if (v instanceof Type) return 'Type'
   }
   throw new EvaluationError(`Unsupported type: ${v?.constructor?.name || typeof v}`)
 }

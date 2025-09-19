@@ -1,18 +1,32 @@
 import {EvaluationError} from './errors.js'
 
-export const TYPES = {
-  string: Symbol('String'),
-  bool: Symbol('Boolean'),
-  int: Symbol('Integer'),
-  double: Symbol('Double'),
-  map: Symbol('Map'),
-  list: Symbol('List'),
-  bytes: Symbol('Bytes'),
-  null_type: Symbol('null'),
-  type: Symbol('Type')
+export class Type {
+  #name
+  constructor(name) {
+    this.#name = name
+  }
+
+  get [Symbol.toStringTag]() {
+    return `Type<${this.#name}>`
+  }
+
+  toString() {
+    return `Type<${this.#name}>`
+  }
 }
 
-export const ALL_TYPES = new Set(Object.values(TYPES))
+export const TYPES = {
+  string: new Type('String'),
+  bool: new Type('Boolean'),
+  int: new Type('Integer'),
+  double: new Type('Double'),
+  map: new Type('Map'),
+  list: new Type('List'),
+  bytes: new Type('Bytes'),
+  null_type: new Type('null'),
+  type: new Type('Type'),
+  'google.protobuf.Timestamp': new Type('google.protobuf.Timestamp')
+}
 
 export const TOKEN = {
   EOF: 0,
@@ -178,15 +192,13 @@ registerFunction({
         return TYPES.double
       case 'boolean':
         return TYPES.bool
-      case 'symbol':
-        if (ALL_TYPES.has(v)) return TYPES.type
-        break
       case 'object':
         if (v === null) return TYPES.null_type
         if (v.constructor === Object || v instanceof Map || !v.constructor) return TYPES.map
         if (Array.isArray(v)) return TYPES.list
         if (v instanceof Uint8Array) return TYPES.bytes
-        if (v instanceof Date) return TYPES.TIMESTAMP
+        if (v instanceof Date) return TYPES['google.protobuf.Timestamp']
+        if (v instanceof Type) return TYPES.type
     }
     throw new EvaluationError(`Unsupported type: ${v?.constructor?.name || typeof v}`)
   }
