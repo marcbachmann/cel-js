@@ -92,6 +92,16 @@ describe('integer literals', () => {
     t.assert.strictEqual(evaluate('0x17 % 0x5'), 3n) // 23 % 5
   })
 
+  test('throws integer overflow error with values out of bound', (t) => {
+    t.assert.strictEqual(evaluate('9223372036854775807'), 9223372036854775807n)
+    t.assert.strictEqual(evaluate('-9223372036854775808'), -9223372036854775808n)
+    t.assert.strictEqual(evaluate('4611686018427387903 * 2'), 9223372036854775806n)
+    t.assert.strictEqual(evaluate('-4611686018427387904 * 2'), -9223372036854775808n)
+    t.assert.throws(() => evaluate(`9223372036854775807 + 1`), /integer overflow/)
+    t.assert.throws(() => evaluate(`-9223372036854775808 - 1`), /integer overflow/)
+    t.assert.throws(() => evaluate(`4611686018427387905 * 2`), /integer overflow/)
+  })
+
   test('should use unsigned integers in arithmetic operations', (t) => {
     t.assert.strictEqual(evaluate('10u + 20u'), 30n)
     t.assert.strictEqual(evaluate('0xau + 0xbu'), 21n) // 10 + 11

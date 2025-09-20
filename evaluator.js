@@ -829,6 +829,7 @@ const handlers = new Map(
 
       switch (leftType) {
         case 'Integer':
+          return s.__verifyInteger(left + right, ast)
         case 'Double':
         case 'String':
           return left + right
@@ -854,10 +855,31 @@ const handlers = new Map(
 
       const right = s.eval(ast[2])
       const rightType = debugType(right)
-      if (leftType !== rightType || !(leftType === 'Integer' || leftType === 'Double')) {
-        throw new EvaluationError(`no such overload: ${leftType} - ${rightType}`, ast)
+      switch (leftType) {
+        case 'Integer':
+          if (rightType === 'Integer') return s.__verifyInteger(left - right, ast)
+          break
+        case 'Double':
+          if (rightType === 'Double') return left - right
+          break
       }
-      return left - right
+
+      throw new EvaluationError(`no such overload: ${leftType} - ${rightType}`, ast)
+    },
+    '*'(ast, s) {
+      s.__verifyNumberOverload(ast)
+      if (typeof s.left === 'bigint') return s.__verifyInteger(s.left * s.right, ast)
+      return s.left * s.right
+    },
+    '/'(ast, s) {
+      s.__verifyNumberOverload(ast)
+      if (s.right === 0 || s.right === 0n) throw new EvaluationError('division by zero')
+      return s.left / s.right
+    },
+    '%'(ast, s) {
+      s.__verifyIntOverload(ast)
+      if (s.right === 0n) throw new EvaluationError('modulo by zero')
+      return s.left % s.right
     },
     '=='(ast, s) {
       s.__supportsEqualityOperator(ast)
@@ -882,20 +904,6 @@ const handlers = new Map(
     '>='(ast, s) {
       s.__supportsRelationalOperator(ast)
       return s.left >= s.right
-    },
-    '*'(ast, s) {
-      s.__verifyNumberOverload(ast)
-      return s.left * s.right
-    },
-    '/'(ast, s) {
-      s.__verifyNumberOverload(ast)
-      if (s.right === 0 || s.right === 0n) throw new EvaluationError('division by zero')
-      return s.left / s.right
-    },
-    '%'(ast, s) {
-      s.__verifyIntOverload(ast)
-      if (s.right === 0 || s.right === 0n) throw new EvaluationError('modulo by zero')
-      return s.left % s.right
     },
     '!'(ast, s) {
       const right = s.eval(ast[1])
@@ -969,8 +977,9 @@ const handlers = new Map(
     },
     object(ast, s) {
       const result = {}
-      for (let i = 0; i < ast[1].length; i++) {
-        const e = ast[1][i]
+      const props = ast[1]
+      for (let i = 0; i < props.length; i++) {
+        const e = props[i]
         result[s.eval(e[0])] = s.eval(e[1])
       }
       return result
@@ -1033,6 +1042,12 @@ class Evaluator {
 
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
+  __verifyInteger(v, ast) {
+    if (v > 9223372036854775807n || v < -9223372036854775808n) {
+      throw new EvaluationError(`integer overflow: ${v}`, ast)
+    }
+    return v
+  }
   __verifyNumberOverload(ast) {
     const leftType = debugType((this.left = this.eval(ast[1])))
     const rightType = debugType((this.right = this.eval(ast[2])))
@@ -1042,7 +1057,7 @@ class Evaluator {
   __verifyIntOverload(ast) {
     const leftType = debugType((this.left = this.eval(ast[1])))
     const rightType = debugType((this.right = this.eval(ast[2])))
-    if (leftType === rightType && leftType === 'Integer') return
+    if (leftType === 'Integer' && rightType === 'Integer') return
     throw new EvaluationError(`no such overload: ${leftType} ${ast[0]} ${rightType}`, ast)
   }
 
