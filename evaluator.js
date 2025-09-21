@@ -957,7 +957,12 @@ const handlers = new Map(
       }
 
       if (fn.macro) return fn.handler.call(s, receiver, ...ast[3])
-      return fn.handler(receiver, ...ast[3].map((arg) => s.eval(arg)))
+      try {
+        return fn.handler(receiver, ...ast[3].map((arg) => s.eval(arg)))
+      } catch (err) {
+        if (err instanceof EvaluationError) throw err.withAst(ast)
+        throw new EvaluationError(err.message, ast, err)
+      }
     },
     call(ast, s) {
       const functionName = ast[1]
@@ -966,8 +971,13 @@ const handlers = new Map(
         throw new EvaluationError(`Function not found: '${functionName}'`, ast)
       }
 
-      if (fn.macro) return fn.handler.call(s, ...ast[2])
-      return fn.handler(...ast[2].map((arg) => s.eval(arg)))
+      try {
+        if (fn.macro) return fn.handler.call(s, ...ast[2])
+        return fn.handler(...ast[2].map((arg) => s.eval(arg)))
+      } catch (err) {
+        if (err instanceof EvaluationError) throw err.withAst(ast)
+        throw new EvaluationError(err.message, ast, err)
+      }
     },
     array(ast, s) {
       const elements = ast[1]

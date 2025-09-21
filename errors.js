@@ -1,22 +1,44 @@
 export const nodePositionCache = new WeakMap()
 
 export class ParseError extends Error {
-  constructor(message, node) {
-    super(message)
+  #wasConstructedWithAst = false
+  constructor(message, node, cause) {
+    super(message, {cause})
     this.name = 'ParseError'
 
     const pos = node && (node.input ? node : nodePositionCache.get(node))
+    if (pos) {
+      this.#wasConstructedWithAst = true
+      this.message = formatErrorWithHighlight(this.message, pos)
+    }
+  }
+
+  withAst(node) {
+    if (this.#wasConstructedWithAst) return this
+    const pos = node && (node.input ? node : nodePositionCache.get(node))
     if (pos) this.message = formatErrorWithHighlight(this.message, pos)
+    return this
   }
 }
 
 export class EvaluationError extends Error {
-  constructor(message, node) {
-    super(message)
+  #wasConstructedWithAst = false
+  constructor(message, node, cause) {
+    super(message, {cause})
     this.name = 'EvaluationError'
 
     const pos = node && (node.input ? node : nodePositionCache.get(node))
+    if (pos) {
+      this.#wasConstructedWithAst = true
+      this.message = formatErrorWithHighlight(this.message, pos)
+    }
+  }
+
+  withAst(node) {
+    if (this.#wasConstructedWithAst) return this
+    const pos = node && (node.input ? node : nodePositionCache.get(node))
     if (pos) this.message = formatErrorWithHighlight(this.message, pos)
+    return this
   }
 }
 
