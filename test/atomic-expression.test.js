@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate, parse} from '../index.js'
+import {evaluate, parse} from '../lib/index.js'
 
 describe('atomic expressions', () => {
   test('should evaluate a number', (t) => {

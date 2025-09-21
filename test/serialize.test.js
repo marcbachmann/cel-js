@@ -1,7 +1,7 @@
 import {test, describe} from 'node:test'
 import assert from 'node:assert'
-import {parse} from '../index.js'
-import {serialize} from '../serialize.js'
+import {parse} from '../lib/index.js'
+import {serialize} from '../lib/serialize.js'
 
 function equalResult(expr) {
   assert.strictEqual(serialize(parse(expr).ast), expr)

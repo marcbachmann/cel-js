@@ -1,5 +1,5 @@
 import {describe, test} from 'node:test'
-import {evaluate} from '../index.js'
+import {evaluate} from '../lib/index.js'
 
 // simulate an evaluation error
 const divByZero = '(1 / 0)'

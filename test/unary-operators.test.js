@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../index.js'
+import {evaluate} from '../lib/index.js'
 
 function strictEqualTest(expr, expected) {
   test(expr, (t) => {

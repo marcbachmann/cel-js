@@ -23,27 +23,22 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "default": "./index.js"
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
     },
     "./evaluator": {
-      "types": "./evaluator.d.ts",
-      "default": "./evaluator.js"
+      "types": "./lib/evaluator.d.ts",
+      "default": "./lib/evaluator.js"
     },
     "./serialize": {
-      "types": "./serialize.d.ts",
-      "default": "./serialize.js"
+      "types": "./lib/serialize.d.ts",
+      "default": "./lib/serialize.js"
     }
   },
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
-    "index.js",
-    "evaluator.js",
-    "serialize.js",
-    "errors.js",
-    "functions.js",
-    "*.d.ts",
+    "lib/*",
     "LICENSE",
     "README.md"
   ],

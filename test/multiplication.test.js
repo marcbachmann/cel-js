@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../index.js'
+import {evaluate} from '../lib/index.js'
 
 describe('multiplication and division', () => {
   test('should multiply two numbers', (t) => {

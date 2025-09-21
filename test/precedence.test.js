@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate, parse} from '../index.js'
+import {evaluate, parse} from '../lib/index.js'
 
 describe('operator precedence', () => {
   test('ternary should have lower precedence than logical AND', (t) => {

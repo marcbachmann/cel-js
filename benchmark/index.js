@@ -7,8 +7,8 @@
  */
 
 import {performance} from 'node:perf_hooks'
-import * as celJsLocal from '../index.js'
-import {serialize} from '../serialize.js'
+import * as celJsLocal from '../lib/index.js'
+import {serialize} from '../lib/serialize.js'
 import * as celJsPackage from 'cel-js'
 
 // Benchmark configuration

@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {parse, evaluate, ParseError, EvaluationError} from '../index.js'
+import {parse, evaluate, ParseError, EvaluationError} from '../lib/index.js'
 
 describe('CEL Implementation Integration Tests', () => {
   test('should export all required functions and classes', (t) => {

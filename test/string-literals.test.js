@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate, parse} from '../index.js'
+import {evaluate, parse} from '../lib/index.js'
 
 describe('string literals and escapes', () => {
   describe('basic string literals', () => {

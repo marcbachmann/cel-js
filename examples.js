@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 
 // Examples demonstrating My CEL JS usage
-import {evaluate, parse} from './index.js'
+import {evaluate, parse} from './lib/index.js'
 
 console.log('🚀 My CEL JS Examples\n')
 
