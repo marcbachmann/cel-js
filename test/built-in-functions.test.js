@@ -35,15 +35,19 @@ describe('built-in functions', () => {
     describe('strings', () => {
       test('should return 0 for empty string', (t) => {
         t.assert.strictEqual(evaluate('size("")'), 0n)
+        t.assert.strictEqual(evaluate('"".size()'), 0n)
       })
 
       test('should return length of string', (t) => {
         t.assert.strictEqual(evaluate('size("abc")'), 3n)
+        t.assert.strictEqual(evaluate('"abc".size()'), 3n)
       })
 
       test('should handle unicode characters', (t) => {
         t.assert.strictEqual(evaluate('size("hello 😄")'), 7n)
+        t.assert.strictEqual(evaluate('"hello 😄".size()'), 7n)
         t.assert.strictEqual(evaluate('size("hello 👨‍❤️‍💋‍👨")'), 14n)
+        t.assert.strictEqual(evaluate('"hello 👨‍❤️‍💋‍👨".size()'), 14n)
       })
     })
 
@@ -51,6 +55,14 @@ describe('built-in functions', () => {
       t.assert.throws(() => evaluate('size(123)'), /size\(\) type error/)
       t.assert.throws(() => evaluate('size(true)'), /size\(\) type error/)
       t.assert.throws(() => evaluate('size(null)'), /size\(\) type error/)
+    })
+
+    test('converts to a non-dynamic type', (t) => {
+      t.assert.throws(() => evaluate('size("hello") == 1.0'), /no such overload/)
+      t.assert.throws(() => evaluate('size(s) == 1.0', {s: 'hello'}), /no such overload/)
+      t.assert.throws(() => evaluate('size(dyn("hello")) == 1.0'), /no such overload/)
+      t.assert.throws(() => evaluate('s.size() == 1.0', {s: 'hello'}), /no such overload/)
+      t.assert.throws(() => evaluate('dyn("hello").size() == 1.0'), /no such overload/)
     })
   })
 
