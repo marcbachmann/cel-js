@@ -1,5 +1,6 @@
 import {test, describe} from 'node:test'
 import {evaluate} from '../lib/index.js'
+import {Duration} from '../lib/functions.js'
 
 describe('built-in functions', () => {
   describe('size function', () => {
@@ -66,7 +67,89 @@ describe('built-in functions', () => {
     })
   })
 
-  describe('Date/Time functions', () => {
+  describe('google.protobuf.Duration functions', () => {
+    describe('duration function', () => {
+      test('returns Duration instance', (t) => {
+        t.assert.ok(evaluate('duration("1h")') instanceof Duration)
+      })
+
+      test('parses duration string', (t) => {
+        t.assert.strictEqual(evaluate('duration("1h")').getMilliseconds(), 3600000n)
+        t.assert.strictEqual(evaluate('duration("1h1h")').getMilliseconds(), 7200000n)
+        t.assert.strictEqual(evaluate('duration("1.5h")').getMilliseconds(), 5400000n)
+        t.assert.strictEqual(evaluate('duration("2m")').getMilliseconds(), 120000n)
+        t.assert.strictEqual(evaluate('duration("2.5m")').getMilliseconds(), 150000n)
+        t.assert.strictEqual(evaluate('duration("30s")').getMilliseconds(), 30000n)
+        t.assert.strictEqual(evaluate('duration("30.5s")').getMilliseconds(), 30500n)
+        t.assert.strictEqual(evaluate('duration("1ms")').getMilliseconds(), 1n)
+        t.assert.strictEqual(evaluate('duration("1h2s3m.1m")').getMilliseconds(), 3788000n)
+        t.assert.strictEqual(evaluate('duration("-1h2s3m.1m")').getMilliseconds(), -3788000n)
+      })
+
+      test('equality', (t) => {
+        t.assert.strictEqual(evaluate('duration("1h") == duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") == duration("2h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") == duration("1h1m")'), false)
+        t.assert.strictEqual(evaluate('duration("1h1m") == duration("1h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") != duration("1h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") != duration("2h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") != duration("1h1m")'), true)
+        t.assert.strictEqual(evaluate('duration("1h1m") != duration("1h")'), true)
+      })
+
+      test('relational', (t) => {
+        t.assert.strictEqual(evaluate('duration("1h") < duration("2h")'), true)
+        t.assert.strictEqual(evaluate('duration("2h") < duration("1h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") < duration("1h1m")'), true)
+        t.assert.strictEqual(evaluate('duration("1h1m") < duration("1h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") <= duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") <= duration("2h")'), true)
+        t.assert.strictEqual(evaluate('duration("2h") <= duration("1h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") <= duration("1h1m")'), true)
+        t.assert.strictEqual(evaluate('duration("1h1m") <= duration("1h")'), false)
+        t.assert.strictEqual(evaluate('duration("2h") > duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") > duration("2h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h1m") > duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") > duration("1h1m")'), false)
+        t.assert.strictEqual(evaluate('duration("1h") >= duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("2h") >= duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") >= duration("2h")'), false)
+        t.assert.strictEqual(evaluate('duration("1h1m") >= duration("1h")'), true)
+        t.assert.strictEqual(evaluate('duration("1h") >= duration("1h1m")'), false)
+      })
+
+      test('addition of durations', (t) => {
+        t.assert.strictEqual(
+          evaluate('duration("1h") + duration("1h")').getMilliseconds(),
+          7200000n
+        )
+        t.assert.strictEqual(
+          evaluate('duration("1h") + duration("30m")').getMilliseconds(),
+          5400000n
+        )
+        t.assert.strictEqual(
+          evaluate('duration("1s") + duration("1s1ms")').getMilliseconds(),
+          2001n
+        )
+      })
+
+      test('addition of timestamp and duration', (t) => {
+        t.assert.strictEqual(
+          evaluate('timestamp("2025-01-01T00:00:00Z") + duration("1h1ms")').getTime(),
+          new Date('2025-01-01T01:00:00.001Z').getTime()
+        )
+      })
+
+      test('subtraction of timestamp and duration', (t) => {
+        t.assert.strictEqual(
+          evaluate('timestamp("2025-01-01T00:00:00Z") - duration("1h1ms")').getTime(),
+          new Date('2024-12-31T22:59:59.999Z').getTime()
+        )
+      })
+    })
+  })
+
+  describe('google.protobuf.Timestamp functions', () => {
     const christmasTs = '2023-12-25T12:30:45.500Z'
     const newyearTs = '2024-01-01T00:00:00Z'
     const christmas = new Date(christmasTs) // Monday
@@ -209,7 +292,7 @@ describe('built-in functions', () => {
         t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getDayOfWeek()'), 1n)
       })
 
-      test.only('should work with timestamp and timezone', (t) => {
+      test('should work with timestamp and timezone', (t) => {
         t.assert.strictEqual(
           evaluate('timestamp("2023-12-25T00:00:00Z").getDate("America/Los_Angeles")'),
           24n
