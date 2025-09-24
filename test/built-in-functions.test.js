@@ -235,6 +235,20 @@ describe('built-in functions', () => {
     })
   })
 
+  describe('string.matches(regex):', () => {
+    test('should return true for matching string', (t) => {
+      t.assert.strictEqual(evaluate('"hello".matches("h.*o")'), true)
+      t.assert.strictEqual(evaluate('"hello".matches("^h")'), true)
+      t.assert.strictEqual(evaluate('"hello".matches("^hello$")'), true)
+    })
+
+    test('should return false for non-matching string', (t) => {
+      t.assert.strictEqual(evaluate('"hello".matches("H.*o")'), false)
+      t.assert.strictEqual(evaluate('"hello".matches("l$")'), false)
+      t.assert.strictEqual(evaluate('"hello".matches("^ello$")'), false)
+    })
+  })
+
   describe('startsWith function', () => {
     describe('method call syntax', () => {
       describe('basic functionality', () => {
