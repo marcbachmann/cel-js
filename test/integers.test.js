@@ -159,8 +159,8 @@ describe('integer literals', () => {
   })
 
   test('should not allow integer equality', (t) => {
-    t.assert.throws(() => evaluate(`1.0 == 0`), /no such overload: Double == Integer/)
-    t.assert.throws(() => evaluate(`1.0 != 0`), /no such overload: Double != Integer/)
+    t.assert.throws(() => evaluate(`1.0 == 0`), /no such overload: double == int/)
+    t.assert.throws(() => evaluate(`1.0 != 0`), /no such overload: double != int/)
   })
 })
 

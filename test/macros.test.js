@@ -35,13 +35,15 @@ describe('macros', () => {
       t.assert.strictEqual(evaluate('has(user.something.foo)', context), false)
     })
 
-    const exactlyOneError = /has\(\) requires exactly one argument/
     test('should throw when no arguments are passed', (t) => {
-      t.assert.throws(() => evaluate('has()'), exactlyOneError)
+      t.assert.throws(() => evaluate('has()'), /found no matching overload for 'has\(\)'/)
     })
 
     test('should throw when multiple arguments are passed', (t) => {
-      t.assert.throws(() => evaluate('has(a, b)', {a: 1, b: 2}), exactlyOneError)
+      t.assert.throws(
+        () => evaluate('has(a, b)', {a: 1, b: 2}),
+        /found no matching overload for 'has\(ast, ast\)'/
+      )
     })
 
     test('should throw when argument is not a field selection', (t) => {
@@ -146,9 +148,14 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /all\(var, predicate\) requires exactly 2 arguments/
-      t.assert.throws(() => evaluate('numbers.all()', context), error)
-      t.assert.throws(() => evaluate('numbers.all(x)', context), error)
+      t.assert.throws(
+        () => evaluate('numbers.all()', context),
+        /found no matching overload for 'list.all\(\)'/
+      )
+      t.assert.throws(
+        () => evaluate('numbers.all(x)', context),
+        /found no matching overload for 'list.all\(ast\)'/
+      )
       t.assert.throws(
         () => evaluate('numbers.all(x > 0, y < 10)', context),
         /all\(var, predicate\) invalid predicate iteration variable/
@@ -163,14 +170,14 @@ describe('macros', () => {
 
       t.assert.throws(
         () => evaluate('"string".all(x, x > 0)', context),
-        /Function not found: 'all' for value of type 'String'/
+        /Function not found: 'all' for value of type 'string'/
       )
     })
 
     test('should throw with invalid operation', (t) => {
       t.assert.throws(
         () => evaluate('mixed.all(x, x > 0)', context),
-        /no such overload: String > Integer/
+        /no such overload: string > int/
       )
     })
 
@@ -221,9 +228,14 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /exists\(var, predicate\) requires exactly 2 arguments/
-      t.assert.throws(() => evaluate('numbers.exists()', context), error)
-      t.assert.throws(() => evaluate('numbers.exists(x)', context), error)
+      t.assert.throws(
+        () => evaluate('numbers.exists()', context),
+        /found no matching overload for 'list.exists\(\)/
+      )
+      t.assert.throws(
+        () => evaluate('numbers.exists(x)', context),
+        /found no matching overload for 'list.exists\(ast\)/
+      )
     })
 
     test('does not expose function for non-receiver call', (t) => {
@@ -273,9 +285,14 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /exists_one\(var, predicate\) requires exactly 2 arguments/
-      t.assert.throws(() => evaluate('numbers.exists_one()', context), error)
-      t.assert.throws(() => evaluate('numbers.exists_one(x)', context), error)
+      t.assert.throws(
+        () => evaluate('numbers.exists_one()', context),
+        /found no matching overload for 'list.exists_one\(\)/
+      )
+      t.assert.throws(
+        () => evaluate('numbers.exists_one(x)', context),
+        /found no matching overload for 'list.exists_one\(ast\)/
+      )
     })
 
     test('does not expose function for non-receiver call', (t) => {
@@ -320,9 +337,14 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /map\(var, predicate\) requires exactly 2 arguments/
-      t.assert.throws(() => evaluate('numbers.map()', context), error)
-      t.assert.throws(() => evaluate('numbers.map(x)', context), error)
+      t.assert.throws(
+        () => evaluate('numbers.map()', context),
+        /found no matching overload for 'list.map\(\)'/
+      )
+      t.assert.throws(
+        () => evaluate('numbers.map(x)', context),
+        /found no matching overload for 'list.map\(ast\)'/
+      )
     })
 
     test('supports combination with other macros', (t) => {
@@ -352,7 +374,8 @@ describe('macros', () => {
         {name: 'Bob', age: 30, active: false},
         {name: 'Charlie', age: 35, active: true},
         {name: 'David', age: 20, active: false}
-      ]
+      ],
+      object: {key1: 'value1', key2: 'value2'}
     }
 
     test('should filter elements based on predicate', (t) => {
@@ -403,6 +426,18 @@ describe('macros', () => {
       t.assert.deepStrictEqual(evaluate('emptyList.filter(x, x > 0)', context), [])
     })
 
+    test('should filter keys of a map', (t) => {
+      t.assert.deepStrictEqual(evaluate('object.filter(x, x.startsWith("key"))', context), [
+        'key1',
+        'key2'
+      ])
+      t.assert.deepStrictEqual(evaluate('object.filter(x, x.endsWith("y2"))', context), ['key2'])
+      t.assert.deepStrictEqual(
+        evaluate('{"key1": "value1", "key2": "value2"}.filter(x, x.endsWith("y2"))', context),
+        ['key2']
+      )
+    })
+
     test('should throw if no boolean is returned', (t) => {
       const error = /filter\(\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.filter(x, x)', context), error)
@@ -412,9 +447,14 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', (t) => {
-      const error = /filter\(var, predicate\) requires exactly 2 arguments/
-      t.assert.throws(() => evaluate('numbers.filter()', context), error)
-      t.assert.throws(() => evaluate('numbers.filter(x)', context), error)
+      t.assert.throws(
+        () => evaluate('numbers.filter()', context),
+        /found no matching overload for 'list.filter\(\)'/
+      )
+      t.assert.throws(
+        () => evaluate('numbers.filter(x)', context),
+        /found no matching overload for 'list.filter\(ast\)'/
+      )
     })
 
     test('does not expose function for non-receiver call', (t) => {
@@ -480,7 +520,7 @@ describe('macros', () => {
     test('should handle type errors in predicates', (t) => {
       t.assert.throws(
         () => evaluate('[1, 2].filter(s, s.startsWith("w"))'),
-        /Function not found: 'startsWith' for value of type 'Integer'/
+        /Function not found: 'startsWith' for value of type 'int'/
       )
     })
   })

@@ -35,21 +35,15 @@ describe('multiplication and division', () => {
   })
 
   test('rejects int and double combinations', (t) => {
-    t.assert.throws(
-      () => evaluate('2.5 * 2'),
-      /EvaluationError: no such overload: Double \* Integer/
-    )
+    t.assert.throws(() => evaluate('2.5 * 2'), /EvaluationError: no such overload: double \* int/)
   })
 
   test('rejects double modulo', (t) => {
     t.assert.throws(
       () => evaluate('5.5 % 2.0'),
-      /EvaluationError: no such overload: Double % Double/
+      /EvaluationError: no such overload: double % double/
     )
 
-    t.assert.throws(
-      () => evaluate('2 % 2.0'),
-      /EvaluationError: no such overload: Integer % Double/
-    )
+    t.assert.throws(() => evaluate('2 % 2.0'), /EvaluationError: no such overload: int % double/)
   })
 })

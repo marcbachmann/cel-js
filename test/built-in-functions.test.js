@@ -52,9 +52,9 @@ describe('built-in functions', () => {
     })
 
     test('should throw error for unsupported types', (t) => {
-      t.assert.throws(() => evaluate('size(123)'), /size\(\) type error/)
-      t.assert.throws(() => evaluate('size(true)'), /size\(\) type error/)
-      t.assert.throws(() => evaluate('size(null)'), /size\(\) type error/)
+      t.assert.throws(() => evaluate('size(123)'), /found no matching overload for 'size\(int\)'/)
+      t.assert.throws(() => evaluate('size(true)'), /found no matching overload for 'size\(bool\)'/)
+      t.assert.throws(() => evaluate('size(null)'), /found no matching overload for 'size\(null\)'/)
     })
 
     test('converts to a non-dynamic type', (t) => {
@@ -209,7 +209,7 @@ describe('built-in functions', () => {
         t.assert.strictEqual(evaluate('timestamp("2023-12-25T12:00:00Z").getDayOfWeek()'), 1n)
       })
 
-      test('should work with timestamp and timezone', (t) => {
+      test.only('should work with timestamp and timezone', (t) => {
         t.assert.strictEqual(
           evaluate('timestamp("2023-12-25T00:00:00Z").getDate("America/Los_Angeles")'),
           24n
@@ -323,12 +323,12 @@ describe('built-in functions', () => {
         test('should throw error when called on non-string', (t) => {
           t.assert.throws(
             () => evaluate('(123).startsWith("1")'),
-            /Function not found: 'startsWith' for value of type 'Integer'/
+            /Function not found: 'startsWith' for value of type 'int'/
           )
         })
 
         test('should throw error when argument is not a string', (t) => {
-          const error = /startsWith\(\) requires a string argument/
+          const error = /found no matching overload for 'string.startsWith/
           t.assert.throws(() => evaluate('"hello".startsWith(123)'), error)
           t.assert.throws(() => evaluate('"hello".startsWith(true)'), error)
           t.assert.throws(() => evaluate('"hello".startsWith(null)'), error)
@@ -349,19 +349,19 @@ describe('built-in functions', () => {
 
           t.assert.throws(
             () => evaluate('num.startsWith("1")', context),
-            /Function not found: 'startsWith' for value of type 'Double'/
+            /Function not found: 'startsWith' for value of type 'double'/
           )
           t.assert.throws(
             () => evaluate('boolean.startsWith("t")', context),
-            /Function not found: 'startsWith' for value of type 'Boolean'/
+            /Function not found: 'startsWith' for value of type 'bool'/
           )
           t.assert.throws(
             () => evaluate('arr.startsWith("")', context),
-            /Function not found: 'startsWith' for value of type 'List'/
+            /Function not found: 'startsWith' for value of type 'list'/
           )
           t.assert.throws(
             () => evaluate('obj.startsWith("")', context),
-            /Function not found: 'startsWith' for value of type 'Map'/
+            /Function not found: 'startsWith' for value of type 'map'/
           )
         })
       })
@@ -393,15 +393,15 @@ describe('built-in functions', () => {
       test('both syntaxes should throw same errors for invalid arguments', (t) => {
         // Test error consistency
         const errorCases = [
-          ['"hello"', '123'],
-          ['"hello"', 'true'],
-          ['"hello"', 'null']
+          ['"hello"', '123', 'int'],
+          ['"hello"', 'true', 'bool'],
+          ['"hello"', 'null', 'null']
         ]
 
-        errorCases.forEach(([str, invalidPrefix]) => {
+        errorCases.forEach(([str, invalidPrefix, argType]) => {
           t.assert.throws(
             () => evaluate(`${str}.startsWith(${invalidPrefix})`),
-            /startsWith\(\) requires a string argument/
+            new RegExp(`found no matching overload for 'string.startsWith\\(${argType}\\)`)
           )
         })
       })
@@ -484,15 +484,15 @@ describe('built-in functions', () => {
     })
 
     test('throws on invalid comparisons', (t) => {
-      t.assert.throws(() => evaluate('int > int'), /no such overload: Type > Type/)
-      t.assert.throws(() => evaluate('int >= int'), /no such overload: Type >= Type/)
-      t.assert.throws(() => evaluate('int < int'), /no such overload: Type < Type/)
-      t.assert.throws(() => evaluate('int <= int'), /no such overload: Type <= Type/)
-      t.assert.throws(() => evaluate('int + int'), /no such overload: Type \+ Type/)
-      t.assert.throws(() => evaluate('int - int'), /no such overload: Type - Type/)
-      t.assert.throws(() => evaluate('int * int'), /no such overload: Type \* Type/)
-      t.assert.throws(() => evaluate('int / int'), /no such overload: Type \/ Type/)
-      t.assert.throws(() => evaluate('int % int'), /no such overload: Type % Type/)
+      t.assert.throws(() => evaluate('int > int'), /no such overload: type > type/)
+      t.assert.throws(() => evaluate('int >= int'), /no such overload: type >= type/)
+      t.assert.throws(() => evaluate('int < int'), /no such overload: type < type/)
+      t.assert.throws(() => evaluate('int <= int'), /no such overload: type <= type/)
+      t.assert.throws(() => evaluate('int + int'), /no such overload: type \+ type/)
+      t.assert.throws(() => evaluate('int - int'), /no such overload: type - type/)
+      t.assert.throws(() => evaluate('int * int'), /no such overload: type \* type/)
+      t.assert.throws(() => evaluate('int / int'), /no such overload: type \/ type/)
+      t.assert.throws(() => evaluate('int % int'), /no such overload: type % type/)
     })
   })
 
@@ -561,9 +561,19 @@ describe('built-in functions', () => {
       t.assert.throws(() => evaluate('double("1 ")'), error)
       t.assert.throws(() => evaluate('double("1.1.1")'), error)
       t.assert.throws(() => evaluate('double("1 0")'), error)
-      t.assert.throws(() => evaluate('double(null)'), error)
-      t.assert.throws(() => evaluate('double(true)'), error)
-      t.assert.throws(() => evaluate('double(false)'), error)
+
+      t.assert.throws(
+        () => evaluate('double(true)'),
+        /found no matching overload for 'double\(bool\)'/
+      )
+      t.assert.throws(
+        () => evaluate('double(false)'),
+        /found no matching overload for 'double\(bool\)'/
+      )
+      t.assert.throws(
+        () => evaluate('double(null)'),
+        /found no matching overload for 'double\(null\)'/
+      )
     })
 
     test('supports addition with number and bigint', (t) => {
@@ -585,20 +595,37 @@ describe('built-in functions', () => {
     })
 
     test('should throw error for objects, arrays, and bytes', (t) => {
-      const typeError = /double\(\) type error: cannot convert to double/
-      t.assert.throws(() => evaluate('double({})'), typeError)
-      t.assert.throws(() => evaluate('double([])'), typeError)
-      t.assert.throws(() => evaluate('double([1, 2, 3])'), typeError)
-      t.assert.throws(() => evaluate('double(bytes("test"))'), typeError)
+      t.assert.throws(
+        () => evaluate('double({})'),
+        /found no matching overload for 'double\(map\)'/
+      )
+      t.assert.throws(
+        () => evaluate('double([])'),
+        /found no matching overload for 'double\(list\)'/
+      )
+      t.assert.throws(
+        () => evaluate('double([1, 2, 3])'),
+        /found no matching overload for 'double\(list\)'/
+      )
+      t.assert.throws(
+        () => evaluate('double(bytes("test"))'),
+        /found no matching overload for 'double\(bytes\)'/
+      )
 
       const context = {
         num: 42,
         str: '3.14',
-        bool: true,
+        boolVal: true,
         nullVal: null
       }
-      t.assert.throws(() => evaluate('double(bool)', context), typeError)
-      t.assert.throws(() => evaluate('double(nullVal)', context), typeError)
+      t.assert.throws(
+        () => evaluate('double(boolVal)', context),
+        /found no matching overload for 'double\(bool\)'/
+      )
+      t.assert.throws(
+        () => evaluate('double(nullVal)', context),
+        /found no matching overload for 'double\(null\)'/
+      )
     })
 
     test('should work in expressions', (t) => {
@@ -607,11 +634,14 @@ describe('built-in functions', () => {
     })
 
     test('should throw with no arguments', (t) => {
-      t.assert.throws(() => evaluate('double()'), /double\(\) requires exactly one argument/)
+      t.assert.throws(() => evaluate('double()'), /found no matching overload for 'double\(\)'/)
     })
 
     test('should throw with multiple arguments', (t) => {
-      t.assert.throws(() => evaluate('double(1, 2)'), /double\(\) requires exactly one argument/)
+      t.assert.throws(
+        () => evaluate('double(1, 2)'),
+        /found no matching overload for 'double\(int, int\)'/
+      )
     })
   })
 
@@ -713,7 +743,7 @@ describe('built-in functions', () => {
     })
 
     describe('invalid argument types', () => {
-      const invalidArg = /bool\(\) requires a boolean or string argument/
+      const invalidArg = /found no matching overload for/
       test('should throw error for number argument', (t) => {
         t.assert.throws(() => evaluate('bool(1)'), invalidArg)
       })

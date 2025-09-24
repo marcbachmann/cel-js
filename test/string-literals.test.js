@@ -154,8 +154,8 @@ describe('string literals and escapes', () => {
     })
 
     test('only allows numbers', (t) => {
-      t.assert.throws(() => evaluate(`'this is ' + null`), /no such overload: String \+ null/)
-      t.assert.throws(() => evaluate(`'this is ' + 0`), /no such overload: String \+ Integer/)
+      t.assert.throws(() => evaluate(`'this is ' + null`), /no such overload: string \+ null/)
+      t.assert.throws(() => evaluate(`'this is ' + 0`), /no such overload: string \+ int/)
     })
   })
 
