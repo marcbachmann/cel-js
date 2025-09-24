@@ -32,7 +32,15 @@ describe('macros', () => {
       t.assert.strictEqual(evaluate('has(user.profile.email)', context), true)
       t.assert.strictEqual(evaluate('has(user.profile.foo.bar)', context), true)
       t.assert.strictEqual(evaluate('has(user.profile.age)', context), false)
-      t.assert.strictEqual(evaluate('has(user.something.foo)', context), false)
+    })
+
+    test('should throw when a nested property does not exist', (t) => {
+      t.assert.throws(() => evaluate('has(user.nonExisting.foo)', context), /No such key: foo/)
+
+      t.assert.throws(
+        () => evaluate('has(user.profile.nonExisting.bar)', context),
+        /No such key: bar/
+      )
     })
 
     test('should throw when no arguments are passed', (t) => {
