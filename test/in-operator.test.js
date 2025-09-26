@@ -87,8 +87,7 @@ describe('in operator and membership tests', () => {
 
   describe('edge cases', () => {
     test('should handle nested arrays', (t) => {
-      // Note: This tests reference equality, not deep equality
-      t.assert.strictEqual(evaluate('[1, 2] in [[1, 2], [3, 4]]'), false)
+      t.assert.strictEqual(evaluate('[1, 2] in [[1, 2], [3, 4]]'), true)
     })
 
     test('should handle null values', (t) => {

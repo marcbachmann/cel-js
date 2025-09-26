@@ -156,6 +156,7 @@ describe('string literals and escapes', () => {
     test('only allows numbers', (t) => {
       t.assert.throws(() => evaluate(`'this is ' + null`), /no such overload: string \+ null/)
       t.assert.throws(() => evaluate(`'this is ' + 0`), /no such overload: string \+ int/)
+      t.assert.throws(() => evaluate('"ell" in "hello"'), /no such overload: string in string/)
     })
   })
 
@@ -223,13 +224,6 @@ describe('string literals and escapes', () => {
     test('should reject invalid \\U escapes', (t) => {
       t.assert.throws(() => evaluate('"\\U00110000"'), /Invalid Unicode code point/) // > U+10FFFF
       t.assert.throws(() => evaluate('"\\U0000D800"'), /surrogate/) // Surrogate
-    })
-  })
-
-  describe('string contains with in operator', () => {
-    test('should support substring in string', (t) => {
-      t.assert.strictEqual(evaluate('"ell" in "hello"'), true)
-      t.assert.strictEqual(evaluate('"abc" in "hello"'), false)
     })
   })
 })

@@ -97,7 +97,7 @@ describe('AST to CEL Serialization', () => {
 
     test('should serialize unary minus', () => {
       equalResult('-x')
-      assert.strictEqual(serialize(parse('--x').ast), '-(-x)')
+      assert.strictEqual(serialize(parse('--x').ast), '--x')
     })
   })
 

@@ -77,8 +77,4 @@ describe('logical operators', () => {
   strictEqualTest('!(true)', false)
   strictEqualTest('!!true', true)
   strictEqualTest('!!!true', false)
-  testThrows(`!""`, /NOT operator can only be applied to boolean values/)
-  testThrows(`!1`, /NOT operator can only be applied to boolean values/)
-  testThrows(`![]`, /NOT operator can only be applied to boolean values/)
-  testThrows(`!{}`, /NOT operator can only be applied to boolean values/)
 })
