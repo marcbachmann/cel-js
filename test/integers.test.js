@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {evaluate, UnsignedInt} from '../lib/evaluator.js'
 
 describe('integer literals', () => {
   test('should parse decimal integers', (t) => {
@@ -53,62 +53,6 @@ describe('integer literals', () => {
     t.assert.strictEqual(evaluate('-0XDEAD'), -57005n)
   })
 
-  test('should parse unsigned decimal integers', (t) => {
-    t.assert.strictEqual(evaluate('42u'), 42n)
-    t.assert.strictEqual(evaluate('42U'), 42n)
-    t.assert.strictEqual(evaluate('0u'), 0n)
-    t.assert.strictEqual(evaluate('0U'), 0n)
-    t.assert.strictEqual(evaluate('4294967295u'), 4294967295n) // max uint32
-    t.assert.strictEqual(evaluate('4294967295U'), 4294967295n)
-  })
-
-  test('should parse unsigned hexadecimal integers', (t) => {
-    t.assert.strictEqual(evaluate('0x0u'), 0n)
-    t.assert.strictEqual(evaluate('0x0U'), 0n)
-    t.assert.strictEqual(evaluate('0xffu'), 255n)
-    t.assert.strictEqual(evaluate('0xffU'), 255n)
-    t.assert.strictEqual(evaluate('0xFFu'), 255n)
-    t.assert.strictEqual(evaluate('0XFFU'), 255n)
-    t.assert.strictEqual(evaluate('0xffffffffu'), 4294967295n) // max uint32
-    t.assert.strictEqual(evaluate('0xffffffffU'), 4294967295n)
-    t.assert.strictEqual(evaluate('0XFFFFFFFFu'), 4294967295n)
-    t.assert.strictEqual(evaluate('0XFFFFFFFFU'), 4294967295n)
-  })
-
-  test('should handle unsigned integer overflow correctly', (t) => {
-    // Test that values larger than 32-bit get truncated to 32-bit unsigned
-    // JavaScript's >>> operator converts to 32-bit unsigned
-    t.assert.strictEqual(evaluate('4294967296u'), 0n) // 2^32 becomes 0
-    t.assert.strictEqual(evaluate('4294967297u'), 1n) // 2^32 + 1 becomes 1
-    t.assert.strictEqual(evaluate('0x100000000u'), 0n) // 2^32 in hex becomes 0
-    t.assert.strictEqual(evaluate('0x100000001u'), 1n) // 2^32 + 1 in hex becomes 1
-  })
-
-  test('should use integers in arithmetic operations', (t) => {
-    t.assert.strictEqual(evaluate('0x10 + 0x20'), 48n) // 16 + 32
-    t.assert.strictEqual(evaluate('0xff - 0xf'), 240n) // 255 - 15
-    t.assert.strictEqual(evaluate('0xa * 0xb'), 110n) // 10 * 11
-    t.assert.strictEqual(evaluate('0x64 / 0x4'), 25n) // 100 / 4
-    t.assert.strictEqual(evaluate('0x17 % 0x5'), 3n) // 23 % 5
-  })
-
-  test('throws integer overflow error with values out of bound', (t) => {
-    t.assert.strictEqual(evaluate('9223372036854775807'), 9223372036854775807n)
-    t.assert.strictEqual(evaluate('-9223372036854775808'), -9223372036854775808n)
-    t.assert.strictEqual(evaluate('4611686018427387903 * 2'), 9223372036854775806n)
-    t.assert.strictEqual(evaluate('-4611686018427387904 * 2'), -9223372036854775808n)
-    t.assert.throws(() => evaluate(`9223372036854775807 + 1`), /integer overflow/)
-    t.assert.throws(() => evaluate(`-9223372036854775808 - 1`), /integer overflow/)
-    t.assert.throws(() => evaluate(`4611686018427387905 * 2`), /integer overflow/)
-  })
-
-  test('should use unsigned integers in arithmetic operations', (t) => {
-    t.assert.strictEqual(evaluate('10u + 20u'), 30n)
-    t.assert.strictEqual(evaluate('0xau + 0xbu'), 21n) // 10 + 11
-    t.assert.strictEqual(evaluate('100u - 50u'), 50n)
-    t.assert.strictEqual(evaluate('0xffu * 2u'), 510n) // 255 * 2
-  })
-
   test('should compare integers correctly', (t) => {
     t.assert.strictEqual(evaluate('0x10 == 16'), true)
     t.assert.strictEqual(evaluate('0xff != 254'), true)
@@ -116,13 +60,6 @@ describe('integer literals', () => {
     t.assert.strictEqual(evaluate('0xf >= 15'), true)
     t.assert.strictEqual(evaluate('0x5 < 10'), true)
     t.assert.strictEqual(evaluate('0x8 <= 8'), true)
-  })
-
-  test('should compare unsigned integers correctly', (t) => {
-    t.assert.strictEqual(evaluate('42u == 42'), true)
-    t.assert.strictEqual(evaluate('0xffu == 255'), true)
-    t.assert.strictEqual(evaluate('100u > 99u'), true)
-    t.assert.strictEqual(evaluate('50u <= 50u'), true)
   })
 
   test('should handle large hex values', (t) => {
@@ -135,18 +72,6 @@ describe('integer literals', () => {
     t.assert.strictEqual(evaluate('(0x10 + 0x20) * 2'), 96n) // (16 + 32) * 2
     t.assert.strictEqual(evaluate('0xff > 100 ? 0xa : 0xb'), 10n) // 255 > 100 ? 10 : 11
     t.assert.strictEqual(evaluate('[0x1, 0x2, 0x3][1]'), 2n) // array access
-  })
-
-  test('should handle unsigned integers in complex expressions', (t) => {
-    t.assert.strictEqual(evaluate('(10u + 20u) * 2u'), 60n)
-    t.assert.strictEqual(evaluate('100u > 50u ? 1u : 0u'), 1n)
-    t.assert.strictEqual(evaluate('[1u, 2u, 3u][0]'), 1n)
-  })
-
-  test('should handle mixed integer types in expressions', (t) => {
-    t.assert.strictEqual(evaluate('10 + 0xa'), 20n) // decimal + hex
-    t.assert.strictEqual(evaluate('0x10 + 20u'), 36n) // hex + unsigned
-    t.assert.strictEqual(evaluate('5 * 0x2 + 3u'), 13n) // mixed arithmetic
   })
 
   test('should allow integer with double comparisons', (t) => {
@@ -192,9 +117,77 @@ describe('integer parsing edge cases', () => {
     t.assert.strictEqual(evaluate('0x10*0x2'), 32n) // hex multiplication without spaces
   })
 
+  test('throws integer overflow error with values out of bound', (t) => {
+    t.assert.strictEqual(evaluate('9223372036854775807').valueOf(), 9223372036854775807n)
+    t.assert.strictEqual(evaluate('-9223372036854775808').valueOf(), -9223372036854775808n)
+    t.assert.strictEqual(evaluate('4611686018427387903 * 2').valueOf(), 9223372036854775806n)
+    t.assert.strictEqual(evaluate('-4611686018427387904 * 2').valueOf(), -9223372036854775808n)
+    t.assert.throws(() => evaluate(`9223372036854775807 + 1`), /integer overflow/)
+    t.assert.throws(() => evaluate(`-9223372036854775808 - 1`), /integer overflow/)
+    t.assert.throws(() => evaluate(`4611686018427387905 * 2`), /integer overflow/)
+  })
+})
+
+describe('unsigned integer', () => {
+  test('returns an unsigned integer', (t) => {
+    const result = evaluate('42u')
+    t.assert.ok(result instanceof UnsignedInt)
+    t.assert.strictEqual(result.valueOf(), 42n)
+  })
+
+  test('should use unsigned integers in arithmetic operations', (t) => {
+    t.assert.strictEqual(evaluate('10u + 20u').valueOf(), 30n)
+    t.assert.strictEqual(evaluate('0xau + 0xbu').valueOf(), 21n) // 10 + 11
+    t.assert.strictEqual(evaluate('100u - 50u').valueOf(), 50n)
+    t.assert.strictEqual(evaluate('0xffu * 2u').valueOf(), 510n) // 255 * 2
+  })
+
+  test('should use integers in arithmetic operations', (t) => {
+    t.assert.strictEqual(evaluate('0x10 + 0x20').valueOf(), 48n) // 16 + 32
+    t.assert.strictEqual(evaluate('0xff - 0xf').valueOf(), 240n) // 255 - 15
+    t.assert.strictEqual(evaluate('0xa * 0xb').valueOf(), 110n) // 10 * 11
+    t.assert.strictEqual(evaluate('0x64 / 0x4').valueOf(), 25n) // 100 / 4
+    t.assert.strictEqual(evaluate('0x17 % 0x5').valueOf(), 3n) // 23 % 5
+  })
+
+  test('should parse unsigned decimal integers', (t) => {
+    t.assert.strictEqual(evaluate('42u').valueOf(), 42n)
+    t.assert.strictEqual(evaluate('42U').valueOf(), 42n)
+    t.assert.strictEqual(evaluate('0u').valueOf(), 0n)
+    t.assert.strictEqual(evaluate('0U').valueOf(), 0n)
+    t.assert.strictEqual(evaluate('4294967295u').valueOf(), 4294967295n) // max uint32
+    t.assert.strictEqual(evaluate('4294967295U').valueOf(), 4294967295n)
+  })
+
+  test('should parse unsigned hexadecimal integers', (t) => {
+    t.assert.strictEqual(evaluate('0x0u').valueOf(), 0n)
+    t.assert.strictEqual(evaluate('0x0U').valueOf(), 0n)
+    t.assert.strictEqual(evaluate('0xffu').valueOf(), 255n)
+    t.assert.strictEqual(evaluate('0xffU').valueOf(), 255n)
+    t.assert.strictEqual(evaluate('0xFFu').valueOf(), 255n)
+    t.assert.strictEqual(evaluate('0XFFU').valueOf(), 255n)
+    t.assert.strictEqual(evaluate('0xffffffffu').valueOf(), 4294967295n) // max uint32
+    t.assert.strictEqual(evaluate('0xffffffffU').valueOf(), 4294967295n)
+    t.assert.strictEqual(evaluate('0XFFFFFFFFu').valueOf(), 4294967295n)
+    t.assert.strictEqual(evaluate('0XFFFFFFFFU').valueOf(), 4294967295n)
+  })
+
+  test('should compare unsigned integers correctly', (t) => {
+    t.assert.ok(evaluate('dyn(42u) == 42'))
+    t.assert.ok(evaluate('dyn(0xffu) == 255'))
+    t.assert.ok(evaluate('100u > 99u'))
+    t.assert.ok(evaluate('50u <= 50u'))
+  })
+
+  test('should handle unsigned integers in complex expressions', (t) => {
+    t.assert.strictEqual(evaluate('(10u + 20u) * 2u').valueOf(), 60n)
+    t.assert.strictEqual(evaluate('100u > 50u ? 1u : 0u').valueOf(), 1n)
+    t.assert.strictEqual(evaluate('[1u, 2u, 3u][0]').valueOf(), 1n)
+  })
+
   test('should handle unsigned suffix at token boundaries', (t) => {
-    t.assert.strictEqual(evaluate('42u+1'), 43n) // no space between unsigned and operator
-    t.assert.strictEqual(evaluate('0xffu*2'), 510n) // unsigned hex without spaces
+    t.assert.strictEqual(evaluate('42u+1u').valueOf(), 43n) // no space between unsigned and operator
+    t.assert.strictEqual(evaluate('0xffu*2u').valueOf(), 510n) // unsigned hex without spaces
   })
 
   test('should not allow unsigned suffix on floats', (t) => {
@@ -206,5 +199,16 @@ describe('integer parsing edge cases', () => {
       name: 'ParseError',
       message: /Unexpected character: 'U'/
     })
+  })
+
+  test('throws integer overflow error with values out of bound', (t) => {
+    t.assert.strictEqual(evaluate('0u').valueOf(), 0n) // min uint64
+    t.assert.strictEqual(evaluate('18446744073709551615u').valueOf(), 18446744073709551615n) // max uint64
+    t.assert.strictEqual(evaluate('9223372036854775807u * 2u').valueOf(), 18446744073709551614n)
+    t.assert.throws(() => evaluate(`0.1u`), /Unexpected character: 'u'/)
+    t.assert.throws(() => evaluate(`0u - 1u`), /integer overflow/)
+    t.assert.throws(() => evaluate(`-1u`), /no such overload: -uint/)
+    t.assert.throws(() => evaluate(`18446744073709551615u + 1u`), /integer overflow/)
+    t.assert.throws(() => evaluate(`9223372036854775808u * 2u`), /integer overflow/)
   })
 })
