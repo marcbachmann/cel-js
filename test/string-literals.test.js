@@ -222,8 +222,8 @@ describe('string literals and escapes', () => {
     })
 
     test('should reject invalid \\U escapes', (t) => {
-      t.assert.throws(() => evaluate('"\\U00110000"'), /Invalid Unicode code point/) // > U+10FFFF
-      t.assert.throws(() => evaluate('"\\U0000D800"'), /surrogate/) // Surrogate
+      t.assert.throws(() => evaluate('"\\U00110000"'), /Invalid Unicode escape/)
+      t.assert.throws(() => evaluate('"\\U0000D800"'), /Invalid Unicode surrogate/)
     })
   })
 })
