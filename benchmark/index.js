@@ -13,8 +13,8 @@ import * as celJsPackage from 'cel-js'
 
 // Benchmark configuration
 const ITERATIONS = {
-  parse: 10000,
-  evaluate: 50000,
+  parse: 100000,
+  evaluate: 500000,
   warmup: 10000
 }
 
@@ -30,6 +30,27 @@ let TEST_EXPRESSIONS = [
     name: 'Simple String',
     expression: '"hello world"',
     context: {}
+  },
+  {
+    name: 'String concat',
+    expression:
+      '"hello world" + "hello world" + "hello world" + "hello world" + "hello world" + "hello world"',
+    context: {}
+  },
+  {
+    name: 'hex concat',
+    expression: '0x01 + 0x02 + 0x03 + 0x04 + 0x05 + 0x06 + 0x07 + 0x08',
+    context: {}
+  },
+  {
+    name: 'long int',
+    expression: '12345678901234567 + 12345678901234567 + 12345678901234567 + 12345678901234567',
+    context: {}
+  },
+  {
+    name: 'long identifier',
+    expression: 'somelongidentifier + somelongidentifier + somelongidentifier + somelongidentifier',
+    context: {somelongidentifier: '12345678901234567'}
   },
   {
     name: 'Simple Boolean',

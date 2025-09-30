@@ -173,7 +173,7 @@ describe('macros', () => {
     test('should throw with non-list argument', (t) => {
       t.assert.throws(
         () => evaluate('42.all(x, x > 0)', context),
-        /Invalid number: unexpected hex digit/
+        /Function not found: 'all' for value of type 'int'/
       )
 
       t.assert.throws(
