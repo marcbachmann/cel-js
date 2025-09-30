@@ -43,6 +43,11 @@ let TEST_EXPRESSIONS = [
     context: {}
   },
   {
+    name: 'double concat',
+    expression: '1.0 + 1.0 + 1.0 + 1.0 + 1.0 + 1.0 + 1.0 + 1.0',
+    context: {}
+  },
+  {
     name: 'long int',
     expression: '12345678901234567 + 12345678901234567 + 12345678901234567 + 12345678901234567',
     context: {}
