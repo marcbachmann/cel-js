@@ -54,4 +54,25 @@ describe('identifiers', () => {
     t.assert.throws(() => evaluate('a.constructor.name', {a: {}}), /No such key: constructor/)
     t.assert.throws(() => evaluate('a.length', {a: {}}), /No such key: length/)
   })
+
+  test('restricts access to reserved identifiers', (t) => {
+    t.assert.throws(() => evaluate('package', {package: 'foo'}), /Reserved identifier: package/)
+    t.assert.throws(() => evaluate('if', {if: 'foo'}), /Reserved identifier: if/)
+    t.assert.throws(() => evaluate('var', {var: 'foo'}), /Reserved identifier: var/)
+  })
+
+  test('allows access to reserved identifiers within objects', (t) => {
+    const obj = {obj: {package: 'a', if: 'b', var: 'c'}}
+    t.assert.strictEqual(evaluate('obj["package"]', obj), 'a')
+    t.assert.strictEqual(evaluate('obj.package', obj), 'a')
+    t.assert.strictEqual(evaluate('obj["if"]', obj), 'b')
+    t.assert.strictEqual(evaluate('obj.if', obj), 'b')
+    t.assert.strictEqual(evaluate('obj["var"]', obj), 'c')
+    t.assert.strictEqual(evaluate('obj.var', obj), 'c')
+  })
+
+  test('verifies that identifiers are of a given type', (t) => {
+    class Unrecognized {}
+    t.assert.throws(() => evaluate('a', {a: new Unrecognized()}), /Unsupported type/)
+  })
 })
