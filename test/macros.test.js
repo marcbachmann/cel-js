@@ -319,12 +319,31 @@ describe('macros', () => {
       users: [
         {name: 'Alice', age: 25},
         {name: 'Bob', age: 30}
-      ]
+      ],
+      object: {key1: 'value1', key2: 'value2'}
     }
 
     test('should transform all elements', (t) => {
       t.assert.deepStrictEqual(evaluate('numbers.map(x, x * 2.0)', context), [2, 4, 6, 8, 10])
       t.assert.deepStrictEqual(evaluate('numbers.map(x, x + 10.0)', context), [11, 12, 13, 14, 15])
+
+      t.assert.deepStrictEqual(evaluate('object.map(x, x)', context), ['key1', 'key2'])
+      t.assert.deepStrictEqual(evaluate('object.map(x, x + ":" + object[x])', context), [
+        'key1:value1',
+        'key2:value2'
+      ])
+    })
+
+    test('supports three-arg form with filter', (t) => {
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, x > 2, x * 2.0)', context), [6, 8, 10])
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, x < 4, x * 2.0)', context), [2, 4, 6])
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, true, x + 1.0)', context), [2, 3, 4, 5, 6])
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, false, x + 1.0)', context), [])
+
+      t.assert.deepStrictEqual(evaluate('object.map(x, x.endsWith("1"), x)', context), ['key1'])
+      t.assert.deepStrictEqual(evaluate('object.map(x, x.endsWith("1"), object[x])', context), [
+        'value1'
+      ])
     })
 
     test('should work with string transformations', (t) => {
@@ -344,17 +363,6 @@ describe('macros', () => {
       t.assert.deepStrictEqual(evaluate('emptyList.map(x, x * 2.0)', context), [])
     })
 
-    test('should throw with wrong number of arguments', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.map()', context),
-        /found no matching overload for 'list.map\(\)'/
-      )
-      t.assert.throws(
-        () => evaluate('numbers.map(x)', context),
-        /found no matching overload for 'list.map\(ast\)'/
-      )
-    })
-
     test('supports combination with other macros', (t) => {
       t.assert.deepStrictEqual(
         evaluate('numbers.filter(x, x < 5.0).map(x, x * 2.0)', context),
@@ -365,6 +373,31 @@ describe('macros', () => {
         evaluate('users.map(u, numbers.filter(x, x < 2).map(n, n + u.age)[0])', context),
         [26, 31]
       )
+    })
+
+    test('should throw with wrong number of arguments', (t) => {
+      t.assert.throws(
+        () => evaluate('numbers.map()', context),
+        /found no matching overload for 'list.map\(\)'/
+      )
+      t.assert.throws(
+        () => evaluate('numbers.map(x)', context),
+        /found no matching overload for 'list.map\(ast\)'/
+      )
+
+      t.assert.throws(
+        () => evaluate('numbers.map(x, x, x, x)', context),
+        /found no matching overload for 'list.map\(ast, ast, ast, ast\)'/
+      )
+    })
+
+    test('must return a boolean in filter of map(var, filter, transform)', (t) => {
+      t.assert.throws(
+        () => evaluate('numbers.map(x, x, x)', context),
+        /map\(var, filter, transform\) filter predicate result is not a boolean/
+      )
+
+      t.assert.deepStrictEqual(evaluate('numbers.map(x, x == x, x)', context), context.numbers)
     })
 
     test('does not expose function for non-receiver call', (t) => {
