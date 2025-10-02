@@ -55,7 +55,7 @@ describe('macros', () => {
     })
 
     test('should throw when argument is not a field selection', (t) => {
-      const error = /has\(\) requires a field selection/
+      const error = /has\(\) invalid argument/
       t.assert.throws(() => evaluate('has(object)', context), error)
       t.assert.throws(() => evaluate('has(nonexistent)', context), error)
       t.assert.throws(() => evaluate('has(size({}))', context), error)
@@ -76,7 +76,7 @@ describe('macros', () => {
     })
 
     describe('should throw when argument is an atomic expression', () => {
-      const error = /has\(\) does not support atomic expressions/
+      const error = /has\(\) invalid argument/
 
       test('string literals', (t) => {
         t.assert.throws(() => evaluate('has("")'), error)
@@ -228,7 +228,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /exists\(\) predicate result is not a boolean/
+      const error = /exists\(var, predicate\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.exists(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists(x, "")', context), error)
@@ -285,7 +285,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /exists_one\(\) predicate result is not a boolean/
+      const error = /exists_one\(var, predicate\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.exists_one(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, "")', context), error)
@@ -394,7 +394,7 @@ describe('macros', () => {
     test('must return a boolean in filter of map(var, filter, transform)', (t) => {
       t.assert.throws(
         () => evaluate('numbers.map(x, x, x)', context),
-        /map\(var, filter, transform\) filter predicate result is not a boolean/
+        /map\(var, filter, transform\) predicate result is not a boolean/
       )
 
       t.assert.deepStrictEqual(evaluate('numbers.map(x, x == x, x)', context), context.numbers)
@@ -480,7 +480,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /filter\(\) predicate result is not a boolean/
+      const error = /filter\(var, predicate\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.filter(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].filter(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].filter(x, "")', context), error)
@@ -542,7 +542,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /all\(\) predicate result is not a boolean/
+      const error = /all\(var, predicate\) predicate result is not a boolean/
       t.assert.throws(() => evaluate('numbers.all(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].all(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].all(x, "")', context), error)

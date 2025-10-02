@@ -201,9 +201,31 @@ let TEST_EXPRESSIONS = [
 
   // Macro operations (may not be supported by cel-js)
   {
+    name: 'Multiple .map calls',
+    expression:
+      'items.map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0)',
+    context: {items: [5, 10, 15, 20, 25]}
+  },
+  {
     name: 'List Comprehension',
     expression: 'items.filter(x, x > 10).map(x, x > 2)',
     context: {items: [5, 10, 15, 20, 25]}
+  },
+
+  {
+    name: 'Multiple has calls',
+    expression: `
+      has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan)
+    `,
+    context: {
+      user: {
+        premium: true,
+        subscription: {
+          plan: 'pro',
+          expiresAt: new Date('2025-01-01')
+        }
+      }
+    }
   },
 
   // Mixed operations (may not be supported by cel-js)
