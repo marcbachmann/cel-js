@@ -19,10 +19,24 @@ interface Functions {
   [functionName: string]: ((...args: any[]) => any) | TypeMethods
 }
 
+/**
+ * Result of type checking an expression.
+ */
+export interface TypeCheckResult {
+  /** Whether the expression passed type checking */
+  valid: boolean
+  /** The inferred type of the expression (only present if valid is true) */
+  type?: string
+  /** The type error that occurred (only present if valid is false) */
+  error?: TypeError
+}
+
 export type ParseResult = {
   (context?: Context, functions?: Functions): any
   /** The parsed AST */
   ast: ASTNode
+  /** Type check the expression without evaluating it */
+  check(): TypeCheckResult
 }
 
 /**
@@ -46,6 +60,15 @@ export class ParseError extends Error {
 export class EvaluationError extends Error {
   constructor(message: string)
   readonly name: 'EvaluationError'
+}
+
+/**
+ * Error thrown during type checking when a type error is detected in the expression.
+ * The error message includes source position highlighting.
+ */
+export class TypeError extends Error {
+  constructor(message: string)
+  readonly name: 'TypeError'
 }
 
 /**
@@ -221,6 +244,26 @@ export class Environment {
   parse(expression: string): ParseResult
 
   /**
+   * Type check a CEL expression without evaluating it.
+   *
+   * @param expression - The CEL expression string to check
+   * @returns An object containing validation result and type information
+   *
+   * @example
+   * ```typescript
+   * const env = new Environment()
+   *   .registerVariable('x', 'int')
+   *   .registerVariable('y', 'string')
+   *
+   * const result = env.check('x + y')
+   * if (!result.valid) {
+   *   console.error('Type error:', result.error.message)
+   * }
+   * ```
+   */
+  check(expression: string): TypeCheckResult
+
+  /**
    * Evaluate a CEL expression with the given context.
    *
    * @param expression - The CEL expression string to evaluate
@@ -250,6 +293,7 @@ declare const cel: {
   Environment: typeof Environment
   ParseError: typeof ParseError
   EvaluationError: typeof EvaluationError
+  TypeError: typeof TypeError
 }
 
 export default cel

@@ -103,8 +103,46 @@ new Environment({
 - **`hasVariable(name)`** - Check if variable is registered
 - **`parse(expression)`** - Parse expression for reuse
 - **`evaluate(expression, context)`** - Evaluate with context
+- **`check(expression)`** - Validate expression types without evaluation
 
 **Supported Types:** `int`, `uint`, `double`, `string`, `bool`, `bytes`, `list`, `map`, `timestamp`, `duration`, `null_type`, `type`, `dyn`, or custom types
+
+### Type Checking
+
+Validate expressions before evaluation to catch type errors early:
+
+```javascript
+import {Environment, TypeError} from '@marcbachmann/cel-js'
+
+const env = new Environment()
+  .registerVariable('age', 'int')
+  .registerVariable('name', 'string')
+
+// Check expression validity
+const result = env.check('age >= 18 && name.startsWith("A")')
+
+if (result.valid) {
+  console.log(`Expression is valid, returns: ${result.type}`) // bool
+  // Safe to evaluate
+  const value = env.evaluate('age >= 18 && name.startsWith("A")', {
+    age: 25n,
+    name: 'Alice'
+  })
+} else {
+  console.error(`Type error: ${result.error.message}`)
+}
+
+// Detect errors without evaluation
+const invalid = env.check('age + name') // Invalid: can't add int + string
+console.log(invalid.valid) // false
+console.log(invalid.error.message) // "Operator '+' not defined for types 'int' and 'string'"
+```
+
+**Benefits:**
+- Catch type mismatches before runtime
+- Validate user-provided expressions safely
+- Get inferred return types for expressions
+- Better error messages with source location
 
 ## Language Features
 
@@ -292,7 +330,7 @@ Run benchmarks: `npm run benchmark`
 ## Error Handling
 
 ```javascript
-import {evaluate, ParseError, EvaluationError} from '@marcbachmann/cel-js'
+import {evaluate, ParseError, EvaluationError, TypeError} from '@marcbachmann/cel-js'
 
 try {
   evaluate('invalid + + syntax')
@@ -302,6 +340,13 @@ try {
   } else if (error instanceof EvaluationError) {
     console.error('Runtime error:', error.message)
   }
+}
+
+// Type checking returns errors without throwing
+const env = new Environment().registerVariable('x', 'int')
+const result = env.check('x + "string"')
+if (!result.valid && result.error instanceof TypeError) {
+  console.error('Type error:', result.error.message)
 }
 ```
 
