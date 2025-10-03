@@ -215,6 +215,40 @@ test('Environment - parse() method for AST reuse', () => {
   assert.strictEqual(result2, 11n)
 })
 
+test('Environment - parse() returns function with check method', () => {
+  const env = new Environment()
+    .registerVariable('x', 'int')
+    .registerVariable('y', 'int')
+
+  const parsed = env.parse('x + y')
+
+  // Check method should be available
+  assert.strictEqual(typeof parsed.check, 'function')
+
+  // Check should return type information
+  const checkResult = parsed.check()
+  assert.strictEqual(checkResult.valid, true)
+  assert.strictEqual(checkResult.type, 'int')
+
+  // Should still be able to evaluate
+  const evalResult = parsed({x: 5n, y: 3n})
+  assert.strictEqual(evalResult, 8n)
+})
+
+test('Environment - parse() check detects type errors', () => {
+  const env = new Environment()
+    .registerVariable('x', 'int')
+    .registerVariable('y', 'string')
+
+  const parsed = env.parse('x + y')
+
+  // Type error should be caught by check
+  const checkResult = parsed.check()
+  assert.strictEqual(checkResult.valid, false)
+  assert.ok(checkResult.error)
+  assert.ok(checkResult.error.message.includes('not defined'))
+})
+
 test('Environment - duplicate variable registration throws', () => {
   const env = new Environment().registerVariable('x', 'int')
 
