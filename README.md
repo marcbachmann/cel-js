@@ -374,9 +374,9 @@ import {Environment, evaluate, ParseError} from '@marcbachmann/cel-js'
 
 const env = new Environment()
   .registerVariable('count', 'int')
-  .registerFunction('double(int): int', (x) => x * 2n)
+  .registerFunction('multiplyByTwo(int): int', (x) => x * 2n)
 
-const result: any = env.evaluate('double(count)', {count: 21n})
+const result: any = env.evaluate('multiplyByTwo(count)', {count: 21n})
 ```
 
 ## Contributing
