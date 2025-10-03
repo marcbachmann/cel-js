@@ -1,30 +1,22 @@
 # @marcbachmann/cel-js
 
-A lightweight, zero-dependency implementation of the [Common Expression Language (CEL)](https://github.com/google/cel-spec) in JavaScript.
+A high-performance, zero-dependency implementation of the [Common Expression Language (CEL)](https://github.com/google/cel-spec) in JavaScript.
 
 [![npm version](https://img.shields.io/npm/v/@marcbachmann/cel-js.svg)](https://www.npmjs.com/package/@marcbachmann/cel-js)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/@marcbachmann/cel-js.svg)](https://nodejs.org/en/)
 
 ## Overview
 
-CEL (Common Expression Language) is a non-Turing complete language designed for simplicity, speed, safety, and portability. This JavaScript implementation provides a fast, lightweight CEL evaluator with zero external dependencies, making it perfect for embedded expression evaluation in JavaScript applications.
+CEL (Common Expression Language) is a non-Turing complete language designed for simplicity, speed, safety, and portability. This JavaScript implementation provides a fast, lightweight CEL evaluator perfect for policy evaluation, configuration, and embedded expressions.
 
 ## Features
 
-- 🚀 **Zero Dependencies** - No external packages, minimal bundle size
-- ⚡ **High Performance** - Optimized lexer, parser, and evaluator
-- 📦 **ES Modules** - Modern ESM support with full tree-shaking capabilities
-- 🔧 **Type Support** - Full support for CEL's type system including strings, numbers, booleans, lists, maps, and bytes
-- 🛡️ **Safe Evaluation** - Sandboxed expression evaluation with no access to the JavaScript runtime
-- 🎯 **Complete CEL Support** - Implements the full CEL specification including:
-  - All arithmetic, comparison, and logical operators
-  - String and bytes literals with escape sequences
-  - List and map construction
-  - Property access and indexing
-  - Function calls and receiver-style method calls
-  - Macros (`has`, `all`, `exists`, `exists_one`, `map`, `filter`)
-  - Ternary conditional operator
+- 🚀 **Zero Dependencies** - No external packages required
+- ⚡ **High Performance** - Up to 22x faster evaluation, 3x faster parsing than alternatives
+- 📦 **ES Modules** - Modern ESM with full tree-shaking support
+- 🔒 **Type Safe** - Environment API with type checking for variables and custom functions
+- 🎯 **Most of the CEL Spec** - Including macros, type functions, and operators
+- 📘 **TypeScript Support** - Full type definitions included
 
 ## Installation
 
@@ -35,139 +27,138 @@ npm install @marcbachmann/cel-js
 ## Quick Start
 
 ```javascript
-import { evaluate, parse } from '@marcbachmann/cel-js'
+import {evaluate} from '@marcbachmann/cel-js'
 
 // Simple evaluation
-console.log(evaluate('1 + 2 * 3')) // 7
+evaluate('1 + 2 * 3') // 7n
 
 // With context
-const context = {
-  user: {
-    name: 'Alice',
-    age: 30,
-    roles: ['admin', 'user']
-  }
-}
-
-const result = evaluate('user.age >= 18 && "admin" in user.roles', context)
-console.log(result) // true
-
-// Parse once, evaluate multiple times
-const expression = parse('user.age >= age_limit')
-console.log(expression({ user: { age: 25 }, age_limit: 21 })) // true
-console.log(expression({ user: { age: 18 }, age_limit: 21 })) // false
+const allowed = evaluate(
+  'user.age >= 18 && "admin" in user.roles',
+  {user: {age: 30, roles: ['admin', 'user']}}
+)
+// true
 ```
 
-## API Reference
+## API
 
-### `evaluate(expression, context?, functions?)`
-
-Evaluates a CEL expression string and returns the result.
+### Simple Evaluation
 
 ```javascript
-evaluate(expression: string, context?: object, functions?: object): any
+import {evaluate, parse} from '@marcbachmann/cel-js'
+
+// Direct evaluation
+evaluate('1 + 2') // 3n
+
+// With variables
+evaluate('name + "!"', {name: 'Alice'}) // "Alice!"
+
+// Parse once, evaluate multiple times for better performance
+const expr = parse('user.age >= minAge')
+expr({user: {age: 25}, minAge: 18}) // true
+expr({user: {age: 16}, minAge: 18}) // false
 ```
 
-**Parameters:**
-- `expression` - The CEL expression string to evaluate
-- `context` - Optional object containing variables accessible in the expression
-- `functions` - Optional object containing custom functions
+### Environment API (Recommended)
 
-**Returns:** The evaluated result
-
-**Throws:** `ParseError` or `EvaluationError` on invalid expressions
-
-### `parse(expression)`
-
-Parses a CEL expression and returns a reusable evaluator function.
+For type-safe expressions with custom functions and operators:
 
 ```javascript
-parse(expression: string): (context?: object, functions?: object) => any
+import {Environment} from '@marcbachmann/cel-js'
+
+const env = new Environment()
+  .registerVariable('user', 'map')
+  .registerVariable('minAge', 'int')
+  .registerFunction('isAdult(int): bool', age => age >= 18n)
+  .registerOperator('string * int', (str, n) => str.repeat(Number(n)))
+
+// Type-checked evaluation
+env.evaluate('isAdult(user.age)', {
+  user: {age: 25n},
+  minAge: 18n
+})
+
+// Custom operators
+env.evaluate('"Hi" * 3') // "HiHiHi"
 ```
 
-**Parameters:**
-- `expression` - The CEL expression string to parse
-
-**Returns:** A function that can be called with context and functions to evaluate the expression
-
-**Throws:** `ParseError` on syntax errors
-
-### Error Types
-
-- `ParseError` - Thrown when an expression has invalid syntax
-- `EvaluationError` - Thrown when an expression cannot be evaluated (e.g., undefined variable, type mismatch)
-
-## Expression Language Guide
-
-### Basic Types
+#### Environment Options
 
 ```javascript
-// Numbers
-evaluate('42')        // 42
-evaluate('3.14')      // 3.14
-evaluate('0xFF')      // 255 (hex)
-evaluate('0xFFu')     // 255 (unsigned)
+new Environment({
+  // Treat undeclared variables as dynamic type
+  unlistedVariablesAreDyn: false,
 
-// Strings
-evaluate('"Hello"')   // "Hello"
-evaluate("'World'")   // "World"
-evaluate('"""
-Multi
-line
-"""')                // "Multi\nline\n"
-
-// Booleans
-evaluate('true')      // true
-evaluate('false')     // false
-
-// Null
-evaluate('null')      // null
+  // Support legacy function format (deprecated)
+  supportLegacyFunctions: false
+})
 ```
+
+#### Environment Methods
+
+- **`registerVariable(name, type)`** - Declare a variable with type checking
+- **`registerType(typename, constructor)`** - Register custom types
+- **`registerFunction(signature, handler)`** - Add custom functions
+- **`registerOperator(signature, handler)`** - Add custom operators
+- **`hasVariable(name)`** - Check if variable is registered
+- **`parse(expression)`** - Parse expression for reuse
+- **`evaluate(expression, context)`** - Evaluate with context
+
+**Supported Types:** `int`, `uint`, `double`, `string`, `bool`, `bytes`, `list`, `map`, `timestamp`, `duration`, `null_type`, `type`, `dyn`, or custom types
+
+## Language Features
 
 ### Operators
 
 ```javascript
 // Arithmetic
-evaluate('2 + 3')     // 5
-evaluate('5 - 2')     // 3
-evaluate('3 * 4')     // 12
-evaluate('10 / 2')    // 5
-evaluate('10 % 3')    // 1
-evaluate('-5')        // -5
+evaluate('10 + 5 - 3')     // 12n
+evaluate('10 * 5 / 2')     // 25n
+evaluate('10 % 3')         // 1n
 
 // Comparison
-evaluate('5 == 5')    // true
-evaluate('5 != 4')    // true
-evaluate('5 > 4')     // true
-evaluate('5 >= 5')    // true
-evaluate('3 < 4')     // true
-evaluate('3 <= 3')    // true
+evaluate('5 > 3')          // true
+evaluate('5 >= 5')         // true
+evaluate('5 == 5')         // true
+evaluate('5 != 4')         // true
 
 // Logical
 evaluate('true && false')  // false
 evaluate('true || false')  // true
-evaluate('!true')          // false
+evaluate('!false')         // true
 
-// String concatenation
-evaluate('"Hello" + " " + "World"')  // "Hello World"
+// Ternary
+evaluate('5 > 3 ? "yes" : "no"')  // "yes"
 
 // Membership
-evaluate('2 in [1, 2, 3]')           // true
-evaluate('"lo" in "Hello"')          // true
+evaluate('2 in [1, 2, 3]')        // true
+evaluate('"ell" in "hello"')      // true
 ```
 
-### Collections
+### Data Types
 
 ```javascript
-// Lists
-evaluate('[1, 2, 3]')              // [1, 2, 3]
-evaluate('[1, 2, 3][1]')           // 2
-evaluate('[1, 2, 3].size()')       // 3
+// Numbers (default to BigInt)
+evaluate('42')           // 42n
+evaluate('3.14')         // 3.14
+evaluate('0xFF')         // 255n
 
-// Maps
-evaluate('{name: "John", age: 30}')         // {name: "John", age: 30}
-evaluate('{"key": "value"}.key')             // "value"
-evaluate('{1: "one", 2: "two"}[2]')         // "two"
+// Strings
+evaluate('"hello"')      // "hello"
+evaluate('r"\\n"')       // "\\n" (raw string)
+evaluate('"""multi\nline"""')  // "multi\nline\n"
+
+// Bytes
+evaluate('b"hello"')     // Uint8Array
+evaluate('b"\\xFF"')     // Uint8Array [255]
+
+// Collections
+evaluate('[1, 2, 3]')           // [1n, 2n, 3n]
+evaluate('{name: "Alice"}')     // {name: "Alice"}
+
+// Other
+evaluate('true')         // true
+evaluate('null')         // null
 ```
 
 ### Built-in Functions
@@ -175,136 +166,136 @@ evaluate('{1: "one", 2: "two"}[2]')         // "two"
 ```javascript
 // Type conversion
 evaluate('string(123)')           // "123"
+evaluate('int("42")')             // 42n
+evaluate('double("3.14")')        // 3.14
 evaluate('bytes("hello")')        // Uint8Array
 
-// Size
-evaluate('size("hello")')         // 5
-evaluate('size([1, 2, 3])')      // 3
-evaluate('size({a: 1, b: 2})')   // 2
+// Collections
+evaluate('size([1, 2, 3])')       // 3n
+evaluate('size("hello")')         // 5n
+evaluate('size({a: 1, b: 2})')    // 2n
 
-// Timestamps
-evaluate('timestamp("2023-01-01T00:00:00Z")')  // Date object
+// Time
+evaluate('timestamp("2024-01-01T00:00:00Z")')  // Date
+
+// Type checking
+evaluate('type(42)')              // int
+evaluate('type("hello")')         // string
 ```
 
 ### String Methods
 
 ```javascript
-evaluate('"hello".size()')                    // 5
-evaluate('"hello".startsWith("he")')          // true
-evaluate('"hello".endsWith("lo")')            // true
-evaluate('"hello".contains("ell")')           // true
-evaluate('"hello".matches("h.*o")')           // true
-```
-
-### Bytes Operations
-
-```javascript
-// Bytes literals
-evaluate('b"hello"')                         // Uint8Array
-evaluate('b"\\xFF\\x00"')                   // Uint8Array with hex values
-
-// Bytes methods
-evaluate('b"hello".size()')                  // 5
-evaluate('b"hello"[0]')                      // 104
-evaluate('b"hello".toString()')              // "hello"
-evaluate('b"hello".toString("base64")')      // "aGVsbG8="
-evaluate('b"hello".toString("hex")')         // "68656c6c6f"
+evaluate('"hello".contains("ell")')         // true
+evaluate('"hello".startsWith("he")')        // true
+evaluate('"hello".endsWith("lo")')          // true
+evaluate('"hello".matches("h.*o")')         // true
+evaluate('"hello".size()')                  // 5n
 ```
 
 ### Macros
 
 ```javascript
-// has - check if field exists
-evaluate('has(user.email)', { user: { name: 'John' } })  // false
-
-// all - check if all elements match
-evaluate('numbers.all(x, x > 0)', { numbers: [1, 2, 3] })  // true
-
-// exists - check if any element matches
-evaluate('numbers.exists(x, x > 5)', { numbers: [1, 5, 10] })  // true
-
-// exists_one - check if exactly one element matches
-evaluate('numbers.exists_one(x, x == 5)', { numbers: [1, 5, 10] })  // true
-
-// map - transform elements
-evaluate('numbers.map(x, x * 2)', { numbers: [1, 2, 3] })  // [2, 4, 6]
-
-// filter - filter elements
-evaluate('numbers.filter(x, x > 2)', { numbers: [1, 2, 3, 4] })  // [3, 4]
-```
-
-### Date/Time Operations
-
-```javascript
-const context = {
-  now: new Date('2024-01-15T10:30:00Z')
+const ctx = {
+  numbers: [1, 2, 3, 4, 5],
+  users: [
+    {name: 'Alice', admin: true},
+    {name: 'Bob', admin: false}
+  ]
 }
 
-evaluate('now.getFullYear()', context)           // 2024
-evaluate('now.getMonth()', context)               // 0 (January)
-evaluate('now.getDate()', context)                // 15
-evaluate('now.getHours()', context)               // 10
-evaluate('now.getMinutes()', context)             // 30
+// Check property exists
+evaluate('has(user.email)', {user: {}})  // false
 
-// With timezone
-evaluate('now.getHours("America/New_York")', context)  // 5 (UTC-5)
+// All elements match
+evaluate('numbers.all(n, n > 0)', ctx)   // true
+
+// Any element matches
+evaluate('numbers.exists(n, n > 3)', ctx)  // true
+
+// Exactly one matches
+evaluate('numbers.exists_one(n, n == 3)', ctx)  // true
+
+// Transform
+evaluate('numbers.map(n, n * 2)', ctx)
+// [2n, 4n, 6n, 8n, 10n]
+
+// Filter
+evaluate('numbers.filter(n, n > 2)', ctx)
+// [3n, 4n, 5n]
+
+// Filter + Transform
+evaluate('users.filter(u, u.admin).map(u, u.name)', ctx)
+
+// Or using three arg form of .map
+evaluate('users.map(u, u.admin, u.name)', ctx)
+// ["Alice"]
 ```
 
-### Custom Functions
+### Custom Types
 
 ```javascript
-const functions = {
-  // Simple function
-  double: (x) => x * 2,
+import {Environment} from '@marcbachmann/cel-js'
 
-  // Multiple parameters
-  add: (a, b) => a + b,
-
-  // String manipulation
-  capitalize: (str) => str.charAt(0).toUpperCase() + str.slice(1),
-
-  // Complex logic
-  discount: (price, percentage) => price * (1 - percentage / 100)
+class Vector {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+  }
+  add(other) {
+    return new Vector(this.x + other.x, this.y + other.y)
+  }
 }
 
-evaluate('double(21)', {}, functions)                    // 42
-evaluate('add(10, 5)', {}, functions)                   // 15
-evaluate('capitalize("hello")', {}, functions)          // "Hello"
-evaluate('discount(100, 20)', {}, functions)            // 80
-```
+const env = new Environment()
+  .registerType('Vector', Vector)
+  .registerVariable('v1', 'Vector')
+  .registerVariable('v2', 'Vector')
+  .registerOperator('Vector + Vector', (a, b) => a.add(b))
+  .registerFunction('magnitude(Vector): double', (v) =>
+    Math.sqrt(v.x * v.x + v.y * v.y)
+  )
 
-## Advanced Usage
-
-### Expression Compilation
-
-For better performance when evaluating the same expression multiple times:
-
-```javascript
-import { parse } from '@marcbachmann/cel-js'
-
-// Parse once
-const checkAccess = parse('user.role == "admin" && user.active')
-
-// Evaluate many times with different contexts
-const users = [
-  { role: 'admin', active: true },
-  { role: 'user', active: true },
-  { role: 'admin', active: false }
-]
-
-users.forEach(user => {
-  console.log(checkAccess({ user }))
+const result = env.evaluate('magnitude(v1 + v2)', {
+  v1: new Vector(3, 4),
+  v2: new Vector(1, 2)
 })
-// Output: true, false, false
+// 7.211102550927978
 ```
 
-### Error Handling
+## Performance
+
+Benchmark results comparing against the `cel-js` package on Node.js v24.8.0 (Apple Silicon):
+
+### Parsing Performance
+- **Average: 3.1x faster** (range: 0.76x - 14.8x)
+- Simple expressions: **7-15x faster**
+- Array/Map creation: **8-10x faster**
+
+### Evaluation Performance
+- **Average: 22x faster** (range: 5.5x - 111x)
+- Simple values: **64-111x faster**
+- Collections: **46-58x faster**
+- Complex logic: **5-14x faster**
+
+### Highlights
+
+| Operation | Parsing | Evaluation |
+|-----------|---------|------------|
+| Simple number | 7.3x | 111x |
+| Array creation | 10.1x | 57.9x |
+| Map creation | 8.6x | 46x |
+| Complex authorization | 1.3x | 5.5x |
+
+Run benchmarks: `npm run benchmark`
+
+## Error Handling
 
 ```javascript
-import { evaluate, ParseError, EvaluationError } from '@marcbachmann/cel-js'
+import {evaluate, ParseError, EvaluationError} from '@marcbachmann/cel-js'
 
 try {
-  const result = evaluate('invalid syntax +++')
+  evaluate('invalid + + syntax')
 } catch (error) {
   if (error instanceof ParseError) {
     console.error('Syntax error:', error.message)
@@ -314,170 +305,93 @@ try {
 }
 ```
 
-### Complex Example
+## Examples
+
+### Authorization Rules
+
+```javascript
+import {Environment} from '@marcbachmann/cel-js'
+
+const authEnv = new Environment()
+  .registerVariable('user', 'map')
+  .registerVariable('resource', 'map')
+
+const canEdit = authEnv.parse(
+  'user.isActive && ' +
+  '(user.role == "admin" || ' +
+  ' user.id == resource.ownerId)'
+)
+
+canEdit({
+  user: {id: 123, role: 'user', isActive: true},
+  resource: {ownerId: 123}
+}) // true
+```
+
+### Data Validation
+
+```javascript
+import {Environment} from '@marcbachmann/cel-js'
+
+const validator = new Environment()
+  .registerVariable('email', 'string')
+  .registerVariable('age', 'int')
+  .registerFunction('isValidEmail(string): bool',
+    email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  )
+
+const valid = validator.evaluate(
+  'isValidEmail(email) && age >= 18 && age < 120',
+  {email: 'user@example.com', age: 25n}
+)
+```
+
+### Feature Flags
 
 ```javascript
 import {parse} from '@marcbachmann/cel-js'
-const context = {
-  request: {
-    method: 'POST',
-    path: '/api/users',
-    user: {
-      id: 123,
-      role: 'admin',
-      permissions: ['read', 'write', 'delete']
-    },
-    body: {
-      name: 'New User',
-      email: 'newuser@example.com'
-    }
-  },
-  resource: {
-    owner_id: 456,
-    public: false
-  }
+
+const flags = {
+  'new-dashboard': parse(
+    'user.betaUser || user.id in allowedUserIds'
+  ),
+  'premium-features': parse(
+    'user.subscription == "pro" && !user.trialExpired'
+  )
 }
 
-const rules = {
-  // Admin can do anything
-  isAdmin: 'request.user.role == "admin"',
-
-  // User owns the resource
-  isOwner: 'request.user.id == resource.owner_id',
-
-  // Has specific permission
-  canDelete: '"delete" in request.user.permissions',
-
-  // Complex access rule
-  canAccess: `
-    resource.public ||
-    request.user.role == "admin" ||
-    (isOwner && request.method in ["GET", "PUT"])
-  `,
-
-  // Validate request
-  validRequest: `
-    request.method == "POST" &&
-    has(request.body.name) &&
-    has(request.body.email) &&
-    request.body.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$")
-  `
+function isEnabled(feature, context) {
+  return flags[feature]?.(context) ?? false
 }
-
-// Compile all rules
-const compiledRules = {}
-for (const [name, expr] of Object.entries(rules)) {
-  compiledRules[name] = parse(expr)
-}
-
-// Evaluate all rules
-const results = {}
-for (const [name, rule] of Object.entries(compiledRules)) {
-  results[name] = rule(context)
-}
-
-console.log(results)
-// {
-//   isAdmin: true,
-//   isOwner: false,
-//   canDelete: true,
-//   canAccess: true,
-//   validRequest: true
-// }
 ```
 
-## Performance
+## TypeScript
 
-This implementation is designed for high performance:
+Full TypeScript support included:
 
-- **Hand-written lexer** - No regex overhead, direct character processing
-- **Efficient parser** - Recursive descent with minimal allocations
-- **Optimized AST** - Array-based representation for cache efficiency
-- **Fast evaluation** - Direct interpretation without intermediate representations
+```typescript
+import {Environment, evaluate, ParseError} from '@marcbachmann/cel-js'
 
-### Benchmark Results
+const env = new Environment()
+  .registerVariable('count', 'int')
+  .registerFunction('double(int): int', (x) => x * 2n)
 
-Comparison with the `cel-js` package shows significant performance improvements:
-
-#### Parsing Performance
-- **Average speedup: 3.38x faster**
-- Range: 1.62x - 10.91x faster across different expression types
-- Fastest on array creation (10.91x) and map creation (6.69x)
-- Consistently faster on all 21 test expressions
-
-#### Evaluation Performance  
-- **Average speedup: 12.94x faster**
-- Range: 5.88x - 28.54x faster
-- Array creation: **28.54x faster**
-- Map creation: **21.80x faster**
-- Simple primitives: **15-20x faster**
-- Complex authorization checks: **5.88x faster**
-
-#### Combined Parse + Evaluate Performance
-- **Average speedup: 6.10x faster**
-- Range: 1.07x - 18.92x faster
-- Simple expressions: **17-19x faster**
-- Complex expressions: **2-4x faster**
-- List comprehensions: **3.59x faster**
-
-#### Specific Operation Performance Highlights
-
-| Operation | Parse | Evaluate | Combined |
-|-----------|-------|----------|----------|
-| Simple Number (42) | 5.36x | 17.88x | 17.87x |
-| Simple Boolean (true) | 5.85x | 19.66x | 18.92x |
-| Array Creation [1,2,3,4,5] | 10.91x | 28.54x | 13.72x |
-| Map Creation {"foo": 1, ...} | 6.69x | 21.80x | 9.28x |
-| Property Access (user.name) | 2.70x | 10.28x | 4.23x |
-| Complex Logic | 2.24x | 11.47x | 2.21x |
-| Authorization Check | 1.63x | 5.88x | 2.16x |
-| List Comprehension | 2.29x | 7.46x | 3.59x |
-
-#### Feature Advantages
-@marcbachmann/cel-js supports features not available in cel-js:
-- ✅ String methods (`startsWith`, `endsWith`, `contains`, `matches`)
-- ✅ Macros (`has`, `all`, `exists`, `exists_one`, `map`, `filter`)
-- ✅ Type functions (`string`, `bytes`, `timestamp`, `size`)
-- ✅ Bytes literals and operations
-- ✅ Raw strings and escape sequences
-- ✅ Triple-quoted strings
-
-### Running Benchmarks
-
-```bash
-# Performance benchmark
-npm run benchmark
-
-# Memory usage benchmark
-npm run benchmark:memory
-
-# With detailed GC stats
-node --expose-gc benchmark/memory.js
+const result: any = env.evaluate('double(count)', {count: 21n})
 ```
-
-**Test Environment**: Node.js v24.6.0 on Darwin ARM64 (Apple Silicon)
-**Benchmark Configuration**: 10,000 iterations each for parsing and evaluation, with 5,000 warmup iterations
-
-See the [benchmark directory](./benchmark/README.md) for detailed benchmark documentation and results.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-### Development
+Contributions welcome! Please open an issue before submitting major changes.
 
 ```bash
 # Run tests
 npm test
 
-# Run tests in watch mode
-npm run test:watch
-
 # Run benchmarks
 npm run benchmark
 
-# Run memory benchmarks
-npm run benchmark:memory
+# Run in watch mode
+npm run test:watch
 ```
 
 ## License
@@ -486,10 +400,5 @@ MIT © Marc Bachmann
 
 ## See Also
 
-- [CEL Specification](https://github.com/google/cel-spec) - The official CEL specification
-- [CEL C++ Implementation](https://github.com/google/cel-cpp) - Google's C++ implementation
-- [CEL Go Implementation](https://github.com/google/cel-go) - Google's Go implementation
-
-## Acknowledgments
-
-This implementation follows the CEL specification created by Google. CEL was designed to be simple, fast, and safe for expression evaluation in various contexts including security policies, protocols, and configurations.
+- [CEL Specification](https://github.com/google/cel-spec)
+- [CEL Go Implementation](https://github.com/google/cel-go)
