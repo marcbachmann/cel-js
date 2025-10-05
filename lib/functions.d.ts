@@ -10,19 +10,13 @@ export class UnsignedInt {
    */
   constructor(value: bigint | number)
 
-  /**
-   * Get the bigint value.
-   */
+  /** Get the bigint value. */
   get value(): bigint
 
-  /**
-   * Convert to primitive bigint for operations.
-   */
+  /** Convert to primitive bigint for operations. */
   valueOf(): bigint
 
-  /**
-   * Convert to string representation.
-   */
+  /** Convert to string representation. */
   toString(): string
 }
 
@@ -38,23 +32,25 @@ export class Duration {
    */
   constructor(seconds: bigint | number, nanos?: number)
 
-  /**
-   * Get the seconds component.
-   */
+  /** Get the seconds component. */
   get seconds(): bigint
 
-  /**
-   * Get the nanoseconds component.
-   */
+  /** Get the nanoseconds component. */
   get nanos(): number
 
-  /**
-   * Convert to primitive bigint (seconds only) for operations.
-   */
+  /** Convert to primitive bigint (seconds only) for operations. */
   valueOf(): bigint
 
-  /**
-   * Convert to string representation in format like "5s", "1h30m", etc.
-   */
+  /** Convert to string representation in format like "5s", "1h30m", etc. */
   toString(): string
 }
+
+/**
+ * Get a value from an object, array, or Map.
+ * @param obj - The object, array, or Map to get from
+ * @param key - The key or index to get
+ * @returns The value at the key, or undefined if not found
+ */
+export function objectGet(obj: any, key: any): any
+
+export {Type, TYPES} from './registry.js'

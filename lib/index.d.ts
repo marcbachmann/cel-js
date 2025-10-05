@@ -2,7 +2,14 @@
  * Represents a CEL expression AST node.
  * Can be a primitive value or an array representing an operation.
  */
-export type ASTNode = null | boolean | number | string | Uint8Array | [string, ...ASTNode[]]
+export type ASTNode =
+  | null
+  | boolean
+  | number
+  | bigint
+  | string
+  | Uint8Array
+  | [string, ...ASTNode[]]
 
 /**
  * Context object for variable resolution during evaluation.
@@ -32,7 +39,7 @@ export interface TypeCheckResult {
 }
 
 export type ParseResult = {
-  (context?: Context, functions?: Functions): any
+  (context?: Context, /** @deprecated Use Environment class instead */ functions?: Functions): any
   /** The parsed AST */
   ast: ASTNode
   /** Type check the expression without evaluating it */
@@ -104,7 +111,11 @@ export function parse(expression: string): ParseResult
  * const result3 = env.evaluate('double(5)'); // 10n
  * ```
  */
-export function evaluate(expression: string, context?: Context, /**@deprecated Use Environment class instead */ functions?: Functions): any
+export function evaluate(
+  expression: string,
+  context?: Context,
+  /**@deprecated Use Environment class instead */ functions?: Functions
+): any
 
 /**
  * Serialize an AST back to a CEL expression string.
