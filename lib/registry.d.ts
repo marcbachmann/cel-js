@@ -46,9 +46,15 @@ export interface Registry {
   /**
    * Register a function overload.
    * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
-   * @param handler - The function implementation
+   * @param handlerOrOptions - Either the function implementation or an options object with handler and optional typeCheck
    */
-  registerFunctionOverload(signature: string, handler: (...args: any[]) => any): void
+  registerFunctionOverload(
+    signature: string,
+    handlerOrOptions: ((...args: any[]) => any) | {
+      handler: (...args: any[]) => any
+      typeCheck?: (checker: any, receiverType: string, args: any[]) => string
+    }
+  ): void
 
   /**
    * Register an operator overload.

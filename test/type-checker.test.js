@@ -638,34 +638,24 @@ describe('Type Checker', () => {
       .registerVariable('doubleIndex', 'double')
       .registerVariable('stringIndex', 'string')
 
-    // Valid: int and uint indices
     assert.strictEqual(env.check('list[0]').valid, true)
     assert.strictEqual(env.check('list[intIndex]').valid, true)
-    assert.strictEqual(env.check('list[uintIndex]').valid, true)
 
-    // Invalid: double index
-    const result1 = env.check('list[doubleIndex]')
-    assert.strictEqual(result1.valid, false)
-    assert.ok(result1.error.message.includes('List index must be int or uint'))
-
-    // Invalid: string index
-    const result2 = env.check('list[stringIndex]')
-    assert.strictEqual(result2.valid, false)
-    assert.ok(result2.error.message.includes('List index must be int or uint'))
-
-    // Invalid: double literal
-    const result3 = env.check('list[1.5]')
-    assert.strictEqual(result3.valid, false)
-    assert.ok(result3.error.message.includes('List index must be int or uint'))
+    for (const t of ['uintIndex', '0u', 'doubleIndex', '1.5', 'stringIndex', '"0"']) {
+      const result = env.check(`list[${t}]`)
+      assert.strictEqual(result.valid, false)
+      assert.ok(result.error.message.includes('List index must be int'))
+    }
   })
 
   test('list index with dynamic variable', () => {
-    const env = new Environment({unlistedVariablesAreDyn: true}).registerVariable('list', 'list')
+    const env = new Environment().registerVariable('list', 'list').registerVariable('dynVar', 'dyn')
 
-    // Dynamic variable is allowed as index (runtime will check)
-    const result = env.check('list[unknownVar]')
-    assert.strictEqual(result.valid, true)
-    assert.strictEqual(result.type, 'dyn')
+    for (const t of ['dynVar', 'dyn(0u)', 'dyn(0.0)', 'dyn("0")']) {
+      const result = env.check(`list[${t}]`)
+      assert.strictEqual(result.valid, true)
+      assert.strictEqual(result.type, 'dyn')
+    }
   })
 
   test('map index access', () => {
@@ -689,14 +679,16 @@ describe('Type Checker', () => {
       .registerVariable('list', 'list')
       .registerVariable('num', 'int')
 
-    // Property access allowed on maps and lists
+    // Property access allowed on maps
     assert.strictEqual(env.check('map.property').valid, true)
-    assert.strictEqual(env.check('list.size').valid, true)
+
+    // Property access not allowed on lists (only numeric indexing works)
+    assert.strictEqual(env.check('list.size').valid, false)
 
     // Property access not allowed on primitives
     const result = env.check('num.property')
     assert.strictEqual(result.valid, false)
-    assert.ok(result.error.message.includes('Cannot access property on type'))
+    assert.ok(result.error.message.includes('Cannot index type'))
   })
 
   test('string indexing not supported', () => {

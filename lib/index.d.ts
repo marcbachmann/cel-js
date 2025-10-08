@@ -203,7 +203,7 @@ export class Environment {
    * Register a custom function or method.
    *
    * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
-   * @param handler - The function implementation
+   * @param handlerOrOptions - Either the function implementation or an options object with handler and optional typeCheck
    * @returns This environment for chaining
    *
    * @example
@@ -213,9 +213,21 @@ export class Environment {
    *
    * // Instance method
    * env.registerFunction('string.reverse(): string', (str) => str.split('').reverse().join(''))
+   *
+   * // Macro function with type checker
+   * env.registerFunction('list.custom(ast, ast): bool', {
+   *   handler: (receiver, ast) => { ... },
+   *   typeCheck: (checker, receiverType, args) => 'bool'
+   * })
    * ```
    */
-  registerFunction(signature: string, handler: (...args: any[]) => any): this
+  registerFunction(
+    signature: string,
+    handlerOrOptions: ((...args: any[]) => any) | {
+      handler: (...args: any[]) => any
+      typeCheck?: (checker: any, receiverType: string, args: any[]) => string
+    }
+  ): this
 
   /**
    * Register a custom operator overload.
