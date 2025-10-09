@@ -14,8 +14,8 @@ CEL (Common Expression Language) is a non-Turing complete language designed for 
 - 🚀 **Zero Dependencies** - No external packages required
 - ⚡ **High Performance** - Up to 22x faster evaluation, 3x faster parsing than alternatives
 - 📦 **ES Modules** - Modern ESM with full tree-shaking support
-- 🔒 **Type Safe** - Environment API with type checking for variables and custom functions
-- 🎯 **Most of the CEL Spec** - Including macros, type functions, and operators
+- 🔒 **Type Safe** - Environment API with type checking for variables, custom types and functions
+- 🎯 **Most of the CEL Spec** - Including macros, custom functions and types, input variables, and all operators (except optional chaining)
 - 📘 **TypeScript Support** - Full type definitions included
 
 ## Installation

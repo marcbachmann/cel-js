@@ -161,10 +161,45 @@ describe('built-in functions', () => {
 
     describe('timestamp function', () => {
       test('should parse valid RFC 3339 timestamp', (t) => {
-        t.assert.strictEqual(
-          evaluate(`timestamp(christmasTs) == timestamp(christmasTs)`, context),
-          true
+        t.assert.deepEqual(evaluate(`timestamp(christmasTs)`, context), christmas)
+        t.assert.deepEqual(
+          evaluate(`timestamp('9999-12-31T23:59:59.999Z')`, context),
+          new Date('9999-12-31T23:59:59.999Z')
         )
+        t.assert.deepEqual(
+          evaluate(`timestamp('0001-01-01T00:00:00Z')`, context),
+          new Date('0001-01-01T00:00:00Z')
+        )
+      })
+
+      test('allows integer unix timestamps', (t) => {
+        t.assert.deepEqual(evaluate(`timestamp(0)`, context), new Date(0))
+        t.assert.deepEqual(evaluate(`timestamp(1703507445)`, context), new Date(1703507445000))
+
+        t.assert.deepEqual(
+          evaluate(`timestamp(253402300799)`, context),
+          new Date('9999-12-31T23:59:59Z')
+        )
+        t.assert.deepEqual(
+          evaluate(`timestamp(-62135596800)`, context),
+          new Date('0001-01-01T00:00:00Z')
+        )
+      })
+
+      test('errors with too large dates (+-1)', (t) => {
+        const intErr = /requires a valid integer unix timestamp/
+        t.assert.throws(() => evaluate(`timestamp(253402300800)`, context), intErr)
+        t.assert.throws(() => evaluate(`timestamp(-62135596801)`, context), intErr)
+
+        const dateErr = /requires a string in ISO 8601 format/
+        t.assert.throws(() => evaluate(`timestamp('10000-01-01T00:00:00Z')`, context), dateErr)
+        t.assert.throws(() => evaluate(`timestamp('0000-01-01T00:00:00Z')`, context), dateErr)
+      })
+
+      test('supports equality operator', (t) => {
+        t.assert.strictEqual(evaluate(`timestamp(0) == timestamp(0)`, context), true)
+        t.assert.strictEqual(evaluate(`timestamp(100) == timestamp(100)`, context), true)
+        t.assert.strictEqual(evaluate(`timestamp(0) == timestamp(100)`, context), false)
       })
     })
 
