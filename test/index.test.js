@@ -84,4 +84,15 @@ describe('CEL Implementation Integration Tests', () => {
     // Should be reasonably fast (less than 100ms for 1000 evaluations)
     t.assert.strictEqual(time < 1000, true, 'Performance test failed - took too long')
   })
+
+  test('supports legacy argument format with functions', (t) => {
+    const context = {a: 5, b: 15}
+    const functions = {
+      max: (x, y) => (x > y ? x : y),
+      min: (x, y) => (x < y ? x : y)
+    }
+
+    t.assert.strictEqual(parse('max(a, b) == 15.0')(context, functions), true)
+    t.assert.strictEqual(evaluate('min(a, b) == 5.0', context, functions), true)
+  })
 })
