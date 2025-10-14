@@ -71,13 +71,15 @@ describe('Type Checker', () => {
     // They would require runtime type coercion
     const result1 = env.check('x + a')
     assert.strictEqual(result1.valid, false)
-    assert.match(result1.error.message, /Operator '\+' not defined/)
+    assert.match(result1.error.message, /no such overload: int \+ double/)
 
     const result2 = env.check('a + x')
     assert.strictEqual(result2.valid, false)
+    assert.match(result2.error.message, /no such overload: double \+ int/)
 
     const result3 = env.check('x * a')
     assert.strictEqual(result3.valid, false)
+    assert.match(result3.error.message, /no such overload: int \* double/)
   })
 
   test('string concatenation', () => {
@@ -106,7 +108,7 @@ describe('Type Checker', () => {
     const result = env.check('str + num')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
-    assert.match(result.error.message, /Operator '\+' not defined/)
+    assert.match(result.error.message, /no such overload: string \+ int/)
   })
 
   test('comparison operators', () => {
@@ -233,7 +235,7 @@ describe('Type Checker', () => {
     // Use .contains() method instead
     const result = env.check('substr in str')
     assert.strictEqual(result.valid, false)
-    assert.match(result.error.message, /Operator 'in' not defined/)
+    assert.match(result.error.message, /no such overload: string in string/)
 
     // This is the correct way:
     const result2 = env.check('str.contains(substr)')
@@ -477,7 +479,7 @@ describe('Type Checker', () => {
     const result = env.check('-str')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
-    assert.match(result.error.message, /Unary operator '-' not defined for type/)
+    assert.match(result.error.message, /no such overload: -string/)
   })
 
   test('dynamic type (dyn)', () => {
@@ -605,7 +607,7 @@ describe('Type Checker', () => {
     // Cross-type equality is NOT supported (no overload for string == int)
     const result = env.check('str == num')
     assert.strictEqual(result.valid, false)
-    assert.match(result.error.message, /Operator '==' not defined/)
+    assert.match(result.error.message, /no such overload: string == int/)
   })
 
   test('parse errors are caught', () => {
