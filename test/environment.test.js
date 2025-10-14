@@ -1,6 +1,6 @@
 import {describe, test} from 'node:test'
 import assert from 'node:assert'
-import {Environment, EvaluationError} from '../lib/evaluator.js'
+import {Environment, ParseError, EvaluationError} from '../lib/evaluator.js'
 
 describe('Environment', () => {
   test('basic usage', () => {
@@ -123,7 +123,7 @@ describe('Environment', () => {
     t.assert.strictEqual(env.evaluate('convert(42)'), '42')
     t.assert.strictEqual(env.evaluate('convert(1.1)'), '1.1')
     t.assert.strictEqual(env.evaluate('convert(1)'), '1')
-    t.assert.throws(() => env.evaluate('convert("foo", ")'), EvaluationError)
+    t.assert.throws(() => env.evaluate('convert("foo", ")'), ParseError)
     t.assert.throws(() => env.evaluate('convert("foo", "bar")'), EvaluationError)
   })
 

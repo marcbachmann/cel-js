@@ -92,22 +92,22 @@ describe('integer literals', () => {
 describe('integer parsing edge cases', () => {
   test('should throw error for invalid hex numbers', (t) => {
     t.assert.throws(() => evaluate('0x'), {
-      name: 'EvaluationError',
+      name: 'ParseError',
       message: /Invalid hex integer/
     })
     t.assert.throws(() => evaluate('0X'), {
-      name: 'EvaluationError',
+      name: 'ParseError',
       message: /Invalid hex integer/
     })
   })
 
   test('should throw error for incomplete hex numbers', (t) => {
     t.assert.throws(() => evaluate('0xg'), {
-      name: 'EvaluationError',
+      name: 'ParseError',
       message: /Invalid hex integer/
     })
     t.assert.throws(() => evaluate('0Xz'), {
-      name: 'EvaluationError',
+      name: 'ParseError',
       message: /Invalid hex integer/
     })
   })
