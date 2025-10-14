@@ -245,7 +245,7 @@ describe('Environment', () => {
     const checkResult = parsed.check()
     assert.strictEqual(checkResult.valid, false)
     assert.ok(checkResult.error)
-    assert.ok(checkResult.error.message.includes('not defined'))
+    assert.ok(checkResult.error.message.includes('no such overload'))
   })
 
   test('duplicate variable registration throws', () => {
