@@ -95,7 +95,7 @@ describe('Custom Type Registration', () => {
 
   test('type checking', () => {
     const env = new Environment()
-      .registerType('Point', Point)
+      .registerType('Point', {ctor: Point, fields: {x: 'int', y: 'int'}})
       .registerType('Vector', Vector)
       .registerVariable('p1', 'Point')
 
@@ -117,6 +117,67 @@ describe('Custom Type Registration', () => {
         message: /Variable 'p1' is not of type 'Point'/
       }
     )
+  })
+
+  test('field restrictions', () => {
+    class User {
+      constructor(name, age, password) {
+        this.name = name
+        this.age = age
+        this.password = password
+        this.secretField = 'secret'
+      }
+    }
+
+    const env = new Environment()
+      .registerType('User', {ctor: User, fields: {name: 'string', age: 'int'}})
+      .registerVariable('user', 'User')
+
+    const context = {user: new User('Alice', 30n, 'secret123')}
+
+    assert.strictEqual(env.evaluate('user.name', context), 'Alice')
+    assert.strictEqual(env.evaluate('user.age', context), 30n)
+
+    assert.throws(() => env.evaluate('user.password', context), /No such key: password/)
+    assert.throws(() => env.evaluate('user.secretField', context), /No such key: secretField/)
+  })
+
+  test('no field restrictions when fields not specified', () => {
+    class Config {
+      constructor(data) {
+        this.option1 = data.option1
+        this.option2 = data.option2
+        this.option3 = data.option3
+      }
+    }
+
+    const env = new Environment()
+      .registerType('Config', Config)
+      .registerVariable('config', 'Config')
+
+    const context = {
+      config: new Config({option1: 'a', option2: 'b', option3: 'c'})
+    }
+
+    assert.strictEqual(env.evaluate('config.option1', context), 'a')
+    assert.strictEqual(env.evaluate('config.option2', context), 'b')
+    assert.strictEqual(env.evaluate('config.option3', context), 'c')
+    assert.throws(() => env.evaluate('config.option4', context), /No such key: option4/)
+  })
+
+  test('empty fields object denies all access', () => {
+    class Private {
+      constructor(value) {
+        this.value = value
+      }
+    }
+
+    const env = new Environment()
+      .registerType('Private', {ctor: Private, fields: {}})
+      .registerVariable('priv', 'Private')
+
+    const context = {priv: new Private(42)}
+    assert.throws(() => env.evaluate('priv.value', context), /No such key: value/)
   })
 
   test('mixed with built-in types', () => {
@@ -212,20 +273,11 @@ describe('Custom Type Registration', () => {
 
   test('error handling', () => {
     const env = new Environment().registerType('Vector', Vector).registerVariable('vec', 'Vector')
+    const context = {vec: new Vector(1, 2)}
 
-    const context = {
-      vec: new Vector(1, 2)
-    }
-
-    // Should throw error for unsupported operation
     assert.throws(
-      () => {
-        env.evaluate('vec * "invalid"', context)
-      },
-      {
-        name: 'EvaluationError',
-        message: /no such overload: Vector \* string/
-      }
+      () => env.evaluate('vec * "invalid"', context),
+      /no such overload: Vector \* string/
     )
   })
 
@@ -281,7 +333,7 @@ describe('Custom Type Registration', () => {
 
     const env = new Environment()
       .registerType('Vector', Vector)
-      .registerType('Container', Container)
+      .registerType('Container', {ctor: Container, fields: {items: 'list<Vector>'}})
       .registerVariable('container', 'Container')
       .registerOperator('Vector + Vector', (a, b) => a.add(b))
 
@@ -352,7 +404,7 @@ describe('Custom Type Registration', () => {
 
   test('type checking with wrong constructor', () => {
     const env = new Environment()
-      .registerType('Vector', Vector)
+      .registerType('Vector', {ctor: Vector, fields: {x: 'double', y: 'double'}})
       .registerType('Point', Point)
       .registerVariable('vec', 'Vector')
 

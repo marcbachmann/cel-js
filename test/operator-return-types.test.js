@@ -96,8 +96,7 @@ describe('Operator return types', () => {
     assert.strictEqual(result.type, 'Complex')
 
     // Verify at runtime
-    const c = new Complex(3, 4)
-    const negated = env.evaluate('-c', {c})
+    const negated = env.evaluate('-c', {c: new Complex(3, 4)})
     assert.strictEqual(negated.real, -3)
     assert.strictEqual(negated.imag, -4)
   })

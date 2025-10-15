@@ -3,37 +3,17 @@ import {evaluate, parse} from '../lib/index.js'
 
 describe('operator precedence', () => {
   test('ternary should have lower precedence than logical AND', (t) => {
-    // This should parse as: (true && false) ? "wrong" : "right"
-    // Not as: true && (false ? "wrong" : "right")
-    const result = evaluate('true && false ? "wrong" : "right"')
-    t.assert.strictEqual(result, 'right')
+    t.assert.strictEqual(evaluate('true && false ? "wrong" : "right"'), 'right')
   })
 
   test('ternary should have lower precedence than logical OR', (t) => {
-    // This should parse as: (false || true) ? "right" : "wrong"
-    const result = evaluate('false || true ? "right" : "wrong"')
-    t.assert.strictEqual(result, 'right')
+    t.assert.strictEqual(evaluate('false || true ? "right" : "wrong"'), 'right')
   })
 
   test('ternary should be right-associative', (t) => {
-    // This should parse as: a ? (b ? "ab" : "a") : "none"
-    const result = evaluate(`a ? b ? "ab" : "a" : "none"`, {
-      a: true,
-      b: true
-    })
-    t.assert.strictEqual(result, 'ab')
-
-    const result2 = evaluate(`a ? b ? "ab" : "a" : "none"`, {
-      a: true,
-      b: false
-    })
-    t.assert.strictEqual(result2, 'a')
-
-    const result3 = evaluate(`a ? b ? "ab" : "a" : "none"`, {
-      a: false,
-      b: true
-    })
-    t.assert.strictEqual(result3, 'none')
+    t.assert.strictEqual(evaluate(`a ? b ? "ab" : "a" : "none"`, {a: true, b: true}), 'ab')
+    t.assert.strictEqual(evaluate(`a ? b ? "ab" : "a" : "none"`, {a: true, b: false}), 'a')
+    t.assert.strictEqual(evaluate(`a ? b ? "ab" : "a" : "none"`, {a: false, b: true}), 'none')
   })
 
   test('complex expression with correct precedence', (t) => {
@@ -59,35 +39,16 @@ describe('operator precedence', () => {
     const result = evaluate(expression, context)
     t.assert.strictEqual(result, 'allowed')
 
-    // Test when condition is false
-    const contextFalse = {
-      ...context,
-      user: {...context.user, isActive: false}
-    }
-
-    const result2 = evaluate(expression, contextFalse)
+    const result2 = evaluate(expression, {...context, user: {...context.user, isActive: false}})
     t.assert.strictEqual(result2, 'denied')
   })
 
   test('ternary AST structure should be correct', (t) => {
     const parsed = parse('a && b ? "yes" : "no"')
-
-    // Should be: ["?:", ["&&", ["id", "a"], ["id", "b"]], "yes", "no"]
-    const ast = parsed.ast
-    t.assert.strictEqual(ast[0], '?:')
-    t.assert.strictEqual(ast[2], 'yes')
-    t.assert.strictEqual(ast[3], 'no')
-
-    // The condition should be an AND operation
-    const condition = ast[1]
-    t.assert.strictEqual(condition[0], '&&')
-    t.assert.deepStrictEqual(condition[1], ['id', 'a'])
-    t.assert.deepStrictEqual(condition[2], ['id', 'b'])
+    t.assert.deepEqual(parsed.ast, ['?:', ['&&', ['id', 'a'], ['id', 'b']], 'yes', 'no'])
   })
 
   test('arithmetic precedence in ternary', (t) => {
-    // Should parse as: ((1 + (2 * 3)) > 5) ? "big" : "small"
-    const result = evaluate('1 + 2 * 3 > 5 ? "big" : "small"')
-    t.assert.strictEqual(result, 'big')
+    t.assert.strictEqual(evaluate('1 + 2 * 3 > 5 ? "big" : "small"'), 'big')
   })
 })

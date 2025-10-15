@@ -223,10 +223,12 @@ export class Environment {
    */
   registerFunction(
     signature: string,
-    handlerOrOptions: ((...args: any[]) => any) | {
-      handler: (...args: any[]) => any
-      typeCheck?: (checker: any, receiverType: string, args: any[]) => string
-    }
+    handlerOrOptions:
+      | ((...args: any[]) => any)
+      | {
+          handler: (...args: any[]) => any
+          typeCheck?: (checker: any, receiverType: string, args: any[]) => string
+        }
   ): this
 
   /**
