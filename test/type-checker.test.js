@@ -272,7 +272,7 @@ describe('Type Checker', () => {
     const result = env.check('num.startsWith("test")')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
-    assert.match(result.error.message, /Method not found/)
+    assert.match(result.error.message, /Function not found: 'startsWith'/)
   })
 
   test('custom function', () => {
@@ -293,7 +293,7 @@ describe('Type Checker', () => {
     const result = env.check('myDouble(str)')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
-    assert.match(result.error.message, /No matching overload/)
+    assert.match(result.error.message, /found no matching overload/)
   })
 
   test('unknown function', () => {

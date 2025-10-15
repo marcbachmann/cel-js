@@ -93,21 +93,8 @@ describe('Environment', () => {
   test('error handling with context', () => {
     const env = new Environment().registerVariable('x', 'int')
 
-    // Test undefined variable
-    assert.throws(
-      () => {
-        env.evaluate('y + 1', {x: 5n})
-      },
-      {
-        name: 'EvaluationError',
-        message: /Unknown variable: y/
-      }
-    )
-
-    // Test type mismatch
-    assert.throws(() => {
-      env.evaluate('x + 1', {x: 'not a number'})
-    }, EvaluationError)
+    assert.throws(() => env.evaluate('y + 1', {x: 5n}), /Unknown variable: y/)
+    assert.throws(() => env.evaluate('x + 1', {x: 'not a number'}), EvaluationError)
   })
 
   test('function overloads', (t) => {
@@ -124,7 +111,7 @@ describe('Environment', () => {
     t.assert.strictEqual(env.evaluate('convert(1.1)'), '1.1')
     t.assert.strictEqual(env.evaluate('convert(1)'), '1')
     t.assert.throws(() => env.evaluate('convert("foo", ")'), ParseError)
-    t.assert.throws(() => env.evaluate('convert("foo", "bar")'), EvaluationError)
+    t.assert.throws(() => env.evaluate('convert("foo", "bar")'), /found no matching overload/)
   })
 
   test('inheritance from global functions', () => {
