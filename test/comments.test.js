@@ -48,6 +48,6 @@ describe('comments', () => {
   test('should parse expressions with comments successfully', (t) => {
     const result = parse('42 // Ultimate answer')
     t.assert.strictEqual(typeof result, 'function')
-    t.assert.strictEqual(result.ast, 42n)
+    t.assert.deepEqual(result.ast, ['value', 42n])
   })
 })

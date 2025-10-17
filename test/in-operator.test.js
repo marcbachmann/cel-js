@@ -88,14 +88,17 @@ describe('in operator and membership tests', () => {
   describe('edge cases', () => {
     test('should handle nested arrays', (t) => {
       t.assert.strictEqual(evaluate('[1, 2] in [[1, 2], [3, 4]]'), true)
+      t.assert.strictEqual(evaluate('[1] in [[1, 2], [3, 4]]'), false)
     })
 
     test('should handle null values', (t) => {
       t.assert.strictEqual(evaluate('null in [null, 1, 2]'), true)
+      t.assert.strictEqual(evaluate('null in [[null], 1, 2]'), false)
     })
 
     test('should handle boolean values', (t) => {
       t.assert.strictEqual(evaluate('true in [true, false]'), true)
+      t.assert.strictEqual(evaluate('true in [[true], false]'), false)
     })
   })
 })
