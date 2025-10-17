@@ -45,7 +45,12 @@ describe('operator precedence', () => {
 
   test('ternary AST structure should be correct', (t) => {
     const parsed = parse('a && b ? "yes" : "no"')
-    t.assert.deepEqual(parsed.ast, ['?:', ['&&', ['id', 'a'], ['id', 'b']], 'yes', 'no'])
+    t.assert.deepEqual(parsed.ast, [
+      '?:',
+      ['&&', ['id', 'a'], ['id', 'b']],
+      ['value', 'yes'],
+      ['value', 'no']
+    ])
   })
 
   test('arithmetic precedence in ternary', (t) => {
