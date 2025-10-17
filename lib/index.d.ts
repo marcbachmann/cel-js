@@ -1,15 +1,28 @@
 /**
  * Represents a CEL expression AST node.
- * Can be a primitive value or an array representing an operation.
+ * An array-like object with position tracking that represents an operation or value.
+ * Format: [operator, ...operands] where operator is a string like 'value', '+', 'call', etc.
+ *
+ * Special node types:
+ * - ['value', primitiveValue] - Wraps literal values (string, number, bigint, boolean, null, Uint8Array)
+ * - ['id', name] - Variable reference
+ * - ['+', left, right] - Binary operation
+ * - ['call', name, args] - Function call
+ * - ['rcall', name, receiver, args] - Method call
+ * - ['.', object, property] - Property access
+ * - ['[]', object, index] - Index access
+ * - ['?:', condition, consequent, alternate] - Ternary
+ * - ['list', elements] - Array literal
+ * - ['map', entries] - Object literal
  */
-export type ASTNode =
-  | null
-  | boolean
-  | number
-  | bigint
-  | string
-  | Uint8Array
-  | [string, ...ASTNode[]]
+export interface ASTNode extends Array<any> {
+  /** The position in the source string where this node starts */
+  readonly pos: number
+  /** The original input string being parsed */
+  readonly input: string
+  /** The operator/node type as the first element */
+  0: string
+}
 
 /**
  * Context object for variable resolution during evaluation.

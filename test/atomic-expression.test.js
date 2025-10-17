@@ -29,18 +29,18 @@ describe('atomic expressions', () => {
   test('should parse successfully', (t) => {
     const result = parse('42')
     t.assert.strictEqual(typeof result, 'function')
-    t.assert.strictEqual(result.ast, 42n)
+    t.assert.deepEqual(result.ast, ['value', 42n])
   })
 
   test('should parse string successfully', (t) => {
     const result = parse('"hello"')
     t.assert.strictEqual(typeof result, 'function')
-    t.assert.strictEqual(result.ast, 'hello')
+    t.assert.deepEqual(result.ast, ['value', 'hello'])
   })
 
   test('should parse boolean successfully', (t) => {
     const result = parse('true')
     t.assert.strictEqual(typeof result, 'function')
-    t.assert.strictEqual(result.ast, true)
+    t.assert.deepEqual(result.ast, ['value', true])
   })
 })
