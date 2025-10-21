@@ -588,7 +588,7 @@ describe('Type Checker', () => {
 
   test('complex nested validation', () => {
     const env = new Environment()
-      .registerVariable('users', 'list')
+      .registerVariable('users', 'list<map<string, dyn>>')
       .registerVariable('minAge', 'int')
 
     // Complex expression with macros and comparisons

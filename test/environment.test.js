@@ -55,7 +55,6 @@ describe('Environment', () => {
       .registerVariable('x', 'int')
       .registerVariable('y', 'int')
       .registerFunction('add(double, double): double', (a, b) => a + b)
-      .registerType('Point', {x: 'int', y: 'int'})
 
     assert.ok(env instanceof Environment)
     assert.ok(env.hasVariable('x'))
