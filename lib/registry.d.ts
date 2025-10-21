@@ -16,6 +16,49 @@ export class Type {
 }
 
 /**
+ * Represents a type declaration with metadata about its structure.
+ */
+export class TypeDeclaration {
+  /**
+   * Create a new type declaration.
+   * @param options - Type declaration options
+   */
+  constructor(options: {
+    kind?: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+    type: string
+    stringValue?: string
+    name?: string
+    keyType?: TypeDeclaration
+    valueType?: TypeDeclaration
+    values?: Record<string, bigint>
+  })
+
+  /** The kind of type (primitive, list, map, message, enum). */
+  kind?: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+
+  /** The type name. */
+  type: string
+
+  /** The message or enum type name. */
+  name?: string
+
+  /** For map types, the key type. */
+  keyType?: TypeDeclaration
+
+  /** For list and map types, the value type. */
+  valueType?: TypeDeclaration
+
+  /** For enum types, the enum values. */
+  values?: Record<string, bigint>
+
+  /** Check if this type is 'dyn' or 'bool'. */
+  isDynOrBool(): boolean
+
+  /** Convert to string representation. */
+  toString(): string
+}
+
+/**
  * Built-in CEL type constants.
  */
 export const TYPES: {
@@ -42,7 +85,13 @@ export const TYPES: {
 /**
  * Registry for managing function overloads, operator overloads, and type mappings.
  */
-export interface Registry {
+export class Registry {
+  /**
+   * Create a new registry instance.
+   * @param opts - Optional initial configuration
+   */
+  constructor(opts?: RegistryOptions)
+
   /**
    * Register a function overload.
    * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
@@ -62,6 +111,21 @@ export interface Registry {
    * @param handler - The operator implementation
    */
   registerOperatorOverload(signature: string, handler: (left: any, right: any) => any): void
+
+  /**
+   * Register a custom type with its constructor and optional field definitions.
+   * @param typename - The name of the type
+   * @param definition - Either a constructor function or an object with ctor and fields
+   * @param withoutDynRegistration - If true, skip automatic dyn() and type() function registration
+   */
+  registerType(typename: string, definition: Function | {ctor: Function, fields?: Record<string, any>}, withoutDynRegistration?: boolean): void
+
+  /**
+   * Get type declaration for a given type string.
+   * @param typename - The type name (e.g., 'string', 'list<int>', 'map<string, bool>')
+   * @returns The type declaration instance
+   */
+  getType(typename: string): TypeDeclaration
 
   /**
    * Register a unary operator overload.
@@ -95,16 +159,19 @@ export interface Registry {
   clone(): Registry
 
   /** The operator overload map. */
-  overloads: Record<string, any>
+  readonly overloads: Record<string, any>
 
   /** The function overload map. */
-  functions: Record<string, any>
+  readonly functions: Record<string, any>
 
   /** Map of type names to their constructor functions. */
-  objectTypes: Map<string, any>
+  readonly objectTypes: Map<string, any>
 
   /** Map of constructor functions to their type names. */
-  objectTypesByConstructor: Map<any, string>
+  readonly objectTypesByConstructor: Map<any, string>
+
+  /** Map of type names to their Type instances. */
+  readonly objectTypeInstances: Map<string, Type>
 }
 
 /**
