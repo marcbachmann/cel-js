@@ -50,6 +50,26 @@ describe('Environment', () => {
     assert.strictEqual(result1, 42n)
   })
 
+  test('custom dyn functions', () => {
+    const env = new Environment()
+      .registerFunction('length(dyn): int', (x) => x.length)
+      .registerFunction('run(dyn): dyn', (obj) => obj ?? 42)
+
+    // Dynamically typed arg
+    const result1 = env.evaluate('length("hello")')
+    assert.strictEqual(result1, 5)
+
+    const result2 = env.evaluate('length([1, 2, 3])')
+    assert.strictEqual(result2, 3)
+
+    // Dynamically typed arg and return values
+    const result3 = env.evaluate('run("hello")')
+    assert.strictEqual(result3, "hello")
+
+    const result4 = env.evaluate('run(null)')
+    assert.strictEqual(result4, 42)
+  })
+
   test('chaining methods', () => {
     const env = new Environment()
       .registerVariable('x', 'int')
