@@ -458,7 +458,7 @@ describe('built-in functions', () => {
         test('should throw error when called on non-string', (t) => {
           t.assert.throws(
             () => evaluate('(123).startsWith("1")'),
-            /Function not found: 'startsWith' for value of type 'int'/
+            /found no matching overload for 'int.startsWith/
           )
         })
 
@@ -484,19 +484,19 @@ describe('built-in functions', () => {
 
           t.assert.throws(
             () => evaluate('num.startsWith("1")', context),
-            /Function not found: 'startsWith' for value of type 'double'/
+            /found no matching overload for 'double.startsWith/
           )
           t.assert.throws(
             () => evaluate('boolean.startsWith("t")', context),
-            /Function not found: 'startsWith' for value of type 'bool'/
+            /found no matching overload for 'bool.startsWith/
           )
           t.assert.throws(
             () => evaluate('arr.startsWith("")', context),
-            /Function not found: 'startsWith' for value of type 'list'/
+            /found no matching overload for 'list.startsWith/
           )
           t.assert.throws(
             () => evaluate('obj.startsWith("")', context),
-            /Function not found: 'startsWith' for value of type 'map'/
+            /found no matching overload for 'map.startsWith/
           )
         })
       })
