@@ -272,7 +272,7 @@ describe('Type Checker', () => {
     const result = env.check('num.startsWith("test")')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
-    assert.match(result.error.message, /Function not found: 'startsWith'/)
+    assert.match(result.error.message, /found no matching overload/)
   })
 
   test('custom function', () => {

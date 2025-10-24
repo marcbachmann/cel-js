@@ -121,7 +121,7 @@ describe('macros', () => {
     }
 
     test('is not supported on non-maps or lists', (t) => {
-      const err = /Function not found: 'all' for value of type/
+      const err = /Unknown variable: x/
       t.assert.throws(() => evaluate('(true).all(x, x > 0)', context), err)
       t.assert.throws(() => evaluate('"hello".all(x, x > 0)', context), err)
       t.assert.throws(() => evaluate('b"hello".all(x, x <= 5)', context), err)
@@ -162,7 +162,7 @@ describe('macros', () => {
       )
       t.assert.throws(
         () => evaluate('numbers.all(x)', context),
-        /found no matching overload for 'list.all\(ast\)'/
+        /Unknown variable: x/
       )
       t.assert.throws(
         () => evaluate('numbers.all(x > 0, y < 10)', context),
@@ -173,12 +173,12 @@ describe('macros', () => {
     test('should throw with non-list argument', (t) => {
       t.assert.throws(
         () => evaluate('42.all(x, x > 0)', context),
-        /Function not found: 'all' for value of type 'int'/
+        /Unknown variable: x/
       )
 
       t.assert.throws(
         () => evaluate('"string".all(x, x > 0)', context),
-        /Function not found: 'all' for value of type 'string'/
+        /Unknown variable: x/
       )
     })
 
@@ -242,7 +242,7 @@ describe('macros', () => {
       )
       t.assert.throws(
         () => evaluate('numbers.exists(x)', context),
-        /found no matching overload for 'list.exists\(ast\)/
+        /Unknown variable: x/
       )
     })
 
@@ -299,7 +299,7 @@ describe('macros', () => {
       )
       t.assert.throws(
         () => evaluate('numbers.exists_one(x)', context),
-        /found no matching overload for 'list.exists_one\(ast\)/
+        /Unknown variable: x/
       )
     })
 
@@ -382,12 +382,12 @@ describe('macros', () => {
       )
       t.assert.throws(
         () => evaluate('numbers.map(x)', context),
-        /found no matching overload for 'list.map\(ast\)'/
+        /Unknown variable: x/
       )
 
       t.assert.throws(
         () => evaluate('numbers.map(x, x, x, x)', context),
-        /found no matching overload for 'list.map\(ast, ast, ast, ast\)'/
+        /Unknown variable: x/
       )
     })
 
@@ -494,7 +494,7 @@ describe('macros', () => {
       )
       t.assert.throws(
         () => evaluate('numbers.filter(x)', context),
-        /found no matching overload for 'list.filter\(ast\)'/
+        /Unknown variable: x/
       )
     })
 
@@ -561,7 +561,7 @@ describe('macros', () => {
     test('should handle type errors in predicates', (t) => {
       t.assert.throws(
         () => evaluate('[1, 2].filter(s, s.startsWith("w"))'),
-        /Function not found: 'startsWith' for value of type 'int'/
+        /found no matching overload for 'int.startsWith/
       )
     })
   })
