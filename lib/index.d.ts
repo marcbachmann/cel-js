@@ -33,13 +33,6 @@ export interface Context {
 }
 
 /**
- * Map of custom function names to their implementations.
- */
-interface Functions {
-  [functionName: string]: ((...args: any[]) => any) | TypeMethods
-}
-
-/**
  * Result of type checking an expression.
  */
 export interface TypeCheckResult {
@@ -52,7 +45,7 @@ export interface TypeCheckResult {
 }
 
 export type ParseResult = {
-  (context?: Context, /** @deprecated Use Environment class instead */ functions?: Functions): any
+  (context?: Context): any
   /** The parsed AST */
   ast: ASTNode
   /** Type check the expression without evaluating it */
@@ -95,7 +88,7 @@ export class TypeError extends Error {
  * Parse a CEL expression string into an evaluable function.
  *
  * @param expression - The CEL expression string to parse
- * @returns A function that can be called with context and custom functions to evaluate the expression
+ * @returns A function that can be called with context to evaluate the expression
  *
  * @example
  * ```typescript
@@ -111,7 +104,6 @@ export function parse(expression: string): ParseResult
  *
  * @param expression - The CEL expression string to evaluate
  * @param context - Optional context object for variable resolution
- * @param functions - (Deprecated) Optional custom functions. Use Environment class instead for custom functions.
  * @returns The result of evaluating the expression
  *
  * @example
@@ -120,15 +112,11 @@ export function parse(expression: string): ParseResult
  * const result2 = evaluate('user.name', { user: { name: 'Alice' } }); // 'Alice'
  *
  * // For custom functions, use Environment instead:
- * const env = new Environment().registerFunction('double(int): int', (x) => x * 2n)
- * const result3 = env.evaluate('double(5)'); // 10n
+ * const env = new Environment().registerFunction('multByTwo(int): int', (x) => x * 2n)
+ * const result3 = env.evaluate('multByTwo(5)'); // 10n
  * ```
  */
-export function evaluate(
-  expression: string,
-  context?: Context,
-  /**@deprecated Use Environment class instead */ functions?: Functions
-): any
+export function evaluate(expression: string, context?: Context): any
 
 /**
  * Serialize an AST back to a CEL expression string.
@@ -149,10 +137,6 @@ export function serialize(ast: ASTNode): string
  * Options for creating a new Environment.
  */
 export interface EnvironmentOptions {
-  /**
-   * Enable support for legacy function format.
-   */
-  supportLegacyFunctions?: boolean
   /**
    * When true, unlisted variables are treated as dynamic (dyn) type.
    * When false, all variables must be explicitly registered.

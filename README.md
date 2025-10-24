@@ -87,10 +87,7 @@ env.evaluate('"Hi" * 3') // "HiHiHi"
 ```javascript
 new Environment({
   // Treat undeclared variables as dynamic type
-  unlistedVariablesAreDyn: false,
-
-  // Support legacy function format (deprecated)
-  supportLegacyFunctions: false
+  unlistedVariablesAreDyn: false
 })
 ```
 

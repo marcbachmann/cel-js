@@ -85,14 +85,10 @@ describe('CEL Implementation Integration Tests', () => {
     t.assert.strictEqual(time < 1000, true, 'Performance test failed - took too long')
   })
 
-  test('supports legacy argument format with functions', (t) => {
-    const context = {a: 5, b: 15}
-    const functions = {
-      max: (x, y) => (x > y ? x : y),
-      min: (x, y) => (x < y ? x : y)
-    }
-
-    t.assert.strictEqual(parse('max(a, b) == 15.0')(context, functions), true)
-    t.assert.strictEqual(evaluate('min(a, b) == 5.0', context, functions), true)
+  test('does not supports legacy argument format with functions', (t) => {
+    const fns = {max: (_a, b) => b}
+    const err = /Function not found: 'max'/
+    t.assert.throws(() => evaluate('max(a, b) == 15.0', {a: 5, b: 15}, fns), err)
+    t.assert.throws(() => parse('max(a, b) == 15.0')({a: 5, b: 15}, fns), err)
   })
 })
