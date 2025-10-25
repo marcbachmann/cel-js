@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 
 // Examples demonstrating My CEL JS usage
-import {evaluate, parse} from './lib/index.js'
+import {evaluate, parse, Environment} from './lib/index.js'
 
 console.log('🚀 My CEL JS Examples\n')
 
@@ -64,17 +64,18 @@ const accessExpression = `
 `
 console.log('Access result:', evaluate(accessExpression, userContext))
 
-// Custom functions
-console.log('\n⚙️  Custom Functions:')
-const customFunctions = {
-  double: (x) => Number(x) * 2,
-  greet: (name) => `Hello, ${name}!`,
-  max: (a, b) => (a > b ? a : b)
-}
+// Custom functions using Environment API (recommended)
+console.log('\n⚙️  Custom Functions (Environment API):')
+const env = new Environment()
+  .registerVariable('user', 'map')
+  .registerVariable('x', 'int')
+  .registerFunction('multiplyByTwo(int): int', (x) => x * 2n)
+  .registerFunction('greet(string): string', (name) => `Hello, ${name}!`)
+  .registerFunction('max(int, int): int', (a, b) => (a > b ? a : b))
 
-console.log('double(5) =', evaluate('double(5)', {}, customFunctions))
-console.log('greet(user.name) =', evaluate('greet(user.name)', userContext, customFunctions))
-console.log('max(10, 20) =', evaluate('max(10, 20)', {}, customFunctions))
+console.log('multiplyByTwo(5) =', env.evaluate('multiplyByTwo(5)', {x: 5n}))
+console.log('greet(user.name) =', env.evaluate('greet(user.name)', userContext))
+console.log('max(10, 20) =', env.evaluate('max(10, 20)', {}))
 
 // Membership testing
 console.log('\n🔍 Membership Testing:')

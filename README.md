@@ -1,9 +1,8 @@
-# @marcbachmann/cel-js
+# @marcbachmann/cel-js [![npm version](https://img.shields.io/npm/v/@marcbachmann/cel-js.svg)](https://www.npmjs.com/package/@marcbachmann/cel-js) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A high-performance, zero-dependency implementation of the [Common Expression Language (CEL)](https://github.com/google/cel-spec) in JavaScript.
 
-[![npm version](https://img.shields.io/npm/v/@marcbachmann/cel-js.svg)](https://www.npmjs.com/package/@marcbachmann/cel-js)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+🚀 Use the [CEL JS Playground](https://playceljs.sksop.in/) to test expressions.
 
 ## Overview
 
@@ -57,6 +56,10 @@ evaluate('name + "!"', {name: 'Alice'}) // "Alice!"
 const expr = parse('user.age >= minAge')
 expr({user: {age: 25}, minAge: 18}) // true
 expr({user: {age: 16}, minAge: 18}) // false
+
+// Access parsed AST and type checking
+console.log(expr.ast)        // AST representation
+const typeCheck = expr.check() // Type check without evaluation
 ```
 
 ### Environment API (Recommended)
@@ -204,6 +207,7 @@ evaluate('string(123)')           // "123"
 evaluate('int("42")')             // 42n
 evaluate('double("3.14")')        // 3.14
 evaluate('bytes("hello")')        // Uint8Array
+evaluate('dyn(42)')               // Converts to dynamic type
 
 // Collections
 evaluate('size([1, 2, 3])')       // 3n
@@ -226,6 +230,51 @@ evaluate('"hello".startsWith("he")')        // true
 evaluate('"hello".endsWith("lo")')          // true
 evaluate('"hello".matches("h.*o")')         // true
 evaluate('"hello".size()')                  // 5n
+evaluate('"hello".indexOf("ll")')           // 2n
+evaluate('"hello world".indexOf("o", 5)')   // 7n (search from index 5)
+evaluate('"hello".lastIndexOf("l")')        // 3n
+evaluate('"hello".substring(1)')            // "ello"
+evaluate('"hello".substring(1, 4)')         // "ell"
+```
+
+### List Methods
+
+```javascript
+evaluate('[1, 2, 3].size()')                // 3n
+evaluate('["a", "b", "c"].join()')          // "abc"
+evaluate('["a", "b", "c"].join(", ")')      // "a, b, c"
+```
+
+### Bytes Methods
+
+```javascript
+evaluate('b"hello".size()')                 // 5n
+evaluate('b"hello".string()')               // "hello"
+evaluate('b"hello".hex()')                  // "68656c6c6f"
+evaluate('b"hello".base64()')               // "aGVsbG8="
+evaluate('b"{\\"x\\": 42}".json()')         // {x: 42n}
+evaluate('b"hello".at(0)')                  // 104n (byte value at index)
+```
+
+### Timestamp Methods
+
+All timestamp methods support an optional timezone parameter (e.g., `"America/New_York"`, `"UTC"`):
+
+```javascript
+const ctx = {t: new Date('2024-01-15T14:30:45.123Z')}
+
+evaluate('t.getFullYear()', ctx)            // 2024n
+evaluate('t.getMonth()', ctx)               // 0n (January, 0-indexed)
+evaluate('t.getDayOfMonth()', ctx)          // 15n
+evaluate('t.getDayOfWeek()', ctx)           // 1n (Monday, 0=Sunday)
+evaluate('t.getDayOfYear()', ctx)           // 15n
+evaluate('t.getHours()', ctx)               // 14n
+evaluate('t.getMinutes()', ctx)             // 30n
+evaluate('t.getSeconds()', ctx)             // 45n
+evaluate('t.getMilliseconds()', ctx)        // 123n
+
+// With timezone
+evaluate('t.getHours("America/New_York")', ctx)  // 9n (UTC-5)
 ```
 
 ### Macros
@@ -354,15 +403,16 @@ if (!result.valid && result.error instanceof TypeError) {
 ```javascript
 import {Environment} from '@marcbachmann/cel-js'
 
+// Instantiating an environment is expensive, please do that outside hot code paths
 const authEnv = new Environment()
   .registerVariable('user', 'map')
   .registerVariable('resource', 'map')
 
-const canEdit = authEnv.parse(
-  'user.isActive && ' +
-  '(user.role == "admin" || ' +
-  ' user.id == resource.ownerId)'
-)
+const canEdit = authEnv.parse(`
+  user.isActive &&
+  (user.role == "admin" ||
+  user.id == resource.ownerId)
+`)
 
 canEdit({
   user: {id: 123, role: 'user', isActive: true},
@@ -375,6 +425,7 @@ canEdit({
 ```javascript
 import {Environment} from '@marcbachmann/cel-js'
 
+// Instantiating an environment is expensive, please do that outside hot code paths
 const validator = new Environment()
   .registerVariable('email', 'string')
   .registerVariable('age', 'int')
@@ -414,6 +465,7 @@ Full TypeScript support included:
 ```typescript
 import {Environment, evaluate, ParseError} from '@marcbachmann/cel-js'
 
+// Instantiating an environment is expensive, please do that outside hot code paths
 const env = new Environment()
   .registerVariable('count', 'int')
   .registerFunction('multiplyByTwo(int): int', (x) => x * 2n)
