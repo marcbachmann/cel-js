@@ -24,23 +24,22 @@ export class TypeDeclaration {
    * @param options - Type declaration options
    */
   constructor(options: {
-    kind?: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+    kind: 'primitive' | 'list' | 'map' | 'message' | 'enum'
     type: string
-    stringValue?: string
-    name?: string
+    name: string
     keyType?: TypeDeclaration
     valueType?: TypeDeclaration
     values?: Record<string, bigint>
   })
 
   /** The kind of type (primitive, list, map, message, enum). */
-  kind?: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+  kind: 'primitive' | 'list' | 'map' | 'message' | 'enum'
 
   /** The type name. */
   type: string
 
   /** The message or enum type name. */
-  name?: string
+  name: string
 
   /** For map types, the key type. */
   keyType?: TypeDeclaration
@@ -99,10 +98,12 @@ export class Registry {
    */
   registerFunctionOverload(
     signature: string,
-    handlerOrOptions: ((...args: any[]) => any) | {
-      handler: (...args: any[]) => any
-      typeCheck?: (checker: any, receiverType: string, args: any[]) => string
-    }
+    handlerOrOptions:
+      | ((...args: any[]) => any)
+      | {
+          handler: (...args: any[]) => any
+          typeCheck?: (checker: any, receiverType: string, args: any[]) => string
+        }
   ): void
 
   /**
@@ -118,7 +119,11 @@ export class Registry {
    * @param definition - Either a constructor function or an object with ctor and fields
    * @param withoutDynRegistration - If true, skip automatic dyn() and type() function registration
    */
-  registerType(typename: string, definition: Function | {ctor: Function, fields?: Record<string, any>}, withoutDynRegistration?: boolean): void
+  registerType(
+    typename: string,
+    definition: Function | {ctor: Function; fields?: Record<string, any>},
+    withoutDynRegistration?: boolean
+  ): void
 
   /**
    * Get type declaration for a given type string.
