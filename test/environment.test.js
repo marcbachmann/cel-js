@@ -70,23 +70,42 @@ describe('Environment', () => {
   })
 
   test('complex expression with multiple features', () => {
-    const env = new Environment()
-      .registerVariable('users', 'list')
-      .registerVariable('minAge', 'int')
-      .registerFunction('isAdult(int): bool', (age) => age >= 18)
+    class User {
+      #age
+      constructor({name, age}) {
+        this.name = name
+        this.#age = age
+      }
 
-    const expression = 'users.filter(u, u.age >= minAge).map(u, u.name)'
+      get age() {
+        return this.#age
+      }
+    }
+
+    const env = new Environment()
+      .registerType('User', {ctor: User, fields: {name: 'string', age: 'double'}})
+      .registerVariable('users', 'list<User>')
+      .registerVariable('minAge', 'int')
+      .registerFunction('isAdult(User): bool', (u) => u.age >= 18)
+
     const context = {
       users: [
-        {name: 'Alice', age: 25},
-        {name: 'Bob', age: 16},
-        {name: 'Charlie', age: 30}
+        new User({name: 'Alice', age: 25}),
+        new User({name: 'Bob', age: 16}),
+        new User({name: 'Charlie', age: 30})
       ],
       minAge: 18n
     }
 
-    const result = env.evaluate(expression, context)
-    assert.deepStrictEqual(result, ['Alice', 'Charlie'])
+    assert.deepStrictEqual(
+      env.evaluate('users.filter(u, u.age >= minAge).map(u, u.name)', context),
+      ['Alice', 'Charlie']
+    )
+
+    assert.deepStrictEqual(env.evaluate('users.filter(u, isAdult(u)).map(u, u.name)', context), [
+      'Alice',
+      'Charlie'
+    ])
   })
 
   test('error handling with context', () => {

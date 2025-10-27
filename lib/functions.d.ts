@@ -52,5 +52,3 @@ export class Duration {
  * @returns The value at the key, or undefined if not found
  */
 export function objectGet(obj: any, key: any): any
-
-export {Type, TYPES} from './registry.js'
