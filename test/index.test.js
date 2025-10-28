@@ -10,12 +10,32 @@ describe('CEL Implementation Integration Tests', () => {
   })
 
   test('should handle parse errors gracefully', (t) => {
-    t.assert.throws(() => parse('1 +'), Error)
+    t.assert.throws(() => parse('1 +'), {
+      name: 'ParseError',
+      node: {
+        input: '1 +',
+        pos: 3
+      }
+    })
   })
 
   test('should handle evaluation errors', (t) => {
-    t.assert.throws(() => evaluate('unknownVar'), /Unknown variable: unknownVar/)
-    t.assert.throws(() => evaluate('obj.prop', {obj: null}), /No such key: prop/)
+    t.assert.throws(() => evaluate('unknownVar'), (err) => {
+      t.assert.ok(err instanceof EvaluationError)
+      t.assert.match(err.message, /Unknown variable: unknownVar/)
+      t.assert.strictEqual(err.node[0], 'id')
+      t.assert.strictEqual(err.node[1], 'unknownVar')
+      return true;
+    })
+    t.assert.throws(() => evaluate('obj.prop', {obj: null}), (err) => {
+      t.assert.ok(err instanceof EvaluationError)
+      t.assert.match(err.message, /No such key: prop/)
+      t.assert.strictEqual(err.node[0], '.')
+      t.assert.strictEqual(err.node[1][0], 'id')
+      t.assert.strictEqual(err.node[1][1], 'obj')
+      t.assert.strictEqual(err.node[2], 'prop')
+      return true;
+    })
   })
 
   test('should work with parse function directly', (t) => {

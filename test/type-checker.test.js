@@ -28,6 +28,8 @@ describe('Type Checker', () => {
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
     assert.match(result.error.message, /Unknown variable: unknownVar/)
+    assert.strictEqual(result.error.node[0], 'id')
+    assert.strictEqual(result.error.node[1], 'unknownVar')
   })
 
   test('literals', () => {
@@ -109,6 +111,11 @@ describe('Type Checker', () => {
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
     assert.match(result.error.message, /no such overload: string \+ int/)
+    assert.strictEqual(result.error.node[0], '+')
+    assert.strictEqual(result.error.node[1][0], 'id')
+    assert.strictEqual(result.error.node[1][1], 'str')
+    assert.strictEqual(result.error.node[2][0], 'id')
+    assert.strictEqual(result.error.node[2][1], 'num')
   })
 
   test('comparison operators', () => {
