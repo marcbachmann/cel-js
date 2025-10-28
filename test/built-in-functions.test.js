@@ -732,15 +732,15 @@ describe('built-in functions', () => {
     test('should throw error for objects, arrays, and bytes', (t) => {
       t.assert.throws(
         () => evaluate('double({})'),
-        /found no matching overload for 'double\(map\)'/
+        /found no matching overload for 'double\(map<dyn, dyn>\)'/
       )
       t.assert.throws(
         () => evaluate('double([])'),
-        /found no matching overload for 'double\(list\)'/
+        /found no matching overload for 'double\(list<dyn>\)'/
       )
       t.assert.throws(
         () => evaluate('double([1, 2, 3])'),
-        /found no matching overload for 'double\(list\)'/
+        /found no matching overload for 'double\(list<dyn>\)'/
       )
       t.assert.throws(
         () => evaluate('double(bytes("test"))'),

@@ -1,6 +1,7 @@
 import {describe, test} from 'node:test'
 import assert from 'node:assert'
-import {Environment, ParseError, EvaluationError} from '../lib/evaluator.js'
+import {ParseError, EvaluationError} from '../lib/errors.js'
+import {Environment} from '../lib/evaluator.js'
 
 describe('Environment', () => {
   test('basic usage', () => {

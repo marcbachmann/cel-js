@@ -1,6 +1,8 @@
 import {test, describe} from 'node:test'
 import assert from 'node:assert'
-import {Environment, TypeError} from '../lib/evaluator.js'
+import {TypeError} from '../lib/errors.js'
+import {Environment} from '../lib/evaluator.js'
+
 describe('Type Checker', () => {
   test('valid variable references', () => {
     const env = new Environment()
