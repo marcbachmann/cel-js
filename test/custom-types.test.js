@@ -99,24 +99,21 @@ describe('Custom Type Registration', () => {
       .registerType('Vector', Vector)
       .registerVariable('p1', 'Point')
 
-    const context = {
-      p1: new Point(10, 20)
-    }
-
     // Should work with correct type
-    const result1 = env.evaluate('p1.x', context)
-    assert.strictEqual(result1, 10)
+    const result1 = env.evaluate('p1.x', {p1: new Point(10n, 20n)})
+    assert.strictEqual(result1, 10n)
 
-    // Should fail with wrong type
-    assert.throws(
-      () => {
-        env.evaluate('p1', {p1: new Vector(1, 2)})
-      },
-      {
-        name: 'EvaluationError',
-        message: /Variable 'p1' is not of type 'Point'/
-      }
-    )
+    // Should fail with wrong field type
+    assert.throws(() => env.evaluate('p1.x', {p1: new Point(10, 20n)}), {
+      name: 'EvaluationError',
+      message: /Field 'x' is not of type 'int', got 'double'/
+    })
+
+    // Should fail with wrong variable type
+    assert.throws(() => env.evaluate('p1', {p1: new Vector(1, 2)}), {
+      name: 'EvaluationError',
+      message: /Variable 'p1' is not of type 'Point'/
+    })
   })
 
   test('field restrictions', () => {
