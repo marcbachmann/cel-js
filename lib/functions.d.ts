@@ -44,11 +44,3 @@ export class Duration {
   /** Convert to string representation in format like "5s", "1h30m", etc. */
   toString(): string
 }
-
-/**
- * Get a value from an object, array, or Map.
- * @param obj - The object, array, or Map to get from
- * @param key - The key or index to get
- * @returns The value at the key, or undefined if not found
- */
-export function objectGet(obj: any, key: any): any
