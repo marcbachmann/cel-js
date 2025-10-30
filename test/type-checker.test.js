@@ -171,10 +171,20 @@ describe('Type Checker', () => {
 
   test('ternary with different branch types', () => {
     const env = new Environment().registerVariable('condition', 'bool')
+    assert.strictEqual(env.check('condition ? dyn("yes") : 42').type, 'dyn')
+    assert.strictEqual(env.check('condition ? "yes" : dyn(42)').type, 'dyn')
+  })
+
+  test('ternary with different branch types', () => {
+    const env = new Environment().registerVariable('condition', 'bool')
 
     const result = env.check('condition ? "yes" : 42')
-    assert.strictEqual(result.valid, true)
-    assert.strictEqual(result.type, 'dyn') // Mixed types return dyn
+    assert.strictEqual(result.valid, false)
+    assert.ok(result.error instanceof TypeError)
+    assert.match(
+      result.error.message,
+      /Ternary branches must have the same type, got 'string' and 'int'/
+    )
   })
 
   test('property access on map', () => {
@@ -186,25 +196,29 @@ describe('Type Checker', () => {
   })
 
   test('property access on invalid type', () => {
-    const env = new Environment().registerVariable('num', 'int')
+    const env = new Environment().registerVariable('someNum', 'int')
 
-    const result = env.check('num.field')
+    const result = env.check('someNum.field')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
   })
 
   test('index access on list', () => {
-    const env = new Environment().registerVariable('list', 'list').registerVariable('idx', 'int')
+    const env = new Environment()
+      .registerVariable('someList', 'list')
+      .registerVariable('idx', 'int')
 
-    const result = env.check('list[idx]')
+    const result = env.check('someList[idx]')
     assert.strictEqual(result.valid, true)
     assert.strictEqual(result.type, 'dyn')
   })
 
   test('index access with invalid index type', () => {
-    const env = new Environment().registerVariable('list', 'list').registerVariable('str', 'string')
+    const env = new Environment()
+      .registerVariable('someList', 'list')
+      .registerVariable('str', 'string')
 
-    const result = env.check('list[str]')
+    const result = env.check('someList[str]')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof TypeError)
     assert.match(result.error.message, /List index must be int/)
@@ -228,6 +242,67 @@ describe('Type Checker', () => {
     assert.strictEqual(result.type, 'bool')
   })
 
+  test('in operator rejects mismatched list element types', () => {
+    const env = new Environment()
+      .registerVariable('name', 'string')
+      .registerVariable('numbers', 'list<int>')
+
+    const result = env.check('name in numbers')
+    assert.strictEqual(result.valid, false)
+    assert.ok(result.error instanceof TypeError)
+    assert.match(result.error.message, /no such overload: string in list<int>/)
+  })
+
+  test('in operator rejects mismatched map key types', () => {
+    const env = new Environment()
+      .registerVariable('id', 'int')
+      .registerVariable('usersByName', 'map<string, int>')
+
+    const result = env.check('id in usersByName')
+    assert.strictEqual(result.valid, false)
+    assert.ok(result.error instanceof TypeError)
+    assert.match(result.error.message, /no such overload: int in map<string, int>/)
+  })
+
+  test('list equality rejects mismatched element types', () => {
+    const env = new Environment()
+
+    const result = env.check('[1] == [1.0]')
+    assert.strictEqual(result.valid, false)
+    assert.ok(result.error instanceof TypeError)
+    assert.match(result.error.message, /no such overload: list<int> == list<double>/)
+  })
+
+  test('dyn operands with multiple list overloads still resolve to list<dyn>', () => {
+    const env = new Environment({unlistedVariablesAreDyn: true})
+      .registerVariable('dynList', 'list')
+      .registerOperator('list<string> + list<string>: list<string>', (a, b) => a.concat(b))
+      .registerOperator('list<int> + list<int>: list<int>', (a, b) => a.concat(b))
+
+    const result = env.check('dynList + dynList')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'list')
+  })
+
+  test('registering new overload invalidates cached lookup results', () => {
+    class User {}
+
+    const env = new Environment()
+      .registerType('User', User)
+      .registerVariable('user', 'User')
+      .registerVariable('users', 'list<User>')
+
+    const initial = env.check('user in users')
+    assert.strictEqual(initial.valid, false)
+    assert.ok(initial.error instanceof TypeError)
+
+    env.registerOperator('User in list<User>', () => false)
+
+    const afterRegistration = env.check('user in users')
+    assert.strictEqual(afterRegistration.valid, true)
+    assert.strictEqual(afterRegistration.type, 'bool')
+  })
+
   test('in operator with string', () => {
     const env = new Environment()
       .registerVariable('substr', 'string')
@@ -246,16 +321,18 @@ describe('Type Checker', () => {
   })
 
   test('built-in function size()', () => {
-    const env = new Environment().registerVariable('str', 'string').registerVariable('list', 'list')
+    const env = new Environment()
+      .registerVariable('str', 'string')
+      .registerVariable('someList', 'list')
 
     assert.strictEqual(env.check('size(str)').type, 'int')
-    assert.strictEqual(env.check('size(list)').type, 'int')
+    assert.strictEqual(env.check('size(someList)').type, 'int')
   })
 
   test('built-in function string()', () => {
-    const env = new Environment().registerVariable('num', 'int')
+    const env = new Environment().registerVariable('someNum', 'int')
 
-    const result = env.check('string(num)')
+    const result = env.check('string(someNum)')
     assert.strictEqual(result.valid, true)
     assert.strictEqual(result.type, 'string')
   })
@@ -332,7 +409,7 @@ describe('Type Checker', () => {
     // Macros should be accepted (detailed checking happens at runtime)
     assert.strictEqual(env.check('items.all(i, i > 0)').type, 'bool')
     assert.strictEqual(env.check('items.exists(i, i > 10)').type, 'bool')
-    assert.strictEqual(env.check('items.map(i, i * 2)').type, 'list')
+    assert.strictEqual(env.check('items.map(i, i * 2)').type, 'list<int>')
     assert.strictEqual(env.check('items.filter(i, i > 5)').type, 'list')
   })
 
@@ -484,10 +561,18 @@ describe('Type Checker', () => {
     assert.match(result.error.message, /no such overload: -string/)
   })
 
-  test('dynamic type (dyn)', () => {
+  test('dynamic type defines return type based on operator', () => {
     const env = new Environment({unlistedVariablesAreDyn: true})
+    const result = env.check('unknownVar + 10')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'int')
+  })
 
-    // Unlisted variables are treated as dyn
+  test('dynamic type defines return type based on operator (multiple matches)', () => {
+    const env = new Environment({unlistedVariablesAreDyn: true})
+      .registerType('User', class User {})
+      .registerOperator('User + int: User')
+
     const result = env.check('unknownVar + 10')
     assert.strictEqual(result.valid, true)
     assert.strictEqual(result.type, 'dyn')
@@ -636,27 +721,29 @@ describe('Type Checker', () => {
 
   test('list index access', () => {
     const env = new Environment()
-      .registerVariable('list', 'list')
+      .registerVariable('someList', 'list')
       .registerVariable('intIndex', 'int')
       .registerVariable('uintIndex', 'uint')
       .registerVariable('doubleIndex', 'double')
       .registerVariable('stringIndex', 'string')
 
-    assert.strictEqual(env.check('list[0]').valid, true)
-    assert.strictEqual(env.check('list[intIndex]').valid, true)
+    assert.strictEqual(env.check('someList[0]').valid, true)
+    assert.strictEqual(env.check('someList[intIndex]').valid, true)
 
     for (const t of ['uintIndex', '0u', 'doubleIndex', '1.5', 'stringIndex', '"0"']) {
-      const result = env.check(`list[${t}]`)
+      const result = env.check(`someList[${t}]`)
       assert.strictEqual(result.valid, false)
       assert.ok(result.error.message.includes('List index must be int'))
     }
   })
 
   test('list index with dynamic variable', () => {
-    const env = new Environment().registerVariable('list', 'list').registerVariable('dynVar', 'dyn')
+    const env = new Environment()
+      .registerVariable('someList', 'list')
+      .registerVariable('dynVar', 'dyn')
 
     for (const t of ['dynVar', 'dyn(0u)', 'dyn(0.0)', 'dyn("0")']) {
-      const result = env.check(`list[${t}]`)
+      const result = env.check(`someList[${t}]`)
       assert.strictEqual(result.valid, true)
       assert.strictEqual(result.type, 'dyn')
     }
@@ -664,33 +751,33 @@ describe('Type Checker', () => {
 
   test('map index access', () => {
     const env = new Environment()
-      .registerVariable('map', 'map')
+      .registerVariable('someMap', 'map')
       .registerVariable('intKey', 'int')
       .registerVariable('stringKey', 'string')
       .registerVariable('doubleKey', 'double')
 
     // All types are valid as map keys
-    assert.strictEqual(env.check('map["key"]').valid, true)
-    assert.strictEqual(env.check('map[intKey]').valid, true)
-    assert.strictEqual(env.check('map[stringKey]').valid, true)
-    assert.strictEqual(env.check('map[doubleKey]').valid, true)
-    assert.strictEqual(env.check('map[0]').valid, true)
+    assert.strictEqual(env.check('someMap["key"]').valid, true)
+    assert.strictEqual(env.check('someMap[intKey]').valid, true)
+    assert.strictEqual(env.check('someMap[stringKey]').valid, true)
+    assert.strictEqual(env.check('someMap[doubleKey]').valid, true)
+    assert.strictEqual(env.check('someMap[0]').valid, true)
   })
 
   test('property access', () => {
     const env = new Environment()
-      .registerVariable('map', 'map')
-      .registerVariable('list', 'list')
-      .registerVariable('num', 'int')
+      .registerVariable('someMap', 'map')
+      .registerVariable('someList', 'list')
+      .registerVariable('someNum', 'int')
 
     // Property access allowed on maps
-    assert.strictEqual(env.check('map.property').valid, true)
+    assert.strictEqual(env.check('someMap.property').valid, true)
 
     // Property access not allowed on lists (only numeric indexing works)
-    assert.strictEqual(env.check('list.size').valid, false)
+    assert.strictEqual(env.check('someList.size').valid, false)
 
     // Property access not allowed on primitives
-    const result = env.check('num.property')
+    const result = env.check('someNum.property')
     assert.strictEqual(result.valid, false)
     assert.ok(result.error.message.includes('Cannot index type'))
   })
