@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {evaluate, Environment} from '../lib/index.js'
 
 describe('lists expressions', () => {
   describe('literals', () => {
@@ -115,6 +115,63 @@ describe('lists expressions', () => {
 
     test('should return correct list if right side is empty', (t) => {
       t.assert.deepStrictEqual(evaluate('[1, 2] + []'), [1n, 2n])
+    })
+
+    test('does not support mixed list types', (t) => {
+      t.assert.throws(() => evaluate('[1] + [1.0]'), /no such overload: list<int> \+ list<double>/)
+    })
+
+    test('does not support in check with invalid types', (t) => {
+      class User {
+        constructor({name, age}) {
+          this.name = name
+          this.age = age
+        }
+      }
+
+      const env = new Environment()
+        .registerType('User', {ctor: User, fields: {name: 'string', age: 'double'}})
+        .registerOperator('User == User', (a, b) => a.name === b.name && a.age === b.age)
+        .registerOperator('User in list<User>', (a, b) =>
+          b.some((u) => a.name === u.name && a.age === u.age)
+        )
+        .registerVariable('likeUser', 'map')
+        .registerVariable('existingUser', 'User')
+        .registerVariable('otherUser', 'User')
+        .registerVariable('users', 'list<User>')
+        .registerVariable('dynUser', 'dyn')
+
+      const context = {
+        likeUser: {name: 'Alice', age: 25},
+        otherUser: new User({name: 'Dave', age: 22}),
+        existingUser: new User({name: 'Alice', age: 25}),
+        dynUser: new User({name: 'Alice', age: 25}),
+        users: [
+          new User({name: 'Alice', age: 25}),
+          new User({name: 'Bob', age: 16}),
+          new User({name: 'Charlie', age: 30})
+        ]
+      }
+
+      t.assert.deepStrictEqual(env.evaluate('users[0] in users', context), true)
+      t.assert.deepStrictEqual(env.evaluate('existingUser in users', context), true)
+      t.assert.deepStrictEqual(env.evaluate('otherUser in users', context), false)
+
+      t.assert.deepStrictEqual(env.evaluate('existingUser == existingUser', context), true)
+      t.assert.deepStrictEqual(env.evaluate('existingUser == users[0]', context), true)
+      t.assert.deepStrictEqual(env.evaluate('existingUser == dynUser', context), true)
+
+      t.assert.throws(
+        () => env.evaluate('likeUser in users', context),
+        /no such overload: map<dyn, dyn> in list<User>/
+      )
+    })
+
+    test('does not support equality check with invalid types', (t) => {
+      t.assert.throws(
+        () => evaluate('[1] == [1.0]'),
+        /no such overload: list<int> == list<double>/
+      )
     })
   })
 
