@@ -87,6 +87,10 @@ describe('integer literals', () => {
     t.assert.throws(() => evaluate(`1.0 == 0`), /no such overload: double == int/)
     t.assert.throws(() => evaluate(`1.0 != 0`), /no such overload: double != int/)
   })
+
+  test('should not allow integer equality', (t) => {
+    t.assert.strictEqual(evaluate(`a + b`, {a: 1, b: 2}), 3)
+  })
 })
 
 describe('integer parsing edge cases', () => {

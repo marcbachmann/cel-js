@@ -19,13 +19,46 @@ describe('in operator and membership tests', () => {
       t.assert.strictEqual(evaluate('1 in []'), false)
     })
 
-    test('should work with variables', (t) => {
-      t.assert.strictEqual(
-        evaluate('item in items', {
-          item: 'apple',
-          items: ['apple', 'banana', 'orange']
-        }),
-        true
+    test('should work with dyn in dyn<list> variables', (t) => {
+      const ctx = {item: 'apple', items: ['apple', 'banana', 'orange']}
+      t.assert.strictEqual(evaluate('1 in items', ctx), false)
+      t.assert.strictEqual(evaluate('dyn("apple") in dyn(items)', ctx), true)
+      t.assert.strictEqual(evaluate('"apple" in items', ctx), true)
+      t.assert.strictEqual(evaluate('item in items', ctx), true)
+      t.assert.strictEqual(evaluate('dyn(item) in items', ctx), true)
+      t.assert.strictEqual(evaluate('dyn("apple") in items', ctx), true)
+    })
+
+    test('should work if dyn in list<string>', (t) => {
+      const ctx = {plan: 'pro'}
+      t.assert.strictEqual(evaluate('plan in ["pro", "enterprise"]', ctx), true)
+      t.assert.strictEqual(evaluate('dyn(plan) in ["pro", "enterprise"]', ctx), true)
+      t.assert.strictEqual(evaluate('dyn("pro") in ["pro", "enterprise"]', ctx), true)
+      t.assert.strictEqual(evaluate('dyn(1) in ["pro", "enterprise"]', ctx), false)
+
+      t.assert.strictEqual(evaluate('bool in [dyn(1.0), dyn(bool)]', ctx), true)
+      t.assert.strictEqual(evaluate('dyn(bool) in [dyn(1.0), dyn(bool)]', ctx), true)
+
+      t.assert.strictEqual(evaluate('false in [dyn(1.0), dyn(false)]', ctx), true)
+      t.assert.strictEqual(evaluate('dyn(false) in [dyn(1.0), dyn(false)]', ctx), true)
+
+      t.assert.strictEqual(evaluate('1 in [dyn(1.0), dyn(false)]', ctx), true)
+      t.assert.strictEqual(evaluate('dyn(1) in [dyn(1.0), dyn(false)]', ctx), true)
+    })
+
+    test('throws for non-matching types', (t) => {
+      const ctx = {plan: 'pro'}
+      t.assert.throws(
+        () => evaluate('1 in ["pro", "enterprise"]', ctx),
+        /no such overload: int in list<string>/
+      )
+      t.assert.throws(
+        () => evaluate('1 in [1.0, 1.2]', ctx),
+        /no such overload: int in list<double>/
+      )
+      t.assert.throws(
+        () => evaluate('true in [1.0, 1.2]', ctx),
+        /no such overload: bool in list<double>/
       )
     })
   })

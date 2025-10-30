@@ -160,10 +160,7 @@ describe('macros', () => {
         () => evaluate('numbers.all()', context),
         /found no matching overload for 'list.all\(\)'/
       )
-      t.assert.throws(
-        () => evaluate('numbers.all(x)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('numbers.all(x)', context), /Unknown variable: x/)
       t.assert.throws(
         () => evaluate('numbers.all(x > 0, y < 10)', context),
         /all\(var, predicate\) invalid predicate iteration variable/
@@ -171,21 +168,15 @@ describe('macros', () => {
     })
 
     test('should throw with non-list argument', (t) => {
-      t.assert.throws(
-        () => evaluate('42.all(x, x > 0)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('42.all(x, x > 0)', context), /Unknown variable: x/)
 
-      t.assert.throws(
-        () => evaluate('"string".all(x, x > 0)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('"string".all(x, x > 0)', context), /Unknown variable: x/)
     })
 
     test('should throw with invalid operation', (t) => {
       t.assert.throws(
         () => evaluate('mixed.all(x, x > 0)', context),
-        /no such overload: string > int/
+        /no such overload: dyn<string> > int/
       )
     })
 
@@ -240,10 +231,7 @@ describe('macros', () => {
         () => evaluate('numbers.exists()', context),
         /found no matching overload for 'list.exists\(\)/
       )
-      t.assert.throws(
-        () => evaluate('numbers.exists(x)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('numbers.exists(x)', context), /Unknown variable: x/)
     })
 
     test('does not expose function for non-receiver call', (t) => {
@@ -297,10 +285,7 @@ describe('macros', () => {
         () => evaluate('numbers.exists_one()', context),
         /found no matching overload for 'list.exists_one\(\)/
       )
-      t.assert.throws(
-        () => evaluate('numbers.exists_one(x)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('numbers.exists_one(x)', context), /Unknown variable: x/)
     })
 
     test('does not expose function for non-receiver call', (t) => {
@@ -380,15 +365,9 @@ describe('macros', () => {
         () => evaluate('numbers.map()', context),
         /found no matching overload for 'list.map\(\)'/
       )
-      t.assert.throws(
-        () => evaluate('numbers.map(x)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('numbers.map(x)', context), /Unknown variable: x/)
 
-      t.assert.throws(
-        () => evaluate('numbers.map(x, x, x, x)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('numbers.map(x, x, x, x)', context), /Unknown variable: x/)
     })
 
     test('must return a boolean in filter of map(var, filter, transform)', (t) => {
@@ -492,10 +471,7 @@ describe('macros', () => {
         () => evaluate('numbers.filter()', context),
         /found no matching overload for 'list.filter\(\)'/
       )
-      t.assert.throws(
-        () => evaluate('numbers.filter(x)', context),
-        /Unknown variable: x/
-      )
+      t.assert.throws(() => evaluate('numbers.filter(x)', context), /Unknown variable: x/)
     })
 
     test('does not expose function for non-receiver call', (t) => {
