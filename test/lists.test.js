@@ -168,10 +168,7 @@ describe('lists expressions', () => {
     })
 
     test('does not support equality check with invalid types', (t) => {
-      t.assert.throws(
-        () => evaluate('[1] == [1.0]'),
-        /no such overload: list<int> == list<double>/
-      )
+      t.assert.throws(() => evaluate('[1] == [1.0]'), /no such overload: list<int> == list<double>/)
     })
   })
 

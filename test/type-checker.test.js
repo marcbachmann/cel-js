@@ -675,13 +675,20 @@ describe('Type Checker', () => {
 
   test('complex nested validation', () => {
     const env = new Environment()
-      .registerVariable('users', 'list<map<string, dyn>>')
+      .registerType('User', {ctor: class User {}, fields: {name: 'string', age: 'int'}})
+      .registerVariable('users', 'list<User>')
       .registerVariable('minAge', 'int')
 
     // Complex expression with macros and comparisons
-    const result = env.check('users.filter(u, u.age >= minAge).map(u, u.name)')
-    assert.strictEqual(result.valid, true)
-    assert.strictEqual(result.type, 'list')
+    assert.strictEqual(
+      env.check('users.filter(u, u.age >= minAge).map(u, u.name)').type,
+      'list<string>'
+    )
+
+    assert.strictEqual(
+      env.check('users.map(u, {"related": users})').type,
+      'list<map<string, list<User>>>'
+    )
   })
 
   test('equality operators support all types', () => {
