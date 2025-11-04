@@ -133,6 +133,13 @@ export class Registry {
   getType(typename: string): TypeDeclaration
 
   /**
+   * Register a variable with its type, throwing if it already exists.
+   * @param name - The variable name
+   * @param type - The variable type name or declaration
+   */
+  registerVariable(name: string, type: string | TypeDeclaration): void
+
+  /**
    * Register a unary operator overload.
    * @param op - The operator symbol ('-' or '!')
    * @param type - The operand type
@@ -187,6 +194,8 @@ export interface RegistryOptions {
   overloads?: Record<string, any>
   objectTypes?: Map<string, any>
   objectTypesByConstructor?: Map<any, string>
+  variables?: Map<string, TypeDeclaration>
+  unlistedVariablesAreDyn: boolean
 }
 
 /**
@@ -195,8 +204,3 @@ export interface RegistryOptions {
  * @returns A new registry instance
  */
 export function createRegistry(opts?: RegistryOptions): Registry
-
-/**
- * Global registry instance used by default.
- */
-export const globalRegistry: Registry
