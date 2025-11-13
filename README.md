@@ -100,10 +100,33 @@ new Environment({
 - **`registerType(typename, constructor)`** - Register custom types
 - **`registerFunction(signature, handler)`** - Add custom functions
 - **`registerOperator(signature, handler)`** - Add custom operators
+- **`clone()`** - Create a fast, isolated copy that stops the parent from registering more entries
 - **`hasVariable(name)`** - Check if variable is registered
 - **`parse(expression)`** - Parse expression for reuse
 - **`evaluate(expression, context)`** - Evaluate with context
 - **`check(expression)`** - Validate expression types without evaluation
+
+#### Environment Cloning
+
+```javascript
+import assert from 'node:assert/strict'
+
+const parent = new Environment().registerVariable('user', 'map')
+const child = parent.clone()
+
+// Parent registries freeze once cloned
+assert.throws(() => parent.registerVariable('foo', 'dyn'))
+
+// Child stays fully extensible without deep-copy overhead
+child
+  .registerFunction('isAdult(map): bool', (u) => u.age >= 18n)
+  .registerVariable('minAge', 'int')
+
+child.evaluate('isAdult(user) && user.age >= minAge', {
+  user: {age: 20n},
+  minAge: 18n
+})
+```
 
 **Supported Types:** `int`, `uint`, `double`, `string`, `bool`, `bytes`, `list`, `map`, `timestamp`, `duration`, `null_type`, `type`, `dyn`, or custom types
 
