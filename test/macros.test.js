@@ -50,7 +50,7 @@ describe('macros', () => {
     test('should throw when multiple arguments are passed', (t) => {
       t.assert.throws(
         () => evaluate('has(a, b)', {a: 1, b: 2}),
-        /found no matching overload for 'has\(ast, ast\)'/
+        /found no matching overload for 'has\(dyn, dyn\)'/
       )
     })
 
@@ -121,7 +121,7 @@ describe('macros', () => {
     }
 
     test('is not supported on non-maps or lists', (t) => {
-      const err = /Unknown variable: x/
+      const err = /found no matching overload/
       t.assert.throws(() => evaluate('(true).all(x, x > 0)', context), err)
       t.assert.throws(() => evaluate('"hello".all(x, x > 0)', context), err)
       t.assert.throws(() => evaluate('b"hello".all(x, x <= 5)', context), err)
@@ -168,9 +168,12 @@ describe('macros', () => {
     })
 
     test('should throw with non-list argument', (t) => {
-      t.assert.throws(() => evaluate('42.all(x, x > 0)', context), /Unknown variable: x/)
+      t.assert.throws(() => evaluate('42.all(x, x > 0)', context), /found no matching overload/)
 
-      t.assert.throws(() => evaluate('"string".all(x, x > 0)', context), /Unknown variable: x/)
+      t.assert.throws(
+        () => evaluate('"string".all(x, x > 0)', context),
+        /found no matching overload/
+      )
     })
 
     test('should throw with invalid operation', (t) => {
@@ -219,7 +222,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /exists\(var, predicate\) predicate result is not a boolean/
+      const error = /exists\(var, predicate\) predicate must return bool, got/
       t.assert.throws(() => evaluate('numbers.exists(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists(x, "")', context), error)
@@ -273,7 +276,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /exists_one\(var, predicate\) predicate result is not a boolean/
+      const error = /exists_one\(var, predicate\) predicate must return bool, got/
       t.assert.throws(() => evaluate('numbers.exists_one(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, "")', context), error)
@@ -373,7 +376,7 @@ describe('macros', () => {
     test('must return a boolean in filter of map(var, filter, transform)', (t) => {
       t.assert.throws(
         () => evaluate('numbers.map(x, x, x)', context),
-        /map\(var, filter, transform\) predicate result is not a boolean/
+        /map\(var, filter, transform\) predicate must return bool, got/
       )
 
       t.assert.deepStrictEqual(evaluate('numbers.map(x, x == x, x)', context), context.numbers)
@@ -459,7 +462,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /filter\(var, predicate\) predicate result is not a boolean/
+      const error = /filter\(var, predicate\) predicate must return bool, got/
       t.assert.throws(() => evaluate('numbers.filter(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].filter(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].filter(x, "")', context), error)
@@ -518,7 +521,7 @@ describe('macros', () => {
     })
 
     test('should throw if no boolean is returned', (t) => {
-      const error = /all\(var, predicate\) predicate result is not a boolean/
+      const error = /all\(var, predicate\) predicate must return bool, got/
       t.assert.throws(() => evaluate('numbers.all(x, x)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].all(x, 0)', context), error)
       t.assert.throws(() => evaluate('[0, 1, 2].all(x, "")', context), error)

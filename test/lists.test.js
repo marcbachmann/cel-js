@@ -56,7 +56,7 @@ describe('lists expressions', () => {
     })
 
     test('throws on string lookup', (t) => {
-      t.assert.throws(() => evaluate('[1, 2, 3]["0"]'), /No such key: 0/)
+      t.assert.throws(() => evaluate('[1, 2, 3]["0"]'), /List index must be int, got 'string'/)
     })
 
     test('throws on negative indices', (t) => {

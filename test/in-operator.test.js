@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {evaluate, Environment} from '../lib/index.js'
 
 describe('in operator and membership tests', () => {
   describe('arrays', () => {
@@ -47,19 +47,15 @@ describe('in operator and membership tests', () => {
     })
 
     test('throws for non-matching types', (t) => {
-      const ctx = {plan: 'pro'}
-      t.assert.throws(
-        () => evaluate('1 in ["pro", "enterprise"]', ctx),
-        /no such overload: int in list<string>/
-      )
-      t.assert.throws(
-        () => evaluate('1 in [1.0, 1.2]', ctx),
-        /no such overload: int in list<double>/
-      )
-      t.assert.throws(
-        () => evaluate('true in [1.0, 1.2]', ctx),
-        /no such overload: bool in list<double>/
-      )
+      const ethrows = (expr, pattern) => t.assert.throws(() => evaluate(expr), pattern)
+      ethrows('1 in ["pro", "enterprise"]', /no such overload: int in list<string>/)
+      ethrows('1 in [1.0, 1.2]', /no such overload: int in list<double>/)
+      ethrows('true in [1.0, 1.2]', /no such overload: bool in list<double>/)
+      ethrows('"true" in [true, false]', /no such overload: string in list<bool>/)
+      ethrows('1 in [[1], [2]]', /no such overload: int in list<list<int>>/)
+      ethrows('"test" in [[1], [2]]', /no such overload: string in list<list<int>>/)
+      ethrows('true in [[true], [false]]', /no such overload: bool in list<list<bool>>/)
+      ethrows('null in [[null]]', /no such overload: null in list<list<null>>/)
     })
   })
 
@@ -88,6 +84,12 @@ describe('in operator and membership tests', () => {
 
     test('should check numeric keys in objects', (t) => {
       t.assert.strictEqual(evaluate('1 in {1: "one", 2: "two"}'), true)
+    })
+
+    test('throws for non-matching map key types', (t) => {
+      const ethrows = (expr, pattern) => t.assert.throws(() => evaluate(expr), pattern)
+      ethrows('1 in {"a": 1, "b": 2}', /no such overload: int in map<string, int>/)
+      ethrows('true in {1: "a", 2: "b"}', /no such overload: bool in map<int, string>/)
     })
   })
 
@@ -126,12 +128,48 @@ describe('in operator and membership tests', () => {
 
     test('should handle null values', (t) => {
       t.assert.strictEqual(evaluate('null in [null, 1, 2]'), true)
-      t.assert.strictEqual(evaluate('null in [[null], 1, 2]'), false)
     })
 
     test('should handle boolean values', (t) => {
       t.assert.strictEqual(evaluate('true in [true, false]'), true)
-      t.assert.strictEqual(evaluate('true in [[true], false]'), false)
+    })
+  })
+
+  describe('with typed environments', () => {
+    test('validates types with declared list variables', (t) => {
+      const env = new Environment()
+        .registerVariable('names', 'list<string>')
+        .registerVariable('numbers', 'list<int>')
+
+      const ctx = {names: ['Alice', 'Bob'], numbers: [1n, 2n, 3n]}
+
+      t.assert.strictEqual(env.evaluate('"Alice" in names', ctx), true)
+      t.assert.strictEqual(env.evaluate('1 in numbers', ctx), true)
+
+      t.assert.throws(
+        () => env.evaluate('1 in names', ctx),
+        /no such overload: int in list<string>/
+      )
+      t.assert.throws(
+        () => env.evaluate('"test" in numbers', ctx),
+        /no such overload: string in list<int>/
+      )
+    })
+
+    test('validates types with declared map variables', (t) => {
+      const env = new Environment()
+        .registerVariable('config', 'map<string, bool>')
+        .registerVariable('scores', 'map<string, int>')
+
+      const ctx = {config: {enabled: true}, scores: {alice: 100n}}
+
+      t.assert.strictEqual(env.evaluate('"enabled" in config', ctx), true)
+      t.assert.strictEqual(env.evaluate('"alice" in scores', ctx), true)
+
+      t.assert.throws(
+        () => env.evaluate('1 in config', ctx),
+        /no such overload: int in map<string, bool>/
+      )
     })
   })
 })

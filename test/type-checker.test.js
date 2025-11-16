@@ -444,11 +444,17 @@ describe('Type Checker', () => {
     // Invalid: filter returns non-bool
     const result1 = env.check('numbers.map(i, i, i * 2)')
     assert.strictEqual(result1.valid, false)
-    assert.match(result1.error.message, /filter predicate must return bool, got 'int'/)
+    assert.match(
+      result1.error.message,
+      /map\(var, filter, transform\) filter predicate must return bool, got 'int'/
+    )
 
     const result2 = env.check('numbers.map(i, i + 1, i * 2)')
     assert.strictEqual(result2.valid, false)
-    assert.match(result2.error.message, /filter predicate must return bool/)
+    assert.match(
+      result2.error.message,
+      /map\(var, filter, transform\) filter predicate must return bool/
+    )
   })
 
   test('map macro requires identifier', () => {
@@ -482,19 +488,31 @@ describe('Type Checker', () => {
     // Invalid: predicates return non-bool
     const result1 = env.check('numbers.all(i, i + 1)')
     assert.strictEqual(result1.valid, false)
-    assert.match(result1.error.message, /predicate must return bool, got 'int'/)
+    assert.match(
+      result1.error.message,
+      /all\(var, predicate\) predicate must return bool, got 'int'/
+    )
 
     const result2 = env.check('numbers.exists(i, i * 2)')
     assert.strictEqual(result2.valid, false)
-    assert.match(result2.error.message, /predicate must return bool, got 'int'/)
+    assert.match(
+      result2.error.message,
+      /exists\(var, predicate\) predicate must return bool, got 'int'/
+    )
 
     const result3 = env.check('numbers.exists_one(i, i)')
     assert.strictEqual(result3.valid, false)
-    assert.match(result3.error.message, /predicate must return bool, got 'int'/)
+    assert.match(
+      result3.error.message,
+      /exists_one\(var, predicate\) predicate must return bool, got 'int'/
+    )
 
     const result4 = env.check('numbers.filter(i, i)')
     assert.strictEqual(result4.valid, false)
-    assert.match(result4.error.message, /predicate must return bool, got 'int'/)
+    assert.match(
+      result4.error.message,
+      /filter\(var, predicate\) predicate must return bool, got 'int'/
+    )
   })
 
   test('predicate macro validation with string lists', () => {
@@ -508,7 +526,10 @@ describe('Type Checker', () => {
     // Invalid: predicate returns string
     const result = env.check('strings.all(s, s + "x")')
     assert.strictEqual(result.valid, false)
-    assert.match(result.error.message, /predicate must return bool, got 'string'/)
+    assert.match(
+      result.error.message,
+      /all\(var, predicate\) predicate must return bool, got 'string'/
+    )
   })
 
   test('predicate macro with invalid variable', () => {
@@ -526,7 +547,7 @@ describe('Type Checker', () => {
     assert.strictEqual(result2.valid, false)
     assert.match(
       result2.error.message,
-      /filter\(var, filter\) requires first argument to be an identifier/
+      /filter\(var, predicate\) requires first argument to be an identifier/
     )
   })
 
@@ -549,7 +570,10 @@ describe('Type Checker', () => {
     // Invalid: predicate returns non-bool
     const result = env.check('data.all(k, k)')
     assert.strictEqual(result.valid, false)
-    assert.match(result.error.message, /predicate must return bool, got 'string'/)
+    assert.match(
+      result.error.message,
+      /all\(var, predicate\) predicate must return bool, got 'string'/
+    )
   })
 
   test('unary minus', () => {

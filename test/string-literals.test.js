@@ -181,8 +181,9 @@ describe('string literals and escapes', () => {
     })
 
     test('does not support retrieval of bytes by index', (t) => {
-      t.assert.throws(() => evaluate('b"hello"[0]'), /No such key: 0/)
-      t.assert.throws(() => evaluate('b"hello"[1]'), /No such key: 1/)
+      const err = /Cannot index type 'bytes' with type 'int'/
+      t.assert.throws(() => evaluate('b"hello"[0]'), err)
+      t.assert.throws(() => evaluate('b"hello"[1]'), err)
     })
 
     test('should support bytes.string()', (t) => {

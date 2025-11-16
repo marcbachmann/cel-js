@@ -2,7 +2,7 @@ import {describe, test} from 'node:test'
 import {evaluate} from '../lib/index.js'
 
 // simulate an evaluation error
-const divByZero = '(1 / 0)'
+const divByZero = '((1 / 0) == 0)'
 const nonexistentVar = 'something'
 const nonexistentProp = 'nested.different'
 const nonexistentFunc = 'nested.different.startsWith("a")'
@@ -32,6 +32,9 @@ describe('logical operators', () => {
     strictEqualTest(`true && false`, false)
     strictEqualTest(`${divByZero} && false`, false)
     strictEqualTest(`true && true`, true)
+    testThrows(`true && ${divByZero}`, /division by zero/)
+    testThrows(`${divByZero} && true`, /division by zero/)
+    testThrows(`${divByZero} && ${nonexistentVar}`, /Unknown variable: something/)
     strictEqualTest(`true || ${divByZero}`, true)
     strictEqualTest(`false || true`, true)
     strictEqualTest(`${divByZero} || true`, true)
@@ -39,9 +42,6 @@ describe('logical operators', () => {
     strictEqualTest(`${nonexistentFunc} || true`, true)
     testThrows(`${divByZero} || ${nonexistentVar}`, /Unknown variable: something/)
     strictEqualTest(`false || false`, false)
-    testThrows(`true && ${divByZero}`, /division by zero/)
-    testThrows(`${divByZero} && true`, /division by zero/)
-    testThrows(`${divByZero} && ${nonexistentVar}`, /Unknown variable: something/)
     testThrows(`false || ${divByZero}`, /division by zero/)
     testThrows(`${divByZero} || false`, /division by zero/)
     testThrows(`${divByZero} || ${nonexistentVar}`, /Unknown variable: something/)
@@ -55,7 +55,7 @@ describe('logical operators', () => {
     strictEqualTest('true && false && true', false)
 
     // Should not evaluate division by zero
-    strictEqualTest('false && (1 / 0)', false)
+    strictEqualTest('false && ((1 / 0) == 0)', false)
   })
 
   describe('OR', () => {
@@ -64,7 +64,7 @@ describe('logical operators', () => {
     strictEqualTest('false || true || false', true)
 
     // Should not evaluate division by zero
-    strictEqualTest('true || (1 / 0)', true)
+    strictEqualTest('true || ((1 / 0) == 0)', true)
   })
 
   strictEqualTest('true && true || false', true)
