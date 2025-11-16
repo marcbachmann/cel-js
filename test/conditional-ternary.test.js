@@ -52,15 +52,21 @@ describe('conditional ternary operator', () => {
   })
 
   test('does not allow non-boolean values', (t) => {
-    t.assert.throws(() => evaluate('"" ? "true" : "false"'), /Ternary condition must be a boolean/)
-    t.assert.throws(() => evaluate('0 ? "true" : "false"'), /Ternary condition must be a boolean/)
+    t.assert.throws(
+      () => evaluate('"" ? "true" : "false"'),
+      /Ternary condition must be bool, got 'string'/
+    )
+    t.assert.throws(
+      () => evaluate('0 ? "true" : "false"'),
+      /Ternary condition must be bool, got 'int'/
+    )
     t.assert.throws(
       () => evaluate('b"0" ? "true" : "false"'),
-      /Ternary condition must be a boolean/
+      /Ternary condition must be bool, got 'bytes'/
     )
     t.assert.throws(
       () => evaluate('null ? "true" : "false"'),
-      /Ternary condition must be a boolean/
+      /Ternary condition must be bool, got 'null'/
     )
   })
 })

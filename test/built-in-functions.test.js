@@ -543,14 +543,10 @@ describe('built-in functions', () => {
     })
 
     describe('complex expressions', () => {
-      test('should work in boolean expressions with both syntaxes', (t) => {
-        t.assert.strictEqual(
-          evaluate('"hello".startsWith("he") || startsWith("world", "he")'),
-          true
-        )
-        t.assert.strictEqual(
-          evaluate('"hello".startsWith("wo") || "world".startsWith("he")'),
-          false
+      test('function syntax should raise when unregistered', (t) => {
+        t.assert.throws(
+          () => evaluate('startsWith("world", "he")'),
+          /Function not found: 'startsWith'/
         )
       })
 
