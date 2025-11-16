@@ -740,7 +740,7 @@ describe('built-in functions', () => {
       )
       t.assert.throws(
         () => evaluate('double([1, 2, 3])'),
-        /found no matching overload for 'double\(list<dyn>\)'/
+        /found no matching overload for 'double\(list<int>\)'/
       )
       t.assert.throws(
         () => evaluate('double(bytes("test"))'),
