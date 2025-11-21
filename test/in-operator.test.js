@@ -66,11 +66,17 @@ describe('in operator and membership tests', () => {
 
   describe('objects/maps', () => {
     test('should check if key exists in object', (t) => {
-      t.assert.strictEqual(evaluate('"name" in {"name": "John", "age": 30}'), true)
+      t.assert.strictEqual(
+        evaluate('"name" in {"name": "John", "age": "30", "role": "admin"}'),
+        true
+      )
     })
 
     test('should check if key does not exist in object', (t) => {
-      t.assert.strictEqual(evaluate('"address" in {"name": "John", "age": 30}'), false)
+      t.assert.strictEqual(
+        evaluate('"address" in {"name": "John", "age": "30", "role": "admin"}'),
+        false
+      )
     })
 
     test('should handle empty object', (t) => {
@@ -132,7 +138,7 @@ describe('in operator and membership tests', () => {
     })
 
     test('should handle null values', (t) => {
-      t.assert.strictEqual(evaluate('null in [null, 1, 2]'), true)
+      t.assert.strictEqual(evaluate('null in [null]'), true)
     })
 
     test('should handle boolean values', (t) => {

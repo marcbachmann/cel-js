@@ -15,8 +15,33 @@ describe('lists expressions', () => {
       t.assert.deepStrictEqual(evaluate('[1, 2, 3]'), [1n, 2n, 3n])
     })
 
-    test('should create a list with mixed types', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, "hello", true, null]'), [1n, 'hello', true, null])
+    test('should not support mixed lists', (t) => {
+      t.assert.throws(
+        () => evaluate('[1, 1.0]', {i: 2}),
+        /List elements must have the same type, got 'int' and 'double'/
+      )
+
+      t.assert.throws(
+        () => evaluate('[[1], [1.0]]', {i: 2}),
+        /List elements must have the same type, got 'list<int>' and 'list<double>'/
+      )
+
+      t.assert.throws(
+        () => evaluate('[[1], [i]]', {i: 2}),
+        /List elements must have the same type, got 'list<int>' and 'list<dyn>'/
+      )
+
+      t.assert.throws(
+        () => evaluate('[1, "hello", true, null]'),
+        /List elements must have the same type, got 'int' and 'string'/
+      )
+
+      t.assert.throws(
+        () => evaluate('[dyn(1), "hello", true, null]'),
+        /List elements must have the same type, got 'dyn' and 'string'/
+      )
+
+      evaluate('[dyn(1), dyn("hello"), dyn(true), dyn(null)]')
     })
   })
 
@@ -119,6 +144,19 @@ describe('lists expressions', () => {
 
     test('does not support mixed list types', (t) => {
       t.assert.throws(() => evaluate('[1] + [1.0]'), /no such overload: list<int> \+ list<double>/)
+
+      t.assert.throws(
+        () => evaluate('[""] + [1.0]'),
+        /no such overload: list<string> \+ list<double>/
+      )
+    })
+
+    test('supports mixed types with dyn', (t) => {
+      t.assert.deepStrictEqual(evaluate('[1] + dyn([2.0])'), [1n, 2])
+      t.assert.deepStrictEqual(evaluate('[dyn(1)] + [2.0]'), [1n, 2])
+      t.assert.deepStrictEqual(evaluate('dyn([1]) + [2.0]'), [1n, 2])
+      t.assert.deepStrictEqual(evaluate('dyn([1]) + dyn([2.0])'), [1n, 2])
+      t.assert.deepStrictEqual(evaluate('i + [2.0]', {i: [1n]}), [1n, 2])
     })
 
     test('does not support in check with invalid types', (t) => {

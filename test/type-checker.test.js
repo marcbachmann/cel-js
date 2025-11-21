@@ -49,6 +49,34 @@ describe('Type Checker', () => {
     assert.strictEqual(mapResult.type, 'map<string, int>')
   })
 
+  test('map literal rejects mixed value types without dyn', () => {
+    const env = new Environment()
+    const result = env.check('{"name": "John", "age": 30}')
+    assert.strictEqual(result.valid, false)
+    assert.match(result.error.message, /Map value uses wrong type/)
+  })
+
+  test('map literal accepts mixed value types when wrapped with dyn', () => {
+    const env = new Environment()
+    const result = env.check('{"name": dyn("John"), "age": dyn(30)}')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'map<string, dyn>')
+  })
+
+  test('map literal rejects mixed key types without dyn', () => {
+    const env = new Environment()
+    const result = env.check('{"name": "John", 1: "other"}')
+    assert.strictEqual(result.valid, false)
+    assert.match(result.error.message, /Map key uses wrong type/)
+  })
+
+  test('map literal accepts mixed key types when wrapped with dyn', () => {
+    const env = new Environment()
+    const result = env.check('{dyn("name"): "John", dyn(1): "other"}')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'map<dyn, string>')
+  })
+
   test('arithmetic operators with matching types', () => {
     const env = new Environment()
       .registerVariable('x', 'int')
@@ -426,12 +454,13 @@ describe('Type Checker', () => {
     const env = new Environment()
       .registerVariable('items', 'list')
       .registerVariable('someint', 'int')
+
     assert.strictEqual(env.check('[1, 2, 3].map(i, i)[0]').type, 'int')
     assert.strictEqual(env.check('[1, 2, 3].map(i, i > 2)[0]').type, 'bool')
     assert.strictEqual(env.check('[[1, 2, 3]].map(i, i)[0]').type, 'list<int>')
-
     assert.strictEqual(env.check('[[someint, 2, 3]].map(i, i)[0]').type, 'list<int>')
-    assert.strictEqual(env.check('[[someint, dyn(2), 3]].map(i, i)[0]').type, 'list')
+    assert.strictEqual(env.check('[dyn([someint, 2, 3])].map(i, i)[0]').type, 'dyn')
+    assert.strictEqual(env.check('[[dyn(someint), dyn(2), dyn(3)]].map(i, i)[0]').type, 'list')
   })
 
   test('map macro with three-arg form', () => {
