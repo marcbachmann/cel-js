@@ -177,10 +177,55 @@ describe('unsigned integer', () => {
   })
 
   test('should compare unsigned integers correctly', (t) => {
-    t.assert.ok(evaluate('dyn(42u) == 42'))
-    t.assert.ok(evaluate('dyn(0xffu) == 255'))
-    t.assert.ok(evaluate('100u > 99u'))
-    t.assert.ok(evaluate('50u <= 50u'))
+    const nr = ['1u', '1', '1.0', '0x1']
+    function assert(expr, expected) {
+      t.assert.equal(evaluate(expr), expected, `${expr} should be ${expected}`)
+    }
+
+    for (const a of nr) {
+      for (const b of nr) {
+        assert(`dyn(${b}) == ${a}`, true)
+        assert(`${a} == dyn(${b})`, true)
+        assert(`dyn(${b}) != ${a}`, false)
+        assert(`${a} != dyn(${b})`, false)
+
+        assert(`(${b} + ${b}) > ${a}`, true)
+        assert(`(${b} + ${b}) > dyn(${a})`, true)
+        assert(`dyn((${b} + ${b})) > ${a}`, true)
+
+        assert(`(${b} + ${b}) < ${a}`, false)
+        assert(`(${b} + ${b}) < dyn(${a})`, false)
+        assert(`dyn((${b} + ${b})) < ${a}`, false)
+
+        assert(`${b} >= ${a}`, true)
+        assert(`${b} >= dyn(${a})`, true)
+        assert(`dyn(${b}) >= ${a}`, true)
+        assert(`${b} <= ${a}`, true)
+        assert(`${b} <= dyn(${a})`, true)
+        assert(`dyn(${b}) <= ${a}`, true)
+      }
+    }
+  })
+
+  test('restricts equality of different type', (t) => {
+    const nr = ['1u', '1', '1.0']
+    function throws(expr, expected) {
+      t.assert.throws(() => evaluate(expr), expected, `${expr} should throw`)
+    }
+
+    for (const a of nr) {
+      for (const b of nr) {
+        if (a === b) continue
+        throws(`${a} == ${b}`)
+        throws(`${a} != ${b}`)
+        throws(`${a} + ${b}`)
+        throws(`${a} - ${b}`)
+        throws(`dyn(${a}) + ${b}`)
+        throws(`dyn(${a}) - ${b}`)
+        throws(`dyn(${a}) / ${b}`)
+        throws(`dyn(${a}) * ${b}`)
+      }
+    }
   })
 
   test('should handle unsigned integers in complex expressions', (t) => {

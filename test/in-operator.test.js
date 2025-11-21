@@ -44,6 +44,11 @@ describe('in operator and membership tests', () => {
 
       t.assert.strictEqual(evaluate('1 in [dyn(1.0), dyn(false)]', ctx), true)
       t.assert.strictEqual(evaluate('dyn(1) in [dyn(1.0), dyn(false)]', ctx), true)
+
+      t.assert.strictEqual(evaluate('1 in dyn([2.0, 3.0])', ctx), false)
+      t.assert.strictEqual(evaluate('true in dyn([2.0, 3.0])', ctx), false)
+      t.assert.strictEqual(evaluate('dyn(1) in dyn([2.0, 3.0])', ctx), false)
+      t.assert.strictEqual(evaluate('dyn(1) in dyn(["1"])', ctx), false)
     })
 
     test('throws for non-matching types', (t) => {
@@ -132,6 +137,57 @@ describe('in operator and membership tests', () => {
 
     test('should handle boolean values', (t) => {
       t.assert.strictEqual(evaluate('true in [true, false]'), true)
+    })
+  })
+
+  describe('generic overloads', () => {
+    test('supports timestamp membership without enumerated overloads', (t) => {
+      t.assert.strictEqual(
+        evaluate('timestamp("2024-01-01T00:00:00Z") in [timestamp("2024-01-01T00:00:00Z")]'),
+        true
+      )
+    })
+
+    test('supports custom types in typed environments', (t) => {
+      class Widget {
+        constructor(id) {
+          this.id = id
+        }
+      }
+
+      const shared = new Widget('beta')
+      const env = new Environment()
+        .registerType('Widget', Widget)
+        .registerVariable('widgets', 'list<Widget>')
+        .registerVariable('candidate', 'Widget')
+
+      const ctx = {
+        widgets: [new Widget('alpha'), shared],
+        candidate: shared
+      }
+
+      t.assert.strictEqual(env.evaluate('candidate in widgets', ctx), true)
+    })
+
+    test('supports map membership with custom key types', (t) => {
+      class Key {
+        constructor(id) {
+          this.id = id
+        }
+      }
+
+      const key = new Key('primary')
+      const env = new Environment()
+        .registerType('Key', Key)
+        .registerVariable('key', 'Key')
+        .registerVariable('lookup', 'map<Key, string>')
+
+      const ctx = {
+        key,
+        lookup: new Map([[key, 'value']])
+      }
+
+      t.assert.strictEqual(env.evaluate('key in lookup', ctx), true)
     })
   })
 
