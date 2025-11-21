@@ -293,19 +293,21 @@ describe('Type Checker', () => {
 
   test('registering new overload invalidates cached lookup results', () => {
     class User {}
+    class Group {}
 
     const env = new Environment()
       .registerType('User', User)
+      .registerType('Group', Group)
       .registerVariable('user', 'User')
-      .registerVariable('users', 'list<User>')
+      .registerVariable('groups', 'list<Group>')
 
-    const initial = env.check('user in users')
+    const initial = env.check('user in groups')
     assert.strictEqual(initial.valid, false)
     assert.ok(initial.error instanceof TypeError)
 
-    env.registerOperator('User in list<User>', () => false)
+    env.registerOperator('User in list<Group>', () => false)
 
-    const afterRegistration = env.check('user in users')
+    const afterRegistration = env.check('user in groups')
     assert.strictEqual(afterRegistration.valid, true)
     assert.strictEqual(afterRegistration.type, 'bool')
   })
