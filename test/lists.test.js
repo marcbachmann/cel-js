@@ -15,33 +15,57 @@ describe('lists expressions', () => {
       t.assert.deepStrictEqual(evaluate('[1, 2, 3]'), [1n, 2n, 3n])
     })
 
-    test('should not support mixed lists', (t) => {
+    test('rejects mixed lists by default', (t) => {
       t.assert.throws(
-        () => evaluate('[1, 1.0]', {i: 2}),
-        /List elements must have the same type, got 'int' and 'double'/
+        () => evaluate('[1, 1.0]'),
+        /List elements must have the same type, expected type 'int' but found 'double'/
       )
 
       t.assert.throws(
-        () => evaluate('[[1], [1.0]]', {i: 2}),
-        /List elements must have the same type, got 'list<int>' and 'list<double>'/
+        () => evaluate('[[1], [1.0]]'),
+        /List elements must have the same type, expected type 'list<int>' but found 'list<double>'/
       )
 
       t.assert.throws(
         () => evaluate('[[1], [i]]', {i: 2}),
-        /List elements must have the same type, got 'list<int>' and 'list<dyn>'/
+        /List elements must have the same type, expected type 'list<int>' but found 'list<dyn>'/
       )
 
       t.assert.throws(
         () => evaluate('[1, "hello", true, null]'),
-        /List elements must have the same type, got 'int' and 'string'/
+        /List elements must have the same type, expected type 'int' but found 'string'/
       )
 
       t.assert.throws(
         () => evaluate('[dyn(1), "hello", true, null]'),
-        /List elements must have the same type, got 'dyn' and 'string'/
+        /List elements must have the same type, expected type 'dyn' but found 'string'/
       )
 
       evaluate('[dyn(1), dyn("hello"), dyn(true), dyn(null)]')
+    })
+
+    test('allows mixed lists when explicitly disabled', (t) => {
+      const env = new Environment({
+        homogeneousAggregateLiterals: false,
+        unlistedVariablesAreDyn: true
+      })
+
+      t.assert.deepStrictEqual(env.evaluate('[1, 1.0]'), [1n, 1])
+      t.assert.deepStrictEqual(env.evaluate('[[1], [1.0]]'), [[1n], [1]])
+      t.assert.deepStrictEqual(env.evaluate('[[1], [i]]', {i: 2}), [[1n], [2]])
+      t.assert.deepStrictEqual(env.evaluate('[1, "hello", true, null]'), [1n, 'hello', true, null])
+      t.assert.deepStrictEqual(env.evaluate('[dyn(1), "hello", true, null]'), [
+        1n,
+        'hello',
+        true,
+        null
+      ])
+      t.assert.deepStrictEqual(env.evaluate('[dyn(1), dyn("hello"), dyn(true), dyn(null)]'), [
+        1n,
+        'hello',
+        true,
+        null
+      ])
     })
   })
 
