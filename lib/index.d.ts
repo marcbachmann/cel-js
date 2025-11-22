@@ -142,6 +142,11 @@ export interface EnvironmentOptions {
    * When false, all variables must be explicitly registered.
    */
   unlistedVariablesAreDyn?: boolean
+  /**
+   * When true (default), list and map literals must have homogeneous element/key/value types.
+   * When false, mixed literals are inferred as list<dyn> or map with dyn components.
+   */
+  homogeneousAggregateLiterals?: boolean
 }
 
 /**

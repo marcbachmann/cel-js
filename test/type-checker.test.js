@@ -49,11 +49,60 @@ describe('Type Checker', () => {
     assert.strictEqual(mapResult.type, 'map<string, int>')
   })
 
-  test('map literal rejects mixed value types without dyn', () => {
+  test('list literal enforces homogeneous elements by default', () => {
+    const env = new Environment()
+    const result = env.check('[1, "two", true]')
+    assert.strictEqual(result.valid, false)
+    assert.match(result.error.message, /List elements must have the same type/)
+  })
+
+  test('list literal allows mixed element types when explicitly disabled', () => {
+    const env = new Environment({homogeneousAggregateLiterals: false})
+    const result = env.check('[1, "two"]')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'list')
+  })
+
+  test('list literal rejects assignable nested types by default', () => {
+    const env = new Environment()
+    const result = env.check('[[], [1]]')
+    assert.strictEqual(result.valid, false)
+    assert.match(
+      result.error.message,
+      /List elements must have the same type, expected type 'list<dyn>' but found 'list<int>'/
+    )
+  })
+
+  test('list literal rejects mixing dyn elements with concrete ones', () => {
+    const env = new Environment()
+
+    const dynFirst = env.check('[dyn(1), 2]')
+    assert.strictEqual(dynFirst.valid, false)
+    assert.match(
+      dynFirst.error.message,
+      /List elements must have the same type, expected type 'dyn' but found 'int'/
+    )
+
+    const dynLast = env.check('[1, dyn(2)]')
+    assert.strictEqual(dynLast.valid, false)
+    assert.match(
+      dynLast.error.message,
+      /List elements must have the same type, expected type 'int' but found 'dyn'/
+    )
+  })
+
+  test('map literal enforces homogeneous value types by default', () => {
     const env = new Environment()
     const result = env.check('{"name": "John", "age": 30}')
     assert.strictEqual(result.valid, false)
     assert.match(result.error.message, /Map value uses wrong type/)
+  })
+
+  test('map literal allows mixed value types when explicitly disabled', () => {
+    const env = new Environment({homogeneousAggregateLiterals: false})
+    const result = env.check('{"name": "John", "age": 30}')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'map<string, dyn>')
   })
 
   test('map literal accepts mixed value types when wrapped with dyn', () => {
@@ -63,11 +112,18 @@ describe('Type Checker', () => {
     assert.strictEqual(result.type, 'map<string, dyn>')
   })
 
-  test('map literal rejects mixed key types without dyn', () => {
+  test('map literal enforces homogeneous key types by default', () => {
     const env = new Environment()
     const result = env.check('{"name": "John", 1: "other"}')
     assert.strictEqual(result.valid, false)
     assert.match(result.error.message, /Map key uses wrong type/)
+  })
+
+  test('map literal allows mixed key types when explicitly disabled', () => {
+    const env = new Environment({homogeneousAggregateLiterals: false})
+    const result = env.check('{"name": "John", 1: "other"}')
+    assert.strictEqual(result.valid, true)
+    assert.strictEqual(result.type, 'map<dyn, string>')
   })
 
   test('map literal accepts mixed key types when wrapped with dyn', () => {
@@ -75,6 +131,34 @@ describe('Type Checker', () => {
     const result = env.check('{dyn("name"): "John", dyn(1): "other"}')
     assert.strictEqual(result.valid, true)
     assert.strictEqual(result.type, 'map<dyn, string>')
+  })
+
+  test('map literal rejects assignable nested map types by default', () => {
+    const env = new Environment()
+    const result = env.check('{"primary": {}, "secondary": {"id": 1}}')
+    assert.strictEqual(result.valid, false)
+    assert.match(
+      result.error.message,
+      /Map value uses wrong type, expected type 'map<dyn, dyn>' but found 'map<string, int>'/
+    )
+  })
+
+  test('map literal rejects mixing dyn keys or values with concrete ones', () => {
+    const env = new Environment()
+
+    const dynValueLater = env.check('{"name": "John", "age": dyn(30)}')
+    assert.strictEqual(dynValueLater.valid, false)
+    assert.match(
+      dynValueLater.error.message,
+      /Map value uses wrong type, expected type 'string' but found 'dyn'/
+    )
+
+    const dynKeyLater = env.check('{"name": "John", dyn(1): "other"}')
+    assert.strictEqual(dynKeyLater.valid, false)
+    assert.match(
+      dynKeyLater.error.message,
+      /Map key uses wrong type, expected type 'string' but found 'dyn'/
+    )
   })
 
   test('arithmetic operators with matching types', () => {

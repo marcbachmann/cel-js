@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {evaluate, Environment} from '../lib/index.js'
 
 describe('maps/objects expressions', () => {
   describe('literals', () => {
@@ -87,11 +87,20 @@ describe('maps/objects expressions', () => {
       })
     })
 
-    test('rejects mixed value types without dyn', (t) => {
+    test('rejects mixed value types by default', (t) => {
       t.assert.throws(
         () => evaluate('{"name": "John", "age": 30, "active": true}'),
         /Map value uses wrong type/
       )
+    })
+
+    test('allows mixed value types when explicitly disabled', (t) => {
+      const env = new Environment({homogeneousAggregateLiterals: false})
+      t.assert.deepStrictEqual(env.evaluate('{"name": "John", "age": 30, "active": true}'), {
+        name: 'John',
+        age: 30n,
+        active: true
+      })
     })
 
     test('allows mixed value types when wrapped with dyn', (t) => {
@@ -101,8 +110,24 @@ describe('maps/objects expressions', () => {
       )
     })
 
-    test('rejects mixed key types without dyn', (t) => {
+    test('still enforces map values when explicitly enabled', (t) => {
+      const env = new Environment({homogeneousAggregateLiterals: true})
+      t.assert.throws(
+        () => env.evaluate('{"name": "John", "age": 30}'),
+        /Map value uses wrong type/
+      )
+    })
+
+    test('rejects mixed key types by default', (t) => {
       t.assert.throws(() => evaluate('{"name": "John", 1: "duplicate"}'), /Map key uses wrong type/)
+    })
+
+    test('allows mixed key types when explicitly disabled', (t) => {
+      const env = new Environment({homogeneousAggregateLiterals: false})
+      t.assert.deepStrictEqual(env.evaluate('{"name": "John", 1: "duplicate"}'), {
+        name: 'John',
+        1: 'duplicate'
+      })
     })
 
     test('allows mixed key types when wrapped with dyn', (t) => {
@@ -110,6 +135,14 @@ describe('maps/objects expressions', () => {
         name: 'John',
         1: 'one'
       })
+    })
+
+    test('still enforces map keys when explicitly enabled', (t) => {
+      const env = new Environment({homogeneousAggregateLiterals: true})
+      t.assert.throws(
+        () => env.evaluate('{"name": "John", 1: "duplicate"}'),
+        /Map key uses wrong type/
+      )
     })
 
     test('should create array of maps', (t) => {

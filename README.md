@@ -90,9 +90,13 @@ env.evaluate('"Hi" * 3') // "HiHiHi"
 ```javascript
 new Environment({
   // Treat undeclared variables as dynamic type
-  unlistedVariablesAreDyn: false
+  unlistedVariablesAreDyn: false,
+  // Require list/map literals to stay strictly homogeneous (default: true)
+  homogeneousAggregateLiterals: true
 })
 ```
+
+Set `homogeneousAggregateLiterals` to `false` if you need aggregate literals to accept mixed element/key/value types without wrapping everything in `dyn(...)`.
 
 #### Environment Methods
 

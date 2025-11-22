@@ -35,7 +35,10 @@ describe('macros', () => {
     })
 
     test('should throw when a nested property does not exist', (t) => {
-      t.assert.throws(() => evaluate('has(user.nonExisting.foo)', context), /No such key: nonExisting/)
+      t.assert.throws(
+        () => evaluate('has(user.nonExisting.foo)', context),
+        /No such key: nonExisting/
+      )
 
       t.assert.throws(
         () => evaluate('has(user.profile.nonExisting.bar)', context),
