@@ -1,22 +1,22 @@
 import {test, describe} from 'node:test'
-import {evaluate, parse} from '../lib/index.js'
+import {expectEval, expectParseAst} from './helpers.js'
 
 describe('operator precedence', () => {
-  test('ternary should have lower precedence than logical AND', (t) => {
-    t.assert.strictEqual(evaluate('true && false ? "wrong" : "right"'), 'right')
+  test('ternary should have lower precedence than logical AND', () => {
+    expectEval('true && false ? "wrong" : "right"', 'right')
   })
 
-  test('ternary should have lower precedence than logical OR', (t) => {
-    t.assert.strictEqual(evaluate('false || true ? "right" : "wrong"'), 'right')
+  test('ternary should have lower precedence than logical OR', () => {
+    expectEval('false || true ? "right" : "wrong"', 'right')
   })
 
-  test('ternary should be right-associative', (t) => {
-    t.assert.strictEqual(evaluate(`a ? b ? "ab" : "a" : "none"`, {a: true, b: true}), 'ab')
-    t.assert.strictEqual(evaluate(`a ? b ? "ab" : "a" : "none"`, {a: true, b: false}), 'a')
-    t.assert.strictEqual(evaluate(`a ? b ? "ab" : "a" : "none"`, {a: false, b: true}), 'none')
+  test('ternary should be right-associative', () => {
+    expectEval(`a ? b ? "ab" : "a" : "none"`, 'ab', {a: true, b: true})
+    expectEval(`a ? b ? "ab" : "a" : "none"`, 'a', {a: true, b: false})
+    expectEval(`a ? b ? "ab" : "a" : "none"`, 'none', {a: false, b: true})
   })
 
-  test('complex expression with correct precedence', (t) => {
+  test('complex expression with correct precedence', () => {
     const expression = `
       user.isActive &&
       user.permissions.canEdit &&
@@ -36,16 +36,12 @@ describe('operator precedence', () => {
       resource: {ownerId: 123}
     }
 
-    const result = evaluate(expression, context)
-    t.assert.strictEqual(result, 'allowed')
-
-    const result2 = evaluate(expression, {...context, user: {...context.user, isActive: false}})
-    t.assert.strictEqual(result2, 'denied')
+    expectEval(expression, 'allowed', context)
+    expectEval(expression, 'denied', {...context, user: {...context.user, isActive: false}})
   })
 
-  test('ternary AST structure should be correct', (t) => {
-    const parsed = parse('a && b ? "yes" : "no"')
-    t.assert.deepEqual(parsed.ast, [
+  test('ternary AST structure should be correct', () => {
+    expectParseAst('a && b ? "yes" : "no"', [
       '?:',
       ['&&', ['id', 'a'], ['id', 'b']],
       ['value', 'yes'],
@@ -53,7 +49,7 @@ describe('operator precedence', () => {
     ])
   })
 
-  test('arithmetic precedence in ternary', (t) => {
-    t.assert.strictEqual(evaluate('1 + 2 * 3 > 5 ? "big" : "small"'), 'big')
+  test('arithmetic precedence in ternary', () => {
+    expectEval('1 + 2 * 3 > 5 ? "big" : "small"', 'big')
   })
 })

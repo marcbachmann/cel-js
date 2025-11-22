@@ -116,7 +116,7 @@ describe('Environment', () => {
     assert.throws(() => env.evaluate('x + 1', {x: 'not a number'}), EvaluationError)
   })
 
-  test('function overloads', (t) => {
+  test('function overloads', () => {
     const env = new Environment()
       .registerFunction('convert(double): string', (v) => String(v))
       .registerFunction('convert(int): string', (v) => String(v))
@@ -125,12 +125,12 @@ describe('Environment', () => {
       .registerFunction('convert(string): string', (v) => v)
       .registerFunction('string.convert(): string', (v) => v)
 
-    t.assert.strictEqual(env.evaluate('convert("foo")'), 'foo')
-    t.assert.strictEqual(env.evaluate('convert(42)'), '42')
-    t.assert.strictEqual(env.evaluate('convert(1.1)'), '1.1')
-    t.assert.strictEqual(env.evaluate('convert(1)'), '1')
-    t.assert.throws(() => env.evaluate('convert("foo", ")'), ParseError)
-    t.assert.throws(() => env.evaluate('convert("foo", "bar")'), /found no matching overload/)
+    assert.strictEqual(env.evaluate('convert("foo")'), 'foo')
+    assert.strictEqual(env.evaluate('convert(42)'), '42')
+    assert.strictEqual(env.evaluate('convert(1.1)'), '1.1')
+    assert.strictEqual(env.evaluate('convert(1)'), '1')
+    assert.throws(() => env.evaluate('convert("foo", ")'), ParseError)
+    assert.throws(() => env.evaluate('convert("foo", "bar")'), /found no matching overload/)
   })
 
   test('inheritance from global functions', () => {

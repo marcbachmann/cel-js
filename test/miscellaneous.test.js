@@ -1,64 +1,35 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {expectEval} from './helpers.js'
 
 describe('miscellaneous', () => {
-  test('order of arithmetic operations', (t) => {
-    t.assert.strictEqual(evaluate('1 + 2 * 3 + 1'), 8n)
-  })
+  test('order of arithmetic operations', () => expectEval('1 + 2 * 3 + 1', 8n))
 
   describe('parentheses', () => {
-    test('should prioritize parentheses expression', (t) => {
-      t.assert.strictEqual(evaluate('(1 + 2) * 3 + 1'), 10n)
-    })
-
-    test('should allow multiple expressions', (t) => {
-      t.assert.strictEqual(evaluate('(1 + 2) * (3 + 1)'), 12n)
-    })
-
-    test('should handle nested parentheses', (t) => {
-      t.assert.strictEqual(evaluate('((1 + 2) * 3) + (4 / 2)'), 11n)
-    })
-
-    test('should handle complex nested expressions', (t) => {
-      t.assert.strictEqual(evaluate('(1 + (2 * (3 + 4))) - (5 - 3)'), 13n)
+    test('should prioritize parentheses expression', () => expectEval('(1 + 2) * 3 + 1', 10n))
+    test('should allow multiple expressions', () => expectEval('(1 + 2) * (3 + 1)', 12n))
+    test('should handle nested parentheses', () => expectEval('((1 + 2) * 3) + (4 / 2)', 11n))
+    test('should handle complex nested expressions', () => {
+      expectEval('(1 + (2 * (3 + 4))) - (5 - 3)', 13n)
     })
   })
 
   describe('operator precedence', () => {
-    test('multiplication before addition', (t) => {
-      t.assert.strictEqual(evaluate('2 + 3 * 4'), 14n)
-    })
-
-    test('division before subtraction', (t) => {
-      t.assert.strictEqual(evaluate('10 - 8 / 2'), 6n)
-    })
-
-    test('comparison operators', (t) => {
-      t.assert.strictEqual(evaluate('1 + 2 == 3 && 4 > 2'), true)
-    })
-
-    test('logical operators precedence', (t) => {
-      t.assert.strictEqual(evaluate('true || false && false'), true) // && has higher precedence than ||
-    })
+    test('multiplication before addition', () => expectEval('2 + 3 * 4', 14n))
+    test('division before subtraction', () => expectEval('10 - 8 / 2', 6n))
+    test('comparison operators', () => expectEval('1 + 2 == 3 && 4 > 2', true))
+    // && has higher precedence than ||
+    test('logical operators precedence', () => expectEval('true || false && false', true))
   })
 
   describe('whitespace handling', () => {
-    test('should handle extra whitespace', (t) => {
-      t.assert.strictEqual(evaluate('  1   +   2  '), 3n)
-    })
-
-    test('should handle tabs and newlines', (t) => {
-      t.assert.strictEqual(evaluate('1\t+\n2'), 3n)
-    })
-
-    test('should handle no whitespace', (t) => {
-      t.assert.strictEqual(evaluate('1+2*3'), 7n)
-    })
+    test('should handle extra whitespace', () => expectEval('  1   +   2  ', 3n))
+    test('should handle tabs and newlines', () => expectEval('1\t+\n2', 3n))
+    test('should handle no whitespace', () => expectEval('1+2*3', 7n))
   })
 
   describe('complex expressions', () => {
-    test('should handle complex mixed operations', (t) => {
-      const context = {
+    test('should handle complex mixed operations', () => {
+      expectEval('(a + b) * c > d && e || f == g', true, {
         a: 1,
         b: 2,
         c: 3,
@@ -66,12 +37,11 @@ describe('miscellaneous', () => {
         e: false,
         f: 'hello',
         g: 'hello'
-      }
-      t.assert.strictEqual(evaluate('(a + b) * c > d && e || f == g', context), true)
+      })
     })
 
-    test('should handle deeply nested property access', (t) => {
-      const context = {
+    test('should handle deeply nested property access', () => {
+      expectEval('user.profile.settings.theme.color', 'blue', {
         user: {
           profile: {
             settings: {
@@ -81,12 +51,11 @@ describe('miscellaneous', () => {
             }
           }
         }
-      }
-      t.assert.strictEqual(evaluate('user.profile.settings.theme.color', context), 'blue')
+      })
     })
 
-    test('should handle mixed array and object access', (t) => {
-      const context = {
+    test('should handle mixed array and object access', () => {
+      expectEval('data.users[0].roles[1].permissions["read"]', true, {
         data: {
           users: [
             {
@@ -94,8 +63,7 @@ describe('miscellaneous', () => {
             }
           ]
         }
-      }
-      t.assert.strictEqual(evaluate('data.users[0].roles[1].permissions["read"]', context), true)
+      })
     })
   })
 })

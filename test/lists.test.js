@@ -1,189 +1,159 @@
 import {test, describe} from 'node:test'
-import {evaluate, Environment} from '../lib/index.js'
+import {TestEnvironment, expectEval, expectEvalDeep, expectEvalThrows} from './helpers.js'
 
 describe('lists expressions', () => {
   describe('literals', () => {
-    test('should create an empty list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[]'), [])
+    test('should create an empty list', () => {
+      expectEvalDeep('[]', [])
     })
 
-    test('should create a one element list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1]'), [1n])
+    test('should create a one element list', () => {
+      expectEvalDeep('[1]', [1n])
     })
 
-    test('should create a many element list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, 2, 3]'), [1n, 2n, 3n])
+    test('should create a many element list', () => {
+      expectEvalDeep('[1, 2, 3]', [1n, 2n, 3n])
     })
 
-    test('rejects mixed lists by default', (t) => {
-      t.assert.throws(
-        () => evaluate('[1, 1.0]'),
+    test('rejects mixed lists by default', () => {
+      expectEvalThrows(
+        '[1, 1.0]',
         /List elements must have the same type, expected type 'int' but found 'double'/
       )
 
-      t.assert.throws(
-        () => evaluate('[[1], [1.0]]'),
+      expectEvalThrows(
+        '[[1], [1.0]]',
         /List elements must have the same type, expected type 'list<int>' but found 'list<double>'/
       )
 
-      t.assert.throws(
-        () => evaluate('[[1], [i]]', {i: 2}),
-        /List elements must have the same type, expected type 'list<int>' but found 'list<dyn>'/
+      expectEvalThrows(
+        '[[1], [i]]',
+        /List elements must have the same type, expected type 'list<int>' but found 'list<dyn>'/,
+        {i: 2}
       )
 
-      t.assert.throws(
-        () => evaluate('[1, "hello", true, null]'),
+      expectEvalThrows(
+        '[1, "hello", true, null]',
         /List elements must have the same type, expected type 'int' but found 'string'/
       )
 
-      t.assert.throws(
-        () => evaluate('[dyn(1), "hello", true, null]'),
+      expectEvalThrows(
+        '[dyn(1), "hello", true, null]',
         /List elements must have the same type, expected type 'dyn' but found 'string'/
       )
 
-      evaluate('[dyn(1), dyn("hello"), dyn(true), dyn(null)]')
+      expectEvalDeep('[dyn(1), dyn("hello"), dyn(true), dyn(null)]', [1n, 'hello', true, null])
     })
 
-    test('allows mixed lists when explicitly disabled', (t) => {
-      const env = new Environment({
+    test('allows mixed lists when explicitly disabled', () => {
+      const env = new TestEnvironment({
         homogeneousAggregateLiterals: false,
         unlistedVariablesAreDyn: true
       })
 
-      t.assert.deepStrictEqual(env.evaluate('[1, 1.0]'), [1n, 1])
-      t.assert.deepStrictEqual(env.evaluate('[[1], [1.0]]'), [[1n], [1]])
-      t.assert.deepStrictEqual(env.evaluate('[[1], [i]]', {i: 2}), [[1n], [2]])
-      t.assert.deepStrictEqual(env.evaluate('[1, "hello", true, null]'), [1n, 'hello', true, null])
-      t.assert.deepStrictEqual(env.evaluate('[dyn(1), "hello", true, null]'), [
-        1n,
-        'hello',
-        true,
-        null
-      ])
-      t.assert.deepStrictEqual(env.evaluate('[dyn(1), dyn("hello"), dyn(true), dyn(null)]'), [
-        1n,
-        'hello',
-        true,
-        null
-      ])
+      env.expectEvalDeep('[1, 1.0]', [1n, 1])
+      env.expectEvalDeep('[[1], [1.0]]', [[1n], [1]])
+      env.expectEvalDeep('[[1], [i]]', [[1n], [2]], {i: 2})
+      env.expectEvalDeep('[1, "hello", true, null]', [1n, 'hello', true, null])
+      env.expectEvalDeep('[dyn(1), "hello", true, null]', [1n, 'hello', true, null])
+      env.expectEvalDeep('[dyn(1), dyn("hello"), dyn(true), dyn(null)]', [1n, 'hello', true, null])
     })
   })
 
   describe('nested lists', () => {
-    test('should create a one element nested list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[[1]]'), [[1n]])
+    test('should create a one element nested list', () => {
+      expectEvalDeep('[[1]]', [[1n]])
     })
 
-    test('should create a many element nested list', (t) => {
-      t.assert.deepStrictEqual(evaluate('[[1], [2], [3]]'), [[1n], [2n], [3n]])
+    test('should create a many element nested list', () => {
+      expectEvalDeep('[[1], [2], [3]]', [[1n], [2n], [3n]])
     })
   })
 
   describe('index access', () => {
-    test('should access list by index', (t) => {
-      t.assert.strictEqual(evaluate('a[1]', {a: [1, 2, 3]}), 2)
+    test('should access list by index', () => {
+      expectEval('a[1]', 2, {a: [1, 2, 3]})
     })
 
-    test('should access list by index if literal used', (t) => {
-      t.assert.strictEqual(evaluate('[1, 5678, 3][1]'), 5678n)
+    test('should access list by index if literal used', () => {
+      expectEval('[1, 5678, 3][1]', 5678n)
     })
 
-    test('should access list on zero index', (t) => {
-      t.assert.strictEqual(evaluate('[7, 8, 9][0]'), 7n)
+    test('should access list on zero index', () => {
+      expectEval('[7, 8, 9][0]', 7n)
     })
 
-    test('should access list a singleton', (t) => {
-      t.assert.strictEqual(evaluate('["foo"][0]'), 'foo')
+    test('should access list a singleton', () => {
+      expectEval('["foo"][0]', 'foo')
     })
 
-    test('should access list on the last index', (t) => {
-      t.assert.strictEqual(evaluate('[7, 8, 9][2]'), 9n)
+    test('should access list on the last index', () => {
+      expectEval('[7, 8, 9][2]', 9n)
     })
 
-    test('should access the list on middle values', (t) => {
-      t.assert.strictEqual(evaluate('[0, 1, 1, 2, 3, 5, 8, 13][4]'), 3n)
+    test('should access the list on middle values', () => {
+      expectEval('[0, 1, 1, 2, 3, 5, 8, 13][4]', 3n)
     })
 
-    test('throws on string lookup', (t) => {
-      t.assert.throws(() => evaluate('[1, 2, 3]["0"]'), /List index must be int, got 'string'/)
+    test('throws on string lookup', () => {
+      expectEvalThrows('[1, 2, 3]["0"]', /List index must be int, got 'string'/)
     })
 
-    test('throws on negative indices', (t) => {
-      t.assert.throws(
-        () => evaluate('[1, 2, 3][-1]'),
-        /No such key: index out of bounds, index -1 < 0/
-      )
+    test('throws on negative indices', () => {
+      expectEvalThrows('[1, 2, 3][-1]', /No such key: index out of bounds, index -1 < 0/)
     })
 
-    test('throws out of bounds indices', (t) => {
-      t.assert.throws(
-        () => evaluate('[1][1]'),
-        /No such key: index out of bounds, index 1 >= size 1/
-      )
-
-      t.assert.throws(
-        () => evaluate('[1][5]'),
-        /No such key: index out of bounds, index 5 >= size 1/
-      )
+    test('throws out of bounds indices', () => {
+      expectEvalThrows('[1][1]', /No such key: index out of bounds, index 1 >= size 1/)
+      expectEvalThrows('[1][5]', /No such key: index out of bounds, index 5 >= size 1/)
     })
 
-    test('throws out of bounds indices', (t) => {
-      t.assert.throws(
-        () => evaluate('[1][1]'),
-        /No such key: index out of bounds, index 1 >= size 1/
-      )
-
-      t.assert.throws(
-        () => evaluate('[1][5]'),
-        /No such key: index out of bounds, index 5 >= size 1/
-      )
+    test('throws out of bounds indices', () => {
+      expectEvalThrows('[1][1]', /No such key: index out of bounds, index 1 >= size 1/)
+      expectEvalThrows('[1][5]', /No such key: index out of bounds, index 5 >= size 1/)
     })
 
-    test('throws on invalid identifier access', (t) => {
-      t.assert.throws(() => evaluate('[1, 2, 3].1'), /Expected IDENTIFIER, got NUMBER/)
-      t.assert.throws(() => evaluate('list.1', {list: []}), /Expected IDENTIFIER, got NUMBER/)
+    test('throws on invalid identifier access', () => {
+      expectEvalThrows('[1, 2, 3].1', /Expected IDENTIFIER, got NUMBER/)
+      expectEvalThrows('list.1', /Expected IDENTIFIER, got NUMBER/, {list: []})
     })
   })
 
   describe('concatenation with arrays', () => {
-    test('should concatenate two lists', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, 2] + [3, 4]'), [1n, 2n, 3n, 4n])
+    test('should concatenate two lists', () => {
+      expectEvalDeep('[1, 2] + [3, 4]', [1n, 2n, 3n, 4n])
     })
 
-    test('should concatenate two lists with the same element', (t) => {
-      t.assert.deepStrictEqual(evaluate('[2] + [2]'), [2n, 2n])
+    test('should concatenate two lists with the same element', () => {
+      expectEvalDeep('[2] + [2]', [2n, 2n])
     })
 
-    test('should return empty list if both elements are empty', (t) => {
-      t.assert.deepStrictEqual(evaluate('[] + []'), [])
+    test('should return empty list if both elements are empty', () => {
+      expectEvalDeep('[] + []', [])
     })
 
-    test('should return correct list if left side is empty', (t) => {
-      t.assert.deepStrictEqual(evaluate('[] + [1, 2]'), [1n, 2n])
+    test('should return correct list if left side is empty', () => {
+      expectEvalDeep('[] + [1, 2]', [1n, 2n])
     })
 
-    test('should return correct list if right side is empty', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1, 2] + []'), [1n, 2n])
+    test('should return correct list if right side is empty', () => {
+      expectEvalDeep('[1, 2] + []', [1n, 2n])
     })
 
-    test('does not support mixed list types', (t) => {
-      t.assert.throws(() => evaluate('[1] + [1.0]'), /no such overload: list<int> \+ list<double>/)
-
-      t.assert.throws(
-        () => evaluate('[""] + [1.0]'),
-        /no such overload: list<string> \+ list<double>/
-      )
+    test('does not support mixed list types', () => {
+      expectEvalThrows('[1] + [1.0]', /no such overload: list<int> \+ list<double>/)
+      expectEvalThrows('[""] + [1.0]', /no such overload: list<string> \+ list<double>/)
     })
 
-    test('supports mixed types with dyn', (t) => {
-      t.assert.deepStrictEqual(evaluate('[1] + dyn([2.0])'), [1n, 2])
-      t.assert.deepStrictEqual(evaluate('[dyn(1)] + [2.0]'), [1n, 2])
-      t.assert.deepStrictEqual(evaluate('dyn([1]) + [2.0]'), [1n, 2])
-      t.assert.deepStrictEqual(evaluate('dyn([1]) + dyn([2.0])'), [1n, 2])
-      t.assert.deepStrictEqual(evaluate('i + [2.0]', {i: [1n]}), [1n, 2])
+    test('supports mixed types with dyn', () => {
+      expectEvalDeep('[1] + dyn([2.0])', [1n, 2])
+      expectEvalDeep('[dyn(1)] + [2.0]', [1n, 2])
+      expectEvalDeep('dyn([1]) + [2.0]', [1n, 2])
+      expectEvalDeep('dyn([1]) + dyn([2.0])', [1n, 2])
+      expectEvalDeep('i + [2.0]', [1n, 2], {i: [1n]})
     })
 
-    test('does not support in check with invalid types', (t) => {
+    test('does not support in check with invalid types', () => {
       class User {
         constructor({name, age}) {
           this.name = name
@@ -191,7 +161,7 @@ describe('lists expressions', () => {
         }
       }
 
-      const env = new Environment()
+      const env = new TestEnvironment()
         .registerType('User', {ctor: User, fields: {name: 'string', age: 'double'}})
         .registerOperator('User == User', (a, b) => a.name === b.name && a.age === b.age)
         .registerOperator('User in list<User>', (a, b) =>
@@ -215,32 +185,33 @@ describe('lists expressions', () => {
         ]
       }
 
-      t.assert.deepStrictEqual(env.evaluate('users[0] in users', context), true)
-      t.assert.deepStrictEqual(env.evaluate('existingUser in users', context), true)
-      t.assert.deepStrictEqual(env.evaluate('otherUser in users', context), false)
+      env.expectEval('users[0] in users', true, context)
+      env.expectEval('existingUser in users', true, context)
+      env.expectEval('otherUser in users', false, context)
 
-      t.assert.deepStrictEqual(env.evaluate('existingUser == existingUser', context), true)
-      t.assert.deepStrictEqual(env.evaluate('existingUser == users[0]', context), true)
-      t.assert.deepStrictEqual(env.evaluate('existingUser == dynUser', context), true)
+      env.expectEval('existingUser == existingUser', true, context)
+      env.expectEval('existingUser == users[0]', true, context)
+      env.expectEval('existingUser == dynUser', true, context)
 
-      t.assert.throws(
-        () => env.evaluate('likeUser in users', context),
-        /no such overload: map<dyn, dyn> in list<User>/
+      env.expectEvalThrows(
+        'likeUser in users',
+        /no such overload: map<dyn, dyn> in list<User>/,
+        context
       )
     })
 
-    test('does not support equality check with invalid types', (t) => {
-      t.assert.throws(() => evaluate('[1] == [1.0]'), /no such overload: list<int> == list<double>/)
+    test('does not support equality check with invalid types', () => {
+      expectEvalThrows('[1] == [1.0]', /no such overload: list<int> == list<double>/)
     })
   })
 
   describe('with variables', () => {
-    test('should use variables in list construction', (t) => {
-      t.assert.deepStrictEqual(evaluate('[x, y, z]', {x: 1, y: 2, z: 3}), [1, 2, 3])
+    test('should use variables in list construction', () => {
+      expectEvalDeep('[x, y, z]', [1, 2, 3], {x: 1, y: 2, z: 3})
     })
 
-    test('should access list element using variable index', (t) => {
-      t.assert.strictEqual(evaluate('items[index]', {items: ['a', 'b', 'c'], index: 1}), 'b')
+    test('should access list element using variable index', () => {
+      expectEval('items[index]', 'b', {items: ['a', 'b', 'c'], index: 1})
     })
   })
 })
