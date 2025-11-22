@@ -70,5 +70,8 @@ describe('unary operators', () => {
     test('should handle complex unary expressions', () => expectEval('!!!(false || true)', false))
   })
 
-  test('supports many repetitions', () => expectEval(' + 1'.repeat(40).replace(' + ', ''), 40n))
+  test('supports many repetitions', () => {
+    const expression = Array.from({length: 32}, () => '1').join(' + ')
+    expectEval(expression, 32n)
+  })
 })

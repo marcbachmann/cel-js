@@ -93,6 +93,14 @@ new Environment({
   unlistedVariablesAreDyn: false,
   // Require list/map literals to stay strictly homogeneous (default: true)
   homogeneousAggregateLiterals: true
+  // Optional structural limits (parse time)
+  limits: {
+    maxAstNodes: 100000,
+    maxDepth: 250,
+    maxListElements: 1000,
+    maxMapEntries: 1000,
+    maxCallArguments: 32
+  }
 })
 ```
 

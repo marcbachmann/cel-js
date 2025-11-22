@@ -134,6 +134,23 @@ export function evaluate(expression: string, context?: Context): any
 export function serialize(ast: ASTNode): string
 
 /**
+ * Structural limits for parsing and evaluating CEL expressions.
+ * All limits default to the minimums required by the CEL specification.
+ */
+export interface Limits {
+  /** Maximum number of AST nodes that can be produced while parsing */
+  maxAstNodes: number
+  /** Maximum nesting depth for recursive grammar elements (calls, selects, indexes, aggregates) */
+  maxDepth: number
+  /** Maximum number of list literal elements */
+  maxListElements: number
+  /** Maximum number of map literal entries */
+  maxMapEntries: number
+  /** Maximum number of function or method call arguments */
+  maxCallArguments: number
+}
+
+/**
  * Options for creating a new Environment.
  */
 export interface EnvironmentOptions {
@@ -147,6 +164,8 @@ export interface EnvironmentOptions {
    * When false, mixed literals are inferred as list<dyn> or map with dyn components.
    */
   homogeneousAggregateLiterals?: boolean
+  /** Optional overrides for parser/evaluator structural limits */
+  limits?: Partial<Limits>
 }
 
 /**

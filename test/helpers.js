@@ -1,10 +1,22 @@
 import assert from 'node:assert/strict'
-import {evaluate, parse, Environment} from '../lib/index.js'
+import {Environment} from '../lib/index.js'
 
 export class TestEnvironment extends Environment {
   #expectEval
   #expectEvalThrows
   #expectEvalDeep
+  #expectParseThrows
+  #parse
+  #evaluate
+
+  get parse() {
+    return (this.#parse ??= super.parse.bind(this))
+  }
+
+  get evaluate() {
+    return (this.#evaluate ??= super.evaluate.bind(this))
+  }
+
   get expectEval() {
     return (this.#expectEval ??= (expr, expected, context, message) => {
       assert.strictEqual(this.evaluate(expr, context), expected, message)
@@ -31,11 +43,27 @@ export class TestEnvironment extends Environment {
       assert.deepStrictEqual(this.evaluate(expr, context), expected, message)
     })
   }
+
+  get expectParseThrows() {
+    return (this.#expectParseThrows ??= (expr, matcher) => {
+      let err
+      assert.throws(() => {
+        try {
+          this.parse(expr)
+        } catch (e) {
+          err = e
+          throw e
+        }
+      }, matcher)
+      return err
+    })
+  }
 }
 
 const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true})
-const {expectEval, expectEvalDeep, expectEvalThrows} = defaultExpectations
-export {expectEval, expectEvalDeep, expectEvalThrows}
+const {evaluate, parse, expectEval, expectEvalDeep, expectEvalThrows, expectParseThrows} =
+  defaultExpectations
+export {assert, evaluate, parse, expectEval, expectEvalDeep, expectEvalThrows, expectParseThrows}
 
 export function expectParseAst(expression, expectedAst) {
   const result = parse(expression)
@@ -43,12 +71,6 @@ export function expectParseAst(expression, expectedAst) {
   assert.deepStrictEqual(toPlainAst(result.ast), expectedAst)
   return result
 }
-
-export function expectParseThrows(expression, matcher) {
-  assert.throws(() => parse(expression), matcher)
-}
-
-export {assert, evaluate, parse}
 
 function toPlainAst(node) {
   if (!Array.isArray(node)) return node
