@@ -1,5 +1,5 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {expectEval, expectEvalDeep, expectEvalThrows} from './helpers.js'
 
 describe('macros', () => {
   describe('has macro', () => {
@@ -14,92 +14,84 @@ describe('macros', () => {
       }
     }
 
-    test('should return true when nested property exists', (t) => {
-      t.assert.strictEqual(evaluate('has(object.property)', context), true)
+    test('should return true when nested property exists', () => {
+      expectEval('has(object.property)', true, context)
     })
 
-    test('should return false when property does not exist', (t) => {
-      t.assert.strictEqual(evaluate('has(object.nonExisting)', context), false)
+    test('should return false when property does not exist', () => {
+      expectEval('has(object.nonExisting)', false, context)
     })
 
-    test('should return false when property does not exist in logical expression', (t) => {
-      const result = evaluate('has(object.nonExisting) && object.nonExisting', context)
-      t.assert.strictEqual(result, false)
+    test('should return false when property does not exist in logical expression', () => {
+      expectEval('has(object.nonExisting) && object.nonExisting', false, context)
     })
 
-    test('should work with nested properties', (t) => {
-      t.assert.strictEqual(evaluate('has(user.profile.name)', context), true)
-      t.assert.strictEqual(evaluate('has(user.profile.email)', context), true)
-      t.assert.strictEqual(evaluate('has(user.profile.foo.bar)', context), true)
-      t.assert.strictEqual(evaluate('has(user.profile.age)', context), false)
+    test('should work with nested properties', () => {
+      expectEval('has(user.profile.name)', true, context)
+      expectEval('has(user.profile.email)', true, context)
+      expectEval('has(user.profile.foo.bar)', true, context)
+      expectEval('has(user.profile.age)', false, context)
     })
 
-    test('should throw when a nested property does not exist', (t) => {
-      t.assert.throws(
-        () => evaluate('has(user.nonExisting.foo)', context),
-        /No such key: nonExisting/
-      )
-
-      t.assert.throws(
-        () => evaluate('has(user.profile.nonExisting.bar)', context),
-        /No such key: nonExisting/
-      )
+    test('should throw when a nested property does not exist', () => {
+      expectEvalThrows('has(user.nonExisting.foo)', /No such key: nonExisting/, context)
+      expectEvalThrows('has(user.profile.nonExisting.bar)', /No such key: nonExisting/, context)
     })
 
-    test('should throw when no arguments are passed', (t) => {
-      t.assert.throws(() => evaluate('has()'), /found no matching overload for 'has\(\)'/)
+    test('should throw when no arguments are passed', () => {
+      expectEvalThrows('has()', /found no matching overload for 'has\(\)'/)
     })
 
-    test('should throw when multiple arguments are passed', (t) => {
-      t.assert.throws(
-        () => evaluate('has(a, b)', {a: 1, b: 2}),
-        /found no matching overload for 'has\(dyn, dyn\)'/
-      )
+    test('should throw when multiple arguments are passed', () => {
+      expectEvalThrows('has(a, b)', /found no matching overload for 'has\(dyn, dyn\)'/, {
+        a: 1,
+        b: 2
+      })
     })
 
-    test('should throw when argument is not a field selection', (t) => {
+    test('should throw when argument is not a field selection', () => {
       const error = /has\(\) invalid argument/
-      t.assert.throws(() => evaluate('has(object)', context), error)
-      t.assert.throws(() => evaluate('has(nonexistent)', context), error)
-      t.assert.throws(() => evaluate('has(size({}))', context), error)
-      t.assert.throws(() => evaluate('has("foo".size())', context), error)
-      t.assert.throws(() => evaluate('has(user["pro" + "file"].email)', context), error)
-      t.assert.throws(() => evaluate('has(user["profile"])', context), error)
-      t.assert.throws(() => evaluate('has(object[0])', context), error)
-      t.assert.throws(() => evaluate('has([1][0])', context), error)
-      t.assert.throws(() => evaluate('has({"foo":"bar"}["foo"])', context), error)
-      t.assert.throws(() => evaluate('has(object[object.keytoprop])', context), error)
-      t.assert.throws(() => evaluate('has([1][1])', context), error)
-      t.assert.throws(() => evaluate('has({"foo":"bar"}["bar"])', context), error)
-      t.assert.throws(() => evaluate('has(object[object.nonexistent])', context), error)
+      expectEvalThrows('has(object)', error, context)
+      expectEvalThrows('has(nonexistent)', error, context)
+      expectEvalThrows('has(size({}))', error, context)
+      expectEvalThrows('has("foo".size())', error, context)
+      expectEvalThrows('has(user["pro" + "file"].email)', error, context)
+      expectEvalThrows('has(user["profile"])', error, context)
+      expectEvalThrows('has(object[0])', error, context)
+      expectEvalThrows('has([1][0])', error, context)
+      expectEvalThrows('has({"foo":"bar"}["foo"])', error, context)
+      expectEvalThrows('has(object[object.keytoprop])', error, context)
+      expectEvalThrows('has([1][1])', error, context)
+      expectEvalThrows('has({"foo":"bar"}["bar"])', error, context)
+      expectEvalThrows('has(object[object.nonexistent])', error, context)
     })
 
-    test('should throw when variable does not exist', (t) => {
-      t.assert.throws(() => evaluate('has(nonexistent.foo)'), /Unknown variable: nonexistent/)
+    test('should throw when variable does not exist', () => {
+      expectEvalThrows('has(nonexistent.foo)', /Unknown variable: nonexistent/)
     })
 
     describe('should throw when argument is an atomic expression', () => {
       const error = /has\(\) invalid argument/
 
-      test('string literals', (t) => {
-        t.assert.throws(() => evaluate('has("")'), error)
-        t.assert.throws(() => evaluate('has("a")'), error)
+      test('string literals', () => {
+        expectEvalThrows('has("")', error)
+        expectEvalThrows('has("a")', error)
       })
 
-      test('array literals', (t) => {
-        t.assert.throws(() => evaluate('has([])'), error)
-        t.assert.throws(() => evaluate('has([1])'), error)
+      test('array literals', () => {
+        expectEvalThrows('has([])', error)
+        expectEvalThrows('has([1])', error)
       })
 
-      test('boolean literals', (t) => {
-        t.assert.throws(() => evaluate('has(true)'), error)
-        t.assert.throws(() => evaluate('has(false)'), error)
+      test('boolean literals', () => {
+        expectEvalThrows('has(true)', error)
+        expectEvalThrows('has(false)', error)
       })
 
-      test('number literals', (t) => {
-        t.assert.throws(() => evaluate('has(42)'), error)
-        t.assert.throws(() => evaluate('has(0)'), error)
-        t.assert.throws(() => evaluate('has(0.3)'), error)
+      test('number literals', () => {
+        expectEvalThrows('has(42)', error)
+        expectEvalThrows('has(0)', error)
+        expectEvalThrows('has(0.3)', error)
       })
     })
   })
@@ -123,71 +115,59 @@ describe('macros', () => {
       number: 42
     }
 
-    test('is not supported on non-maps or lists', (t) => {
+    test('is not supported on non-maps or lists', () => {
       const err = /found no matching overload/
-      t.assert.throws(() => evaluate('(true).all(x, x > 0)', context), err)
-      t.assert.throws(() => evaluate('"hello".all(x, x > 0)', context), err)
-      t.assert.throws(() => evaluate('b"hello".all(x, x <= 5)', context), err)
+      expectEvalThrows('(true).all(x, x > 0)', err, context)
+      expectEvalThrows('"hello".all(x, x > 0)', err, context)
+      expectEvalThrows('b"hello".all(x, x <= 5)', err, context)
     })
 
-    test('should return true when all elements match predicate', (t) => {
-      t.assert.strictEqual(evaluate('numbers.all(x, x > 0)', context), true)
-      t.assert.strictEqual(evaluate('numbers.all(x, x <= 5)', context), true)
-      t.assert.strictEqual(evaluate('users.all(u, u.active)', context), true)
+    test('should return true when all elements match predicate', () => {
+      expectEval('numbers.all(x, x > 0)', true, context)
+      expectEval('numbers.all(x, x <= 5)', true, context)
+      expectEval('users.all(u, u.active)', true, context)
     })
 
-    test('should return false when not all elements match predicate', (t) => {
-      t.assert.strictEqual(evaluate('numbers.all(x, x > 3)', context), false)
-      t.assert.strictEqual(evaluate('products.all(p, p.inStock)', context), false)
+    test('should return false when not all elements match predicate', () => {
+      expectEval('numbers.all(x, x > 3)', false, context)
+      expectEval('products.all(p, p.inStock)', false, context)
     })
 
-    test('should return true for empty list', (t) => {
-      t.assert.strictEqual(evaluate('emptyList.all(x, x > 0)', context), true)
+    test('should return true for empty list', () => {
+      expectEval('emptyList.all(x, x > 0)', true, context)
     })
 
-    test('should work with string operations', (t) => {
-      t.assert.strictEqual(evaluate('strings.all(s, s.size() > 3)', context), true)
-      t.assert.strictEqual(evaluate('strings.all(s, s.size() > 5)', context), false)
+    test('should work with string operations', () => {
+      expectEval('strings.all(s, s.size() > 3)', true, context)
+      expectEval('strings.all(s, s.size() > 5)', false, context)
     })
 
-    test('should work with complex predicates', (t) => {
-      t.assert.strictEqual(
-        evaluate('users.all(u, u.age >= 25 && u.name.size() > 2)', context),
-        true
-      )
-      t.assert.strictEqual(evaluate('products.all(p, p.price > 20 || p.inStock)', context), true)
+    test('should work with complex predicates', () => {
+      expectEval('users.all(u, u.age >= 25 && u.name.size() > 2)', true, context)
+      expectEval('products.all(p, p.price > 20 || p.inStock)', true, context)
     })
 
-    test('should throw with wrong number of arguments', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.all()', context),
-        /found no matching overload for 'list.all\(\)'/
-      )
-      t.assert.throws(() => evaluate('numbers.all(x)', context), /Unknown variable: x/)
-      t.assert.throws(
-        () => evaluate('numbers.all(x > 0, y < 10)', context),
-        /all\(var, predicate\) invalid predicate iteration variable/
+    test('should throw with wrong number of arguments', () => {
+      expectEvalThrows('numbers.all()', /found no matching overload for 'list.all\(\)'/, context)
+      expectEvalThrows('numbers.all(x)', /Unknown variable: x/, context)
+      expectEvalThrows(
+        'numbers.all(x > 0, y < 10)',
+        /all\(var, predicate\) invalid predicate iteration variable/,
+        context
       )
     })
 
-    test('should throw with non-list argument', (t) => {
-      t.assert.throws(() => evaluate('42.all(x, x > 0)', context), /found no matching overload/)
-
-      t.assert.throws(
-        () => evaluate('"string".all(x, x > 0)', context),
-        /found no matching overload/
-      )
+    test('should throw with non-list argument', () => {
+      expectEvalThrows('42.all(x, x > 0)', /found no matching overload/, context)
+      expectEvalThrows('"string".all(x, x > 0)', /found no matching overload/, context)
     })
 
-    test('should throw with invalid operation', (t) => {
-      t.assert.throws(
-        () => evaluate('mixed.all(x, x > 0)', context),
-        /no such overload: dyn<string> > int/
-      )
+    test('should throw with invalid operation', () => {
+      expectEvalThrows('mixed.all(x, x > 0)', /no such overload: dyn<string> > int/, context)
     })
 
-    test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('all(numbers, x, x > 4)'), /Function not found: 'all'/)
+    test('does not expose function for non-receiver call', () => {
+      expectEvalThrows('all(numbers, x, x > 4)', /Function not found: 'all'/)
     })
   })
 
@@ -203,45 +183,46 @@ describe('macros', () => {
       ]
     }
 
-    test('should return true when at least one element matches', (t) => {
-      t.assert.strictEqual(evaluate('numbers.exists(x, x > 4)', context), true)
-      t.assert.strictEqual(evaluate('users.exists(u, u.age > 30)', context), true)
-      t.assert.strictEqual(evaluate('users.exists(u, !u.active)', context), true)
+    test('should return true when at least one element matches', () => {
+      expectEval('numbers.exists(x, x > 4)', true, context)
+      expectEval('users.exists(u, u.age > 30)', true, context)
+      expectEval('users.exists(u, !u.active)', true, context)
     })
 
-    test('should return false when no elements match', (t) => {
-      t.assert.strictEqual(evaluate('numbers.exists(x, x > 10)', context), false)
-      t.assert.strictEqual(evaluate('users.exists(u, u.age > 40)', context), false)
-      t.assert.strictEqual(evaluate('strings.exists(s, s == "missing")', context), false)
+    test('should return false when no elements match', () => {
+      expectEval('numbers.exists(x, x > 10)', false, context)
+      expectEval('users.exists(u, u.age > 40)', false, context)
+      expectEval('strings.exists(s, s == "missing")', false, context)
     })
 
-    test('should return false for empty list', (t) => {
-      t.assert.strictEqual(evaluate('emptyList.exists(x, x > 0)', context), false)
+    test('should return false for empty list', () => {
+      expectEval('emptyList.exists(x, x > 0)', false, context)
     })
 
-    test('should work with string operations', (t) => {
-      t.assert.strictEqual(evaluate('strings.exists(s, s.startsWith("h"))', context), true)
-      t.assert.strictEqual(evaluate('strings.exists(s, s.startsWith("z"))', context), false)
+    test('should work with string operations', () => {
+      expectEval('strings.exists(s, s.startsWith("h"))', true, context)
+      expectEval('strings.exists(s, s.startsWith("z"))', false, context)
     })
 
-    test('should throw if no boolean is returned', (t) => {
+    test('should throw if no boolean is returned', () => {
       const error = /exists\(var, predicate\) predicate must return bool, got/
-      t.assert.throws(() => evaluate('numbers.exists(x, x)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].exists(x, 0)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].exists(x, "")', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].exists(x, {"nr": x})', context), error)
+      expectEvalThrows('numbers.exists(x, x)', error, context)
+      expectEvalThrows('[0, 1, 2].exists(x, 0)', error, context)
+      expectEvalThrows('[0, 1, 2].exists(x, "")', error, context)
+      expectEvalThrows('[0, 1, 2].exists(x, {"nr": x})', error, context)
     })
 
-    test('should throw with wrong number of arguments', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.exists()', context),
-        /found no matching overload for 'list.exists\(\)/
+    test('should throw with wrong number of arguments', () => {
+      expectEvalThrows(
+        'numbers.exists()',
+        /found no matching overload for 'list.exists\(\)/,
+        context
       )
-      t.assert.throws(() => evaluate('numbers.exists(x)', context), /Unknown variable: x/)
+      expectEvalThrows('numbers.exists(x)', /Unknown variable: x/, context)
     })
 
-    test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('exists(numbers, x, x > 4)'), /Function not found: 'exists'/)
+    test('does not expose function for non-receiver call', () => {
+      expectEvalThrows('exists(numbers, x, x > 4)', /Function not found: 'exists'/)
     })
   })
 
@@ -257,48 +238,46 @@ describe('macros', () => {
       ]
     }
 
-    test('should return true when exactly one element matches', (t) => {
-      t.assert.strictEqual(evaluate('numbers.exists_one(x, x == 3)', context), true)
-      t.assert.strictEqual(evaluate('users.exists_one(u, u.admin)', context), true)
-      t.assert.strictEqual(evaluate('numbers.exists_one(x, x > 4)', context), true)
+    test('should return true when exactly one element matches', () => {
+      expectEval('numbers.exists_one(x, x == 3)', true, context)
+      expectEval('users.exists_one(u, u.admin)', true, context)
+      expectEval('numbers.exists_one(x, x > 4)', true, context)
     })
 
-    test('should return false when no elements match', (t) => {
-      t.assert.strictEqual(evaluate('numbers.exists_one(x, x > 10)', context), false)
-      t.assert.strictEqual(evaluate('users.exists_one(u, u.age > 40)', context), false)
+    test('should return false when no elements match', () => {
+      expectEval('numbers.exists_one(x, x > 10)', false, context)
+      expectEval('users.exists_one(u, u.age > 40)', false, context)
     })
 
-    test('should return false when multiple elements match', (t) => {
-      t.assert.strictEqual(evaluate('numbers.exists_one(x, x > 2)', context), false)
-      t.assert.strictEqual(evaluate('duplicates.exists_one(x, x == 2)', context), false)
-      t.assert.strictEqual(evaluate('users.exists_one(u, !u.admin)', context), false)
+    test('should return false when multiple elements match', () => {
+      expectEval('numbers.exists_one(x, x > 2)', false, context)
+      expectEval('duplicates.exists_one(x, x == 2)', false, context)
+      expectEval('users.exists_one(u, !u.admin)', false, context)
     })
 
-    test('should return false for empty list', (t) => {
-      t.assert.strictEqual(evaluate('emptyList.exists_one(x, x > 0)', context), false)
+    test('should return false for empty list', () => {
+      expectEval('emptyList.exists_one(x, x > 0)', false, context)
     })
 
-    test('should throw if no boolean is returned', (t) => {
+    test('should throw if no boolean is returned', () => {
       const error = /exists_one\(var, predicate\) predicate must return bool, got/
-      t.assert.throws(() => evaluate('numbers.exists_one(x, x)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, 0)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, "")', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].exists_one(x, {"nr": x})', context), error)
+      expectEvalThrows('numbers.exists_one(x, x)', error, context)
+      expectEvalThrows('[0, 1, 2].exists_one(x, 0)', error, context)
+      expectEvalThrows('[0, 1, 2].exists_one(x, "")', error, context)
+      expectEvalThrows('[0, 1, 2].exists_one(x, {"nr": x})', error, context)
     })
 
-    test('should throw with wrong number of arguments', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.exists_one()', context),
-        /found no matching overload for 'list.exists_one\(\)/
+    test('should throw with wrong number of arguments', () => {
+      expectEvalThrows(
+        'numbers.exists_one()',
+        /found no matching overload for 'list.exists_one\(\)'/,
+        context
       )
-      t.assert.throws(() => evaluate('numbers.exists_one(x)', context), /Unknown variable: x/)
+      expectEvalThrows('numbers.exists_one(x)', /Unknown variable: x/, context)
     })
 
-    test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(
-        () => evaluate('exists_one(numbers, x, x > 4)'),
-        /Function not found: 'exists_one'/
-      )
+    test('does not expose function for non-receiver call', () => {
+      expectEvalThrows('exists_one(numbers, x, x > 4)', /Function not found: 'exists_one'/)
     })
   })
 
@@ -314,79 +293,68 @@ describe('macros', () => {
       object: {key1: 'value1', key2: 'value2'}
     }
 
-    test('should transform all elements', (t) => {
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x * 2.0)', context), [2, 4, 6, 8, 10])
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x + 10.0)', context), [11, 12, 13, 14, 15])
+    test('should transform all elements', () => {
+      expectEvalDeep('numbers.map(x, x * 2.0)', [2, 4, 6, 8, 10], context)
+      expectEvalDeep('numbers.map(x, x + 10.0)', [11, 12, 13, 14, 15], context)
 
-      t.assert.deepStrictEqual(evaluate('object.map(x, x)', context), ['key1', 'key2'])
-      t.assert.deepStrictEqual(evaluate('object.map(x, x + ":" + object[x])', context), [
-        'key1:value1',
-        'key2:value2'
-      ])
+      expectEvalDeep('object.map(x, x)', ['key1', 'key2'], context)
+      expectEvalDeep('object.map(x, x + ":" + object[x])', ['key1:value1', 'key2:value2'], context)
     })
 
-    test('supports three-arg form with filter', (t) => {
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x > 2, x * 2.0)', context), [6, 8, 10])
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x < 4, x * 2.0)', context), [2, 4, 6])
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, true, x + 1.0)', context), [2, 3, 4, 5, 6])
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, false, x + 1.0)', context), [])
+    test('supports three-arg form with filter', () => {
+      expectEvalDeep('numbers.map(x, x > 2, x * 2.0)', [6, 8, 10], context)
+      expectEvalDeep('numbers.map(x, x < 4, x * 2.0)', [2, 4, 6], context)
+      expectEvalDeep('numbers.map(x, true, x + 1.0)', [2, 3, 4, 5, 6], context)
+      expectEvalDeep('numbers.map(x, false, x + 1.0)', [], context)
 
-      t.assert.deepStrictEqual(evaluate('object.map(x, x.endsWith("1"), x)', context), ['key1'])
-      t.assert.deepStrictEqual(evaluate('object.map(x, x.endsWith("1"), object[x])', context), [
-        'value1'
-      ])
+      expectEvalDeep('object.map(x, x.endsWith("1"), x)', ['key1'], context)
+      expectEvalDeep('object.map(x, x.endsWith("1"), object[x])', ['value1'], context)
     })
 
-    test('should work with string transformations', (t) => {
-      t.assert.deepStrictEqual(evaluate('strings.map(s, s.size())', context), [5n, 5n])
+    test('should work with string transformations', () => {
+      expectEvalDeep('strings.map(s, s.size())', [5n, 5n], context)
     })
 
-    test('should work with object property access', (t) => {
-      t.assert.deepStrictEqual(evaluate('users.map(u, u.name)', context), ['Alice', 'Bob'])
-      t.assert.deepStrictEqual(evaluate('users.map(u, u.age * 2.0)', context), [50, 60])
+    test('should work with object property access', () => {
+      expectEvalDeep('users.map(u, u.name)', ['Alice', 'Bob'], context)
+      expectEvalDeep('users.map(u, u.age * 2.0)', [50, 60], context)
     })
 
-    test('should work with complex transformations', (t) => {
-      t.assert.deepStrictEqual(evaluate('users.map(u, u.age > 25.0)', context), [false, true])
+    test('should work with complex transformations', () => {
+      expectEvalDeep('users.map(u, u.age > 25.0)', [false, true], context)
     })
 
-    test('should return empty list for empty input', (t) => {
-      t.assert.deepStrictEqual(evaluate('emptyList.map(x, x * 2.0)', context), [])
+    test('should return empty list for empty input', () => {
+      expectEvalDeep('emptyList.map(x, x * 2.0)', [], context)
     })
 
-    test('supports combination with other macros', (t) => {
-      t.assert.deepStrictEqual(
-        evaluate('numbers.filter(x, x < 5.0).map(x, x * 2.0)', context),
-        [2, 4, 6, 8]
-      )
-
-      t.assert.deepStrictEqual(
-        evaluate('users.map(u, numbers.filter(x, x < 2).map(n, n + u.age)[0])', context),
-        [26, 31]
+    test('supports combination with other macros', () => {
+      expectEvalDeep('numbers.filter(x, x < 5.0).map(x, x * 2.0)', [2, 4, 6, 8], context)
+      expectEvalDeep(
+        'users.map(u, numbers.filter(x, x < 2).map(n, n + u.age)[0])',
+        [26, 31],
+        context
       )
     })
 
-    test('should throw with wrong number of arguments', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.map()', context),
-        /found no matching overload for 'list.map\(\)'/
-      )
-      t.assert.throws(() => evaluate('numbers.map(x)', context), /Unknown variable: x/)
-
-      t.assert.throws(() => evaluate('numbers.map(x, x, x, x)', context), /Unknown variable: x/)
+    test('should throw with wrong number of arguments', () => {
+      expectEvalThrows('numbers.map()', /found no matching overload for 'list.map\(\)'/, context)
+      expectEvalThrows('numbers.map(x)', /Unknown variable: x/, context)
+      expectEvalThrows('numbers.map(x, x, x, x)', /Unknown variable: x/, context)
     })
 
-    test('must return a boolean in filter of map(var, filter, transform)', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.map(x, x, x)', context),
-        /map\(var, filter, transform\) predicate must return bool, got/
+    test('must return a boolean in filter of map(var, filter, transform)', () => {
+      expectEvalThrows(
+        'numbers.map(x, x, x)',
+        /map\(var, filter, transform\) predicate must return bool, got/,
+        context
       )
 
-      t.assert.deepStrictEqual(evaluate('numbers.map(x, x == x, x)', context), context.numbers)
+      expectEvalDeep('numbers.map(x, x == x, x)', context.numbers, context)
     })
 
-    test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('map(numbers, x, x > 4)'), /Function not found: 'map'/)
+    test('does not expose function for non-receiver call', () => {
+      expectEvalThrows('map(numbers, x, x > 4)', /Function not found: 'map'/)
     })
   })
 
@@ -404,84 +372,76 @@ describe('macros', () => {
       object: {key1: 'value1', key2: 'value2'}
     }
 
-    test('should filter elements based on predicate', (t) => {
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, true)', context), context.numbers)
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, false)', context), [])
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, x > 5)', context), [6, 7, 8, 9, 10])
+    test('should filter elements based on predicate', () => {
+      expectEvalDeep('numbers.filter(x, true)', context.numbers, context)
+      expectEvalDeep('numbers.filter(x, false)', [], context)
+      expectEvalDeep('numbers.filter(x, x > 5)', [6, 7, 8, 9, 10], context)
 
-      t.assert.deepStrictEqual(
-        evaluate('numbers.filter(number, int(number) % 2 == 0)', context),
-        [0, 2, 4, 6, 8, 10]
-      )
+      expectEvalDeep('numbers.filter(number, int(number) % 2 == 0)', [0, 2, 4, 6, 8, 10], context)
     })
 
-    test('should work with string filtering', (t) => {
-      t.assert.deepStrictEqual(evaluate('strings.filter(s, s.size() > 4)', context), [
-        'hello',
-        'world',
-        'example'
-      ])
-      t.assert.deepStrictEqual(evaluate('strings.filter(s, s.startsWith("t"))', context), ['test'])
+    test('should work with string filtering', () => {
+      expectEvalDeep('strings.filter(s, s.size() > 4)', ['hello', 'world', 'example'], context)
+      expectEvalDeep('strings.filter(s, s.startsWith("t"))', ['test'], context)
     })
 
-    test('should work with object property filtering', (t) => {
+    test('should work with object property filtering', () => {
       const activeUsers = [
         {name: 'Alice', age: 25, active: true},
         {name: 'Charlie', age: 35, active: true}
       ]
-      t.assert.deepStrictEqual(evaluate('users.filter(u, u.active)', context), activeUsers)
+      expectEvalDeep('users.filter(u, u.active)', activeUsers, context)
 
       const youngUsers = [
         {name: 'Alice', age: 25, active: true},
         {name: 'David', age: 20, active: false}
       ]
-      t.assert.deepStrictEqual(evaluate('users.filter(u, u.age < 30)', context), youngUsers)
+      expectEvalDeep('users.filter(u, u.age < 30)', youngUsers, context)
     })
 
-    test('should work with complex predicates', (t) => {
+    test('should work with complex predicates', () => {
       const result = [{name: 'Alice', age: 25, active: true}]
-      t.assert.deepStrictEqual(evaluate('users.filter(u, u.active && u.age < 30)', context), result)
+      expectEvalDeep('users.filter(u, u.active && u.age < 30)', result, context)
     })
 
-    test('should return empty list when no elements match', (t) => {
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, x > 20)', context), [])
-      t.assert.deepStrictEqual(evaluate('users.filter(u, u.age > 50)', context), [])
+    test('should return empty list when no elements match', () => {
+      expectEvalDeep('numbers.filter(x, x > 20)', [], context)
+      expectEvalDeep('users.filter(u, u.age > 50)', [], context)
     })
 
-    test('should return empty list for empty input', (t) => {
-      t.assert.deepStrictEqual(evaluate('emptyList.filter(x, x > 0)', context), [])
+    test('should return empty list for empty input', () => {
+      expectEvalDeep('emptyList.filter(x, x > 0)', [], context)
     })
 
-    test('should filter keys of a map', (t) => {
-      t.assert.deepStrictEqual(evaluate('object.filter(x, x.startsWith("key"))', context), [
-        'key1',
-        'key2'
-      ])
-      t.assert.deepStrictEqual(evaluate('object.filter(x, x.endsWith("y2"))', context), ['key2'])
-      t.assert.deepStrictEqual(
-        evaluate('{"key1": "value1", "key2": "value2"}.filter(x, x.endsWith("y2"))', context),
-        ['key2']
+    test('should filter keys of a map', () => {
+      expectEvalDeep('object.filter(x, x.startsWith("key"))', ['key1', 'key2'], context)
+      expectEvalDeep('object.filter(x, x.endsWith("y2"))', ['key2'], context)
+      expectEvalDeep(
+        '{"key1": "value1", "key2": "value2"}.filter(x, x.endsWith("y2"))',
+        ['key2'],
+        context
       )
     })
 
-    test('should throw if no boolean is returned', (t) => {
+    test('should throw if no boolean is returned', () => {
       const error = /filter\(var, predicate\) predicate must return bool, got/
-      t.assert.throws(() => evaluate('numbers.filter(x, x)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].filter(x, 0)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].filter(x, "")', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].filter(x, {"nr": x})', context), error)
+      expectEvalThrows('numbers.filter(x, x)', error, context)
+      expectEvalThrows('[0, 1, 2].filter(x, 0)', error, context)
+      expectEvalThrows('[0, 1, 2].filter(x, "")', error, context)
+      expectEvalThrows('[0, 1, 2].filter(x, {"nr": x})', error, context)
     })
 
-    test('should throw with wrong number of arguments', (t) => {
-      t.assert.throws(
-        () => evaluate('numbers.filter()', context),
-        /found no matching overload for 'list.filter\(\)'/
+    test('should throw with wrong number of arguments', () => {
+      expectEvalThrows(
+        'numbers.filter()',
+        /found no matching overload for 'list.filter\(\)'/,
+        context
       )
-      t.assert.throws(() => evaluate('numbers.filter(x)', context), /Unknown variable: x/)
+      expectEvalThrows('numbers.filter(x)', /Unknown variable: x/, context)
     })
 
-    test('does not expose function for non-receiver call', (t) => {
-      t.assert.throws(() => evaluate('filter(numbers, x, x > 4)'), /Function not found: 'filter'/)
+    test('does not expose function for non-receiver call', () => {
+      expectEvalThrows('filter(numbers, x, x > 4)', /Function not found: 'filter'/)
     })
   })
 
@@ -495,54 +455,39 @@ describe('macros', () => {
       ]
     }
 
-    test('should chain filter and map', (t) => {
-      // Filter even numbers then double them
+    test('should chain filter and map', () => {
       const evenNumbers = [2, 4, 6, 8, 10]
       const doubledEvens = [4n, 8n, 12n, 16n, 20n]
 
-      t.assert.deepStrictEqual(evaluate('numbers.filter(x, int(x) % 2 == 0)', context), evenNumbers)
-      t.assert.deepStrictEqual(
-        evaluate('numbers.filter(x, int(x) % 2 == 0).map(x, int(x) * 2)', context),
-        doubledEvens
-      )
+      expectEvalDeep('numbers.filter(x, int(x) % 2 == 0)', evenNumbers, context)
+      expectEvalDeep('numbers.filter(x, int(x) % 2 == 0).map(x, int(x) * 2)', doubledEvens, context)
     })
 
-    test('should use all with filtered results', (t) => {
-      // Check if all filtered users have high scores
-      t.assert.strictEqual(
-        evaluate('users.filter(u, u.age > 30).all(u, u.name.size() > 3)', context),
-        true
-      )
+    test('should use all with filtered results', () => {
+      expectEval('users.filter(u, u.age > 30).all(u, u.name.size() > 3)', true, context)
     })
 
-    test('should combine multiple macros', (t) => {
-      // Complex example: check if there exists exactly one user over 30 with all scores above 90
-      t.assert.strictEqual(
-        evaluate('users.filter(u, u.age > 30).all(u, u.name.size() > 3)', context),
-        true
-      )
+    test('should combine multiple macros', () => {
+      expectEval('users.filter(u, u.age > 30).all(u, u.name.size() > 3)', true, context)
     })
 
-    test('should throw if no boolean is returned', (t) => {
+    test('should throw if no boolean is returned', () => {
       const error = /all\(var, predicate\) predicate must return bool, got/
-      t.assert.throws(() => evaluate('numbers.all(x, x)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].all(x, 0)', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].all(x, "")', context), error)
-      t.assert.throws(() => evaluate('[0, 1, 2].all(x, {"nr": x})', context), error)
+      expectEvalThrows('numbers.all(x, x)', error, context)
+      expectEvalThrows('[0, 1, 2].all(x, 0)', error, context)
+      expectEvalThrows('[0, 1, 2].all(x, "")', error, context)
+      expectEvalThrows('[0, 1, 2].all(x, {"nr": x})', error, context)
     })
   })
 
   describe('macro error handling', () => {
-    test('should handle invalid expressions in predicates', (t) => {
-      t.assert.throws(
-        () => evaluate('[1, 2, 3].all(x, nonexistent > 0)'),
-        /Unknown variable: nonexistent/
-      )
+    test('should handle invalid expressions in predicates', () => {
+      expectEvalThrows('[1, 2, 3].all(x, nonexistent > 0)', /Unknown variable: nonexistent/)
     })
 
-    test('should handle type errors in predicates', (t) => {
-      t.assert.throws(
-        () => evaluate('[1, 2].filter(s, s.startsWith("w"))'),
+    test('should handle type errors in predicates', () => {
+      expectEvalThrows(
+        '[1, 2].filter(s, s.startsWith("w"))',
         /found no matching overload for 'int.startsWith/
       )
     })
@@ -559,19 +504,13 @@ describe('macros', () => {
         ])
       }
 
-      t.assert.strictEqual(evaluate('scores.all(s, scores[s] > 70)', context), true)
-      t.assert.strictEqual(evaluate('scores.exists(s, scores[s] > 85)', context), true)
-      t.assert.deepStrictEqual(evaluate('scores.filter(s, scores[s] > 80)', context), [
-        'alice',
-        'bob'
-      ])
+      expectEval('scores.all(s, scores[s] > 70)', true, context)
+      expectEval('scores.exists(s, scores[s] > 85)', true, context)
+      expectEvalDeep('scores.filter(s, scores[s] > 80)', ['alice', 'bob'], context)
 
-      t.assert.strictEqual(evaluate('mapScores.all(s, mapScores[s] > 70)', context), true)
-      t.assert.strictEqual(evaluate('mapScores.exists(s, mapScores[s] > 85)', context), true)
-      t.assert.deepStrictEqual(evaluate('mapScores.filter(s, mapScores[s] > 80)', context), [
-        'alice',
-        'bob'
-      ])
+      expectEval('mapScores.all(s, mapScores[s] > 70)', true, context)
+      expectEval('mapScores.exists(s, mapScores[s] > 85)', true, context)
+      expectEvalDeep('mapScores.filter(s, mapScores[s] > 80)', ['alice', 'bob'], context)
     })
   })
 })

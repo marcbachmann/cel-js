@@ -1,5 +1,5 @@
 import {describe, test} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {expectEval, expectEvalThrows} from './helpers.js'
 
 // simulate an evaluation error
 const divByZero = '((1 / 0) == 0)'
@@ -12,14 +12,14 @@ const ctx = {
 }
 
 function strictEqualTest(expr, expected) {
-  test(expr, (t) => {
-    t.assert.strictEqual(evaluate(expr, ctx), expected)
+  test(expr, () => {
+    expectEval(expr, expected, ctx)
   })
 }
 
 function testThrows(expr, error) {
-  test(expr, (t) => {
-    t.assert.throws(() => evaluate(expr, ctx), error)
+  test(expr, () => {
+    expectEvalThrows(expr, error, ctx)
   })
 }
 

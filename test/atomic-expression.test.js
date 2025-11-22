@@ -1,46 +1,14 @@
 import {test, describe} from 'node:test'
-import {evaluate, parse} from '../lib/index.js'
+import {expectEval, expectParseAst} from './helpers.js'
 
 describe('atomic expressions', () => {
-  test('should evaluate a number', (t) => {
-    t.assert.strictEqual(evaluate('1'), 1n)
-  })
-
-  test('should evaluate a true boolean literal', (t) => {
-    t.assert.strictEqual(evaluate('true'), true)
-  })
-
-  test('should evaluate a false boolean literal', (t) => {
-    t.assert.strictEqual(evaluate('false'), false)
-  })
-
-  test('should evaluate null literal', (t) => {
-    t.assert.strictEqual(evaluate('null'), null)
-  })
-
-  test('should evaluate a string literal', (t) => {
-    t.assert.strictEqual(evaluate('"foo"'), 'foo')
-  })
-
-  test('should evaluate a float', (t) => {
-    t.assert.strictEqual(evaluate('1.2'), 1.2)
-  })
-
-  test('should parse successfully', (t) => {
-    const result = parse('42')
-    t.assert.strictEqual(typeof result, 'function')
-    t.assert.deepEqual(result.ast, ['value', 42n])
-  })
-
-  test('should parse string successfully', (t) => {
-    const result = parse('"hello"')
-    t.assert.strictEqual(typeof result, 'function')
-    t.assert.deepEqual(result.ast, ['value', 'hello'])
-  })
-
-  test('should parse boolean successfully', (t) => {
-    const result = parse('true')
-    t.assert.strictEqual(typeof result, 'function')
-    t.assert.deepEqual(result.ast, ['value', true])
-  })
+  test('should evaluate a number', () => expectEval('1', 1n))
+  test('should evaluate a true boolean literal', () => expectEval('true', true))
+  test('should evaluate a false boolean literal', () => expectEval('false', false))
+  test('should evaluate null literal', () => expectEval('null', null))
+  test('should evaluate a string literal', () => expectEval('"foo"', 'foo'))
+  test('should evaluate a float', () => expectEval('1.2', 1.2))
+  test('should parse successfully', () => expectParseAst('42', ['value', 42n]))
+  test('should parse string successfully', () => expectParseAst('"hello"', ['value', 'hello']))
+  test('should parse boolean successfully', () => expectParseAst('true', ['value', true]))
 })

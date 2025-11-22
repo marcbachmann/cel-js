@@ -1,8 +1,7 @@
 import {describe, test} from 'node:test'
-import assert from 'node:assert'
-import {Environment} from '../lib/evaluator.js'
+import {TestEnvironment} from './helpers.js'
 
-const globalEnv = new Environment()
+const globalEnv = new TestEnvironment()
   .registerVariable('dynamic', 'dyn')
   .registerVariable('dynamicList', 'list<dyn>')
   .registerVariable('integer', 'int')
@@ -18,46 +17,45 @@ const globalEnv = new Environment()
   .registerFunction('max(map<string,int>): string', (list) => 'map-string-int')
   .registerFunction('max(map<string,bool>): string', (list) => 'map-string-bool')
 
-const evaluate = globalEnv.evaluate.bind(globalEnv)
+const {expectEval, expectEvalThrows} = globalEnv
 
 describe('Custom functions', () => {
   test('resolves overloads correctly according to the type check', () => {
-    assert.equal(evaluate('max([1])'), 'list-int')
-    assert.equal(evaluate('max([integer])', {integer: 1n}), 'list-int')
-    assert.equal(evaluate('max(integerList)', {integerList: [1n]}), 'list-int')
-    assert.equal(evaluate('max([false])'), 'list-bool')
-    assert.equal(evaluate('max([boolean])', {boolean: false}), 'list-bool')
-    assert.equal(evaluate('max(booleanList)', {booleanList: [false]}), 'list-bool')
+    expectEval('max([1])', 'list-int')
+    expectEval('max([integer])', 'list-int', {integer: 1n})
+    expectEval('max(integerList)', 'list-int', {integerList: [1n]})
+    expectEval('max([false])', 'list-bool')
+    expectEval('max([boolean])', 'list-bool', {boolean: false})
+    expectEval('max(booleanList)', 'list-bool', {booleanList: [false]})
   })
 
   test('resolves overloads correctly according to the type check with dyn', () => {
-    assert.equal(evaluate('max([dynamic])', {dynamic: 1n}), 'list-int')
-    assert.equal(evaluate('max(dynamic)', {dynamic: [1n]}), 'list-int')
-    assert.equal(evaluate('max([dyn(1)])'), 'list-int')
+    expectEval('max([dynamic])', 'list-int', {dynamic: 1n})
+    expectEval('max(dynamic)', 'list-int', {dynamic: [1n]})
+    expectEval('max([dyn(1)])', 'list-int')
   })
 
   test('prefers concrete overloads when dyn collections carry specific types', () => {
-    assert.equal(evaluate('max([dyn(1), dyn(1.0)])'), 'list-int')
-    assert.throws(() => evaluate('max([dyn(1.1), dyn(1)])'), /no matching overload/i)
+    expectEval('max([dyn(1), dyn(1.0)])', 'list-int')
+    expectEvalThrows('max([dyn(1.1), dyn(1)])', /no matching overload/i)
 
-    assert.equal(evaluate('max(dynamic)', {dynamic: {value: 1n}}), 'map-string-int')
-    assert.equal(evaluate('max(dynamic)', {dynamic: {value: false}}), 'map-string-bool')
-    assert.equal(evaluate('max(dynamic)', {dynamic: new Map([[1n, 2n]])}), 'map-int-int')
-    assert.equal(evaluate('max(dynamic)', {dynamic: new Map([[1n, true]])}), 'map-int-bool')
+    expectEval('max(dynamic)', 'map-string-int', {dynamic: {value: 1n}})
+    expectEval('max(dynamic)', 'map-string-bool', {dynamic: {value: false}})
+    expectEval('max(dynamic)', 'map-int-int', {dynamic: new Map([[1n, 2n]])})
+    expectEval('max(dynamic)', 'map-int-bool', {dynamic: new Map([[1n, true]])})
   })
 
   test('refines partially dynamic collection declarations', () => {
-    assert.equal(evaluate('max(dynamicList)', {dynamicList: [1n]}), 'list-int')
-    assert.equal(evaluate('max(dynamicList)', {dynamicList: [false]}), 'list-bool')
-    assert.throws(() => evaluate('max(dynamicList)', {dynamicList: ['a']}), /no matching overload/i)
+    expectEval('max(dynamicList)', 'list-int', {dynamicList: [1n]})
+    expectEval('max(dynamicList)', 'list-bool', {dynamicList: [false]})
+    expectEvalThrows('max(dynamicList)', /no matching overload/i, {dynamicList: ['a']})
   })
 
   test('falls back to the first overload when runtime values lack samples', () => {
-    assert.equal(evaluate('max([])'), 'list-bool')
-    assert.equal(evaluate('max(dynamicList)', {dynamicList: []}), 'list-bool')
-
-    assert.equal(evaluate('max({})'), 'map-int-int')
-    assert.equal(evaluate('max(dynamic)', {dynamic: {}}), 'map-int-int')
-    assert.equal(evaluate('max(dynamic)', {dynamic: new Map()}), 'map-int-int')
+    expectEval('max([])', 'list-bool')
+    expectEval('max(dynamicList)', 'list-bool', {dynamicList: []})
+    expectEval('max({})', 'map-int-int')
+    expectEval('max(dynamic)', 'map-int-int', {dynamic: {}})
+    expectEval('max(dynamic)', 'map-int-int', {dynamic: new Map()})
   })
 })

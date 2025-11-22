@@ -1,16 +1,12 @@
 import {test, describe} from 'node:test'
-import {evaluate} from '../lib/index.js'
+import {expectEval, expectEvalThrows} from './helpers.js'
 
-function strictEqualTest(expr, expected) {
-  test(expr, (t) => {
-    t.assert.strictEqual(evaluate(expr), expected)
-  })
+function strictEqualTest(expr, expected, context) {
+  test(expr, () => expectEval(expr, expected, context))
 }
 
-function testThrows(expr, error) {
-  test(expr, (t) => {
-    t.assert.throws(() => evaluate(expr), {message: error})
-  })
+function testThrows(expr, matcher, context) {
+  test(expr, () => expectEvalThrows(expr, matcher, context))
 }
 
 describe('unary operators', () => {
@@ -21,9 +17,8 @@ describe('unary operators', () => {
     strictEqualTest('!!!true', false)
     strictEqualTest('!(1 == 1)', false)
 
-    test('should handle negation with variables', (t) => {
-      t.assert.strictEqual(evaluate('!isActive', {isActive: true}), false)
-    })
+    test('should handle negation with variables', () =>
+      expectEval('!isActive', false, {isActive: true}))
 
     strictEqualTest('!false', true)
     strictEqualTest('!(false)', true)
@@ -39,76 +34,41 @@ describe('unary operators', () => {
   })
 
   describe('unary plus', () => {
-    test('supports unary plus as operator', (t) => {
-      t.assert.strictEqual(evaluate('1 + 2'), 3n)
-      t.assert.strictEqual(evaluate('1 +2'), 3n)
-      t.assert.strictEqual(evaluate('1+2'), 3n)
+    test('supports unary plus as operator', () => {
+      expectEval('1 + 2', 3n)
+      expectEval('1 +2', 3n)
+      expectEval('1+2', 3n)
     })
 
-    test('rejects unary plus in front of group', (t) => {
-      t.assert.throws(() => evaluate('+(1 + 2)'), {
-        name: 'ParseError',
-        message: /Unexpected token: PLUS/
-      })
+    const unexpectedPlusError = {name: 'ParseError', message: /Unexpected token: PLUS/}
+    test('rejects unary plus in front of group', () => {
+      expectEvalThrows('+(1 + 2)', unexpectedPlusError)
     })
 
-    test('rejects unary plus', (t) => {
-      t.assert.throws(() => evaluate('+2'), {
-        name: 'ParseError',
-        message: /Unexpected token: PLUS/
-      })
+    test('rejects unary plus', () => {
+      expectEvalThrows('+2', unexpectedPlusError)
     })
 
-    test('rejects unary plus after operator', (t) => {
-      t.assert.throws(() => evaluate('1 ++ 2'), {
-        name: 'ParseError',
-        message: /Unexpected token: PLUS/
-      })
+    test('rejects unary plus after operator', () => {
+      expectEvalThrows('1 ++ 2', unexpectedPlusError)
 
-      t.assert.throws(() => evaluate('1 + + 2'), {
-        name: 'ParseError',
-        message: /Unexpected token: PLUS/
-      })
+      expectEvalThrows('1 + + 2', unexpectedPlusError)
     })
   })
 
   describe('unary minus', () => {
-    test('should negate positive number', (t) => {
-      t.assert.strictEqual(evaluate('-5'), -5n)
-    })
-
-    test('should negate negative number', (t) => {
-      t.assert.strictEqual(evaluate('-(-5)'), 5n)
-    })
-
-    test('should handle double negation', (t) => {
-      t.assert.strictEqual(evaluate('--5'), 5n)
-    })
-
-    test('should handle unary minus with expressions', (t) => {
-      t.assert.strictEqual(evaluate('-(1 + 2)'), -3n)
-    })
-
-    test('should handle unary minus with variables', (t) => {
-      t.assert.strictEqual(evaluate('-value', {value: 10}), -10)
-    })
-
-    test('should handle unary minus with floats', (t) => {
-      t.assert.strictEqual(evaluate('-3.14'), -3.14)
-    })
+    test('should negate positive number', () => expectEval('-5', -5n))
+    test('should negate negative number', () => expectEval('-(-5)', 5n))
+    test('should handle double negation', () => expectEval('--5', 5n))
+    test('should handle unary minus with expressions', () => expectEval('-(1 + 2)', -3n))
+    test('should handle unary minus with variables', () => expectEval('-value', -10, {value: 10}))
+    test('should handle unary minus with floats', () => expectEval('-3.14', -3.14))
   })
 
   describe('combined unary operators', () => {
-    test('should handle NOT and minus together', (t) => {
-      t.assert.strictEqual(evaluate('!(-1 < 0)'), false)
-    })
-
-    test('should handle complex unary expressions', (t) => {
-      t.assert.strictEqual(evaluate('!!!(false || true)'), false)
-    })
+    test('should handle NOT and minus together', () => expectEval('!(-1 < 0)', false))
+    test('should handle complex unary expressions', () => expectEval('!!!(false || true)', false))
   })
 
-  test('supports many repetitions', (t) => {
-    t.assert.strictEqual(evaluate(' + 1'.repeat(40).replace(' + ', '')), 40n)
-  })
+  test('supports many repetitions', () => expectEval(' + 1'.repeat(40).replace(' + ', ''), 40n))
 })
