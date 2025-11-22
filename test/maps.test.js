@@ -197,4 +197,34 @@ describe('maps/objects expressions', () => {
       expectEval('data.users[0].profile["full-name"]', 'John Doe', context)
     })
   })
+
+  describe('prototype pollution hardening', () => {
+    test('should ignore __proto__ assignments during map creation', () => {
+      delete Object.prototype.polluted
+      try {
+        const env = new Environment({homogeneousAggregateLiterals: false})
+        const result = env.evaluate('{"safe": true, "__proto__": {"polluted": true}}')
+        assert.deepStrictEqual(result, {safe: true})
+        assert.strictEqual(Object.prototype.polluted, undefined)
+        assert.strictEqual('polluted' in {}, false)
+      } finally {
+        delete Object.prototype.polluted
+      }
+    })
+
+    test('should drop constructor/prototype keys to keep objects safe', () => {
+      delete Object.prototype.polluted
+      try {
+        const env = new Environment({homogeneousAggregateLiterals: false})
+        const result = env.evaluate(
+          '{"safe": true, "constructor": {"prototype": {"polluted": true}}, "prototype": {"polluted": true}}'
+        )
+        assert.deepStrictEqual(result, {safe: true})
+        assert.strictEqual(Object.prototype.polluted, undefined)
+        assert.strictEqual('polluted' in {}, false)
+      } finally {
+        delete Object.prototype.polluted
+      }
+    })
+  })
 })
