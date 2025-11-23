@@ -351,6 +351,31 @@ evaluate('users.map(u, u.admin, u.name)', ctx)
 // ["Alice"]
 ```
 
+#### Custom macros
+You can register your own macros by declaring overloads that accept `ast` arguments. The macro handler executes at parse time and must return an object that provides both `typeCheck` and `evaluate` hooks; these hooks are invoked later during `env.check()` and `env.evaluate()` so the macro lines up with the regular type-checker/evaluator pipeline.
+
+```javascript
+import {Environment} from '@marcbachmann/cel-js'
+
+const env = new Environment()
+env.registerFunction('macro(ast): dyn', ({ast, args}) => {
+  // Any parameter on this object are available as
+  // the `macro` parameter within the `typeCheck` and `evaluate` functions below.
+  return {
+    // e.g. you can precompute values during parse time
+    firstArgument: args[0],
+    // Mandatory: called when the expression is type-checked
+    typeCheck(checker, macro, ctx) {
+      return checker.check(macro.firstArgument, ctx)
+    },
+    // Mandatory: called when the expression is evaluated
+    evaluate(evaluator, macro, ctx) {
+      return evaluator.eval(macro.firstArgument, ctx)
+    }
+  }
+})
+```
+
 ### Custom Types
 
 ```javascript
