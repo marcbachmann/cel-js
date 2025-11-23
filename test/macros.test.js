@@ -39,11 +39,11 @@ describe('macros', () => {
     })
 
     test('should throw when no arguments are passed', () => {
-      expectEvalThrows('has()', /found no matching overload for 'has\(\)'/)
+      expectEvalThrows('has()', /Function not found: 'has'/)
     })
 
     test('should throw when multiple arguments are passed', () => {
-      expectEvalThrows('has(a, b)', /found no matching overload for 'has\(dyn, dyn\)'/, {
+      expectEvalThrows('has(a, b)', /Function not found: 'has'/, {
         a: 1,
         b: 2
       })
@@ -116,7 +116,7 @@ describe('macros', () => {
     }
 
     test('is not supported on non-maps or lists', () => {
-      const err = /found no matching overload/
+      const err = /cannot be range of a comprehension/
       expectEvalThrows('(true).all(x, x > 0)', err, context)
       expectEvalThrows('"hello".all(x, x > 0)', err, context)
       expectEvalThrows('b"hello".all(x, x <= 5)', err, context)
@@ -148,8 +148,9 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      expectEvalThrows('numbers.all()', /found no matching overload for 'list.all\(\)'/, context)
-      expectEvalThrows('numbers.all(x)', /Unknown variable: x/, context)
+      const err = /Function not found: 'all' for receiver of type 'dyn'/
+      expectEvalThrows('numbers.all()', err, context)
+      expectEvalThrows('numbers.all(x)', err, context)
       expectEvalThrows(
         'numbers.all(x > 0, y < 10)',
         /all\(var, predicate\) invalid predicate iteration variable/,
@@ -158,8 +159,9 @@ describe('macros', () => {
     })
 
     test('should throw with non-list argument', () => {
-      expectEvalThrows('42.all(x, x > 0)', /found no matching overload/, context)
-      expectEvalThrows('"string".all(x, x > 0)', /found no matching overload/, context)
+      const err = /cannot be range of a comprehension/
+      expectEvalThrows('42.all(x, x > 0)', err, context)
+      expectEvalThrows('"string".all(x, x > 0)', err, context)
     })
 
     test('should throw with invalid operation', () => {
@@ -213,12 +215,9 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      expectEvalThrows(
-        'numbers.exists()',
-        /found no matching overload for 'list.exists\(\)/,
-        context
-      )
-      expectEvalThrows('numbers.exists(x)', /Unknown variable: x/, context)
+      const err = /Function not found: 'exists' for receiver of type 'dyn'/
+      expectEvalThrows('numbers.exists()', err, context)
+      expectEvalThrows('numbers.exists(x)', err, context)
     })
 
     test('does not expose function for non-receiver call', () => {
@@ -268,12 +267,9 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      expectEvalThrows(
-        'numbers.exists_one()',
-        /found no matching overload for 'list.exists_one\(\)'/,
-        context
-      )
-      expectEvalThrows('numbers.exists_one(x)', /Unknown variable: x/, context)
+      const err = /Function not found: 'exists_one' for receiver of type 'dyn'/
+      expectEvalThrows('numbers.exists_one()', err, context)
+      expectEvalThrows('numbers.exists_one(x)', err, context)
     })
 
     test('does not expose function for non-receiver call', () => {
@@ -338,9 +334,10 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      expectEvalThrows('numbers.map()', /found no matching overload for 'list.map\(\)'/, context)
-      expectEvalThrows('numbers.map(x)', /Unknown variable: x/, context)
-      expectEvalThrows('numbers.map(x, x, x, x)', /Unknown variable: x/, context)
+      const err = /Function not found: 'map' for receiver of type 'dyn'/
+      expectEvalThrows('numbers.map()', err, context)
+      expectEvalThrows('numbers.map(x)', err, context)
+      expectEvalThrows('numbers.map(x, x, x, x)', err, context)
     })
 
     test('must return a boolean in filter of map(var, filter, transform)', () => {
@@ -432,12 +429,9 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      expectEvalThrows(
-        'numbers.filter()',
-        /found no matching overload for 'list.filter\(\)'/,
-        context
-      )
-      expectEvalThrows('numbers.filter(x)', /Unknown variable: x/, context)
+      const err = /Function not found: 'filter' for receiver of type 'dyn'/
+      expectEvalThrows('numbers.filter()', err, context)
+      expectEvalThrows('numbers.filter(x)', err, context)
     })
 
     test('does not expose function for non-receiver call', () => {

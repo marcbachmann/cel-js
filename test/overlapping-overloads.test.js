@@ -112,7 +112,20 @@ describe('Overlapping function overloads', () => {
   describe('ast type (macros)', () => {
     test('ast overlaps with any specific type', () => {
       const env = new Environment()
-      env.registerFunction('macro(ast): dyn', (ast) => this.eval(ast))
+      env.registerFunction('macro(ast): dyn', ({args}) => {
+        // This whole object that's returned will be available as
+        // macro object in the typeCheck/evaluate functions
+        return {
+          firstArgument: args[0],
+          // typeCheck and evaluate are required
+          typeCheck(checker, macro, ctx) {
+            return checker.check(macro.firstArgument, ctx)
+          },
+          evaluate(evaluator, macro, ctx) {
+            return evaluator.eval(macro.firstArgument, ctx)
+          }
+        }
+      })
 
       assert.throws(
         () => env.registerFunction('macro(dyn): dyn', (x) => x),
@@ -130,7 +143,14 @@ describe('Overlapping function overloads', () => {
 
     test('ast overlaps in multi-arg positions', () => {
       const env = new Environment()
-      env.registerFunction('macro(ast, int): dyn', (ast, _x) => this.eval(ast))
+      env.registerFunction('macro(ast, int): int', () => ({
+        evaluate() {
+          return 1
+        },
+        typeCheck(checker) {
+          return checker.getType('int')
+        }
+      }))
 
       assert.throws(
         () => env.registerFunction('macro(int, string): int', (x, _y) => x),

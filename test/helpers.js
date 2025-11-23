@@ -6,8 +6,10 @@ export class TestEnvironment extends Environment {
   #expectEvalThrows
   #expectEvalDeep
   #expectParseThrows
+  #expectCheckThrows
   #parse
   #evaluate
+  #expectType
 
   get parse() {
     return (this.#parse ??= super.parse.bind(this))
@@ -24,18 +26,8 @@ export class TestEnvironment extends Environment {
   }
 
   get expectEvalThrows() {
-    return (this.#expectEvalThrows ??= (expr, matcher, context) => {
-      let err
-      assert.throws(() => {
-        try {
-          this.evaluate(expr, context)
-        } catch (e) {
-          err = e
-          throw e
-        }
-      }, matcher)
-      return err
-    })
+    return (this.#expectEvalThrows ??= (expr, matcher, context) =>
+      assertThrows(() => this.evaluate(expr, context), matcher))
   }
 
   get expectEvalDeep() {
@@ -45,19 +37,38 @@ export class TestEnvironment extends Environment {
   }
 
   get expectParseThrows() {
-    return (this.#expectParseThrows ??= (expr, matcher) => {
-      let err
-      assert.throws(() => {
-        try {
-          this.parse(expr)
-        } catch (e) {
-          err = e
-          throw e
-        }
-      }, matcher)
-      return err
+    return (this.#expectParseThrows ??= (expr, matcher) =>
+      assertThrows(() => this.parse(expr), matcher))
+  }
+
+  get expectType() {
+    return (this.#expectType ??= (expr, expected) => {
+      const result = this.check(expr)
+      assert.strictEqual(result.type, expected)
     })
   }
+
+  get expectCheckThrows() {
+    return (this.#expectCheckThrows ??= (expr, matcher) =>
+      assertThrows(() => {
+        const result = this.check(expr)
+        if (result.valid) return
+        throw result.error
+      }, matcher))
+  }
+}
+
+function assertThrows(fn, matcher) {
+  let err
+  assert.throws(() => {
+    try {
+      fn()
+    } catch (e) {
+      err = e
+      throw e
+    }
+  }, matcher)
+  return err
 }
 
 const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true})
