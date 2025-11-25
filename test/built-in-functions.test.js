@@ -337,7 +337,32 @@ describe('built-in functions', () => {
     })
   })
 
-  describe('startsWith function', () => {
+  describe('string.split:', () => {
+    test('requires string delimiter', () => {
+      assert.throws(
+        () => evaluate('"a,b,c".split()'),
+        /found no matching overload for 'string.split\(\)/
+      )
+    })
+
+    test('should split string by delimiter', () => {
+      expectEvalDeep('"a,b,c".split(",")', ['a', 'b', 'c'])
+    })
+
+    test('should split string by delimiter + limit', () => {
+      expectEvalDeep('"a,b,c".split(",", 0)', [])
+      expectEvalDeep('"a,b,c".split(",", -1)', ['a', 'b', 'c'])
+      expectEvalDeep('"a,b,c".split("", -1)', ['a', ',', 'b', ',', 'c'])
+
+      expectEvalDeep('"a,b,c".split(",", 1)', ['a,b,c'])
+      expectEvalDeep('"a,b,c".split(",", 2)', ['a', 'b,c'])
+      expectEvalDeep('"a,b,c".split(",", 3)', ['a', 'b', 'c'])
+      expectEvalDeep('"a,b,c".split(",", 4)', ['a', 'b', 'c'])
+      expectEvalDeep('"a,b,c".split("", 3)', ['a', ',', 'b,c'])
+    })
+  })
+
+  describe('string.startsWith function', () => {
     describe('method call syntax', () => {
       describe('basic functionality', () => {
         test('should return true when string starts with prefix', () => {
