@@ -118,6 +118,22 @@ Set `homogeneousAggregateLiterals` to `false` if you need aggregate literals to 
 - **`evaluate(expression, context)`** - Evaluate with context
 - **`check(expression)`** - Validate expression types without evaluation
 
+#### `registerFunction` (sync & async)
+
+`registerFunction(signature, handler)` accepts both synchronous and async handlers. When an async function (or a macro predicate/transform that uses async functions) participates in an expression, `env.evaluate()` returns a `Promise` that resolves with the final value. Consumers should `await` those evaluations when they register async behavior:
+
+```javascript
+const env = new Environment()
+  .registerFunction('fetchUser(string): map', async (id) => {
+    const res = await fetch(`/users/${id}`)
+    return res.json()
+  })
+
+const user = await env.evaluate('fetchUser(userId)', {userId: '42'})
+```
+
+Async handlers are primarily intended for latency-sensitive lookups (e.g., cache fetches, lightweight RPC). CEL’s goal is still deterministic, predictable evaluation, so avoid building expressions that trigger unbounded async work (like nested loops within macros or large fan-out requests) even though the engine will await those results.
+
 #### Environment Cloning
 
 ```javascript
