@@ -21,7 +21,9 @@ export class TestEnvironment extends Environment {
 
   get expectEval() {
     return (this.#expectEval ??= (expr, expected, context, message) => {
-      assert.strictEqual(this.evaluate(expr, context), expected, message)
+      const res = this.evaluate(expr, context)
+      if (!(res instanceof Promise)) assert.strictEqual(res, expected, message)
+      else return res.then((r) => assert.strictEqual(r, expected, message))
     })
   }
 
@@ -32,7 +34,9 @@ export class TestEnvironment extends Environment {
 
   get expectEvalDeep() {
     return (this.#expectEvalDeep ??= (expr, expected, context, message) => {
-      assert.deepStrictEqual(this.evaluate(expr, context), expected, message)
+      const result = this.evaluate(expr, context)
+      if (!(result instanceof Promise)) assert.deepStrictEqual(result, expected, message)
+      else return result.then((r) => assert.deepStrictEqual(r, expected, message))
     })
   }
 
@@ -58,17 +62,26 @@ export class TestEnvironment extends Environment {
   }
 }
 
-function assertThrows(fn, matcher) {
-  let err
+function throws(err, matcher) {
   assert.throws(() => {
-    try {
-      fn()
-    } catch (e) {
-      err = e
-      throw e
-    }
+    throw err
   }, matcher)
   return err
+}
+
+function assertThrows(fn, matcher) {
+  let err
+  try {
+    const res = fn()
+    if (res instanceof Promise)
+      return res.then(
+        () => throws(null, matcher),
+        (e) => throws(e, matcher)
+      )
+  } catch (e) {
+    err = e
+  }
+  return throws(err, matcher)
 }
 
 const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true})
