@@ -655,9 +655,6 @@ describe('Type Checker', () => {
 
     env.expectType('ts + dur', 'google.protobuf.Timestamp')
     env.expectType('ts - dur', 'google.protobuf.Timestamp')
-
-    // Timestamp - Timestamp is NOT supported in overloads
-    env.expectCheckThrows('ts - ts')
   })
 
   test('error includes source position', () => {

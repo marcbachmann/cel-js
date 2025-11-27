@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import {Environment} from '../lib/index.js'
+import {Duration} from '../lib/functions.js'
+const {deepStrictEqual, strictEqual, throws} = assert
 
 export class TestEnvironment extends Environment {
   #expectEval
@@ -22,8 +24,8 @@ export class TestEnvironment extends Environment {
   get expectEval() {
     return (this.#expectEval ??= (expr, expected, context, message) => {
       const res = this.evaluate(expr, context)
-      if (!(res instanceof Promise)) assert.strictEqual(res, expected, message)
-      else return res.then((r) => assert.strictEqual(r, expected, message))
+      if (!(res instanceof Promise)) strictEqual(res, expected, message)
+      else return res.then((r) => strictEqual(r, expected, message))
     })
   }
 
@@ -34,9 +36,9 @@ export class TestEnvironment extends Environment {
 
   get expectEvalDeep() {
     return (this.#expectEvalDeep ??= (expr, expected, context, message) => {
-      const result = this.evaluate(expr, context)
-      if (!(result instanceof Promise)) assert.deepStrictEqual(result, expected, message)
-      else return result.then((r) => assert.deepStrictEqual(r, expected, message))
+      const res = this.evaluate(expr, context)
+      if (!(res instanceof Promise)) deepStrictEqual(normalize(res), normalize(expected), message)
+      else return res.then((r) => deepStrictEqual(normalize(r), normalize(expected), message))
     })
   }
 
@@ -48,7 +50,7 @@ export class TestEnvironment extends Environment {
   get expectType() {
     return (this.#expectType ??= (expr, expected) => {
       const result = this.check(expr)
-      assert.strictEqual(result.type, expected)
+      strictEqual(result.type, expected)
     })
   }
 
@@ -62,8 +64,8 @@ export class TestEnvironment extends Environment {
   }
 }
 
-function throws(err, matcher) {
-  assert.throws(() => {
+function assertError(err, matcher) {
+  throws(() => {
     throw err
   }, matcher)
   return err
@@ -75,13 +77,13 @@ function assertThrows(fn, matcher) {
     const res = fn()
     if (res instanceof Promise)
       return res.then(
-        () => throws(null, matcher),
-        (e) => throws(e, matcher)
+        () => assertError(null, matcher),
+        (e) => assertError(e, matcher)
       )
   } catch (e) {
     err = e
   }
-  return throws(err, matcher)
+  return assertError(err, matcher)
 }
 
 const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true})
@@ -91,8 +93,8 @@ export {assert, evaluate, parse, expectEval, expectEvalDeep, expectEvalThrows, e
 
 export function expectParseAst(expression, expectedAst) {
   const result = parse(expression)
-  assert.strictEqual(typeof result, 'function')
-  assert.deepStrictEqual(toPlainAst(result.ast), expectedAst)
+  strictEqual(typeof result, 'function')
+  deepStrictEqual(toPlainAst(result.ast), expectedAst)
   return result
 }
 
@@ -101,4 +103,9 @@ function toPlainAst(node) {
   const plain = new Array(node.length)
   for (let i = 0; i < node.length; i++) plain[i] = toPlainAst(node[i])
   return plain
+}
+
+function normalize(value) {
+  if (value instanceof Duration) return {Duration: value.valueOf()}
+  return value
 }
