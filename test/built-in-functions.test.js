@@ -180,6 +180,20 @@ describe('built-in functions', () => {
         expectEval('timestamp(100) == timestamp(100)', true, context)
         expectEval('timestamp(0) == timestamp(100)', false, context)
       })
+
+      test('timestamp substraction returns duration', () => {
+        expectEvalDeep('timestamp(1000) - timestamp(0)', new Duration(1000n), context)
+        expectEvalDeep('timestamp(0) - timestamp(1000)', new Duration(-1000n), context)
+        expectEvalDeep(
+          'timestamp("2024-01-01T00:00:00Z") - timestamp(3600)',
+          new Duration(1704063600n),
+          context
+        )
+
+        assert.throws(() => {
+          expectEvalDeep('timestamp(0) - timestamp(1000)', new Duration(0n), context)
+        })
+      })
     })
 
     describe('getDate function', () => {
