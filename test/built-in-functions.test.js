@@ -351,6 +351,30 @@ describe('built-in functions', () => {
     })
   })
 
+  describe('string.trim(): string', () => {
+    test('removes whitespaces', () => {
+      expectEval('"\\n\\rhello ".trim()', 'hello')
+      expectEval('"  hello  ".trim()', 'hello')
+      expectEval('"hello".trim()', 'hello')
+    })
+  })
+
+  describe('string.lowerAscii(): string', () => {
+    test('converts to lower case', () => {
+      expectEval('"\\n\\rWelcome to Zürich ".lowerAscii()', '\n\rwelcome to zürich ')
+      expectEval('"🤕 HEllo".lowerAscii()', '🤕 hello')
+      expectEval('"ยินดีต้อนรับในซูริก".lowerAscii()', 'ยินดีต้อนรับในซูริก')
+    })
+  })
+
+  describe('string.upperAscii(): string', () => {
+    test('converts to upper case', () => {
+      expectEval('"\\n\\rWelcome to Zürich ".upperAscii()', '\n\rWELCOME TO ZÜRICH ')
+      expectEval('"🤕 HEllo".upperAscii()', '🤕 HELLO')
+      expectEval('"ยินดีต้อนรับในซูริก".upperAscii()', 'ยินดีต้อนรับในซูริก')
+    })
+  })
+
   describe('string.split:', () => {
     test('requires string delimiter', () => {
       assert.throws(
