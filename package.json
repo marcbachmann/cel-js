@@ -46,8 +46,7 @@
     "test": "node --test test/**/*.test.js",
     "test:watch": "node --test --watch test/**/*.test.js",
     "examples": "node examples.js",
-    "benchmark": "node benchmark/index.js",
-    "benchmark:memory": "node --expose-gc benchmark/memory.js"
+    "benchmark": "node --expose-gc --allow-natives-syntax benchmark/index.js"
   },
   "devDependencies": {
     "eslint-config-prettier": "^10.1.5",

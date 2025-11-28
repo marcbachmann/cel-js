@@ -1,241 +1,86 @@
 # @marcbachmann/cel-js Performance Benchmarks
 
-This directory contains comprehensive benchmarks comparing the performance of @marcbachmann/cel-js against the `cel-js` npm package.
+This folder hosts the official benchmarking scripts for @marcbachmann/cel-js. The goal is to
+provide a repeatable way to measure parse and evaluation throughput for the expressions we care
+about most, capture structured JSON artifacts, and track regressions over time.
 
-## Overview
+## What gets measured?
 
-The benchmarks demonstrate that @marcbachmann/cel-js:
-- **Parses expressions 3.38x faster** on average (range: 1.62x - 10.91x)
-- **Evaluates expressions 12.94x faster** on average (range: 5.88x - 28.54x)
-- **Combined parse+eval 6.10x faster** on average (range: 1.07x - 18.92x)
-- **Supports more CEL features** including string methods, macros, and bytes operations
+`benchmark/index.js` keeps a single `TEST_EXPRESSIONS` array that covers literals, arithmetic,
+logical expressions, list/map operations, macros, and a few real-world authorization snippets. The
+script builds two [`bench-node`](https://www.npmjs.com/package/bench-node) suites from that shared
+data:
 
-## Real-World Performance Examples
+- **Parsing suite** – runs `parse()` repeatedly for each expression.
+- **Evaluation suite** – parses once per expression, then benchmarks repeated evaluations with the
+  provided context objects.
 
-From actual benchmark runs on Node.js v24.6.0 (Darwin ARM64):
-
-### Simple Operations
-- Number literal `42`: **5.36x faster** parsing, **17.88x faster** evaluation
-- Boolean literal `true`: **5.85x faster** parsing, **19.66x faster** evaluation
-- String literal `"hello world"`: **2.60x faster** parsing, **15.16x faster** evaluation
-- Property access `user.name`: **2.70x faster** parsing, **10.28x faster** evaluation
-
-### Collection Operations  
-- Array creation `[1,2,3,4,5]`: **10.91x faster** parsing, **28.54x faster** evaluation
-- Map creation `{"foo": 1, ...}`: **6.69x faster** parsing, **21.80x faster** evaluation
-- Array membership `"admin" in roles`: **1.91x faster** parsing, **12.07x faster** evaluation
-- Map access `config["timeout"]`: **2.31x faster** parsing, **11.04x faster** evaluation
-
-### Complex Operations
-- Arithmetic `(a + b) * c - (d / e)`: **2.19x faster** parsing, **7.30x faster** evaluation
-- Authorization check: **1.63x faster** parsing, **5.88x faster** evaluation
-- Nested ternary conditions: **2.84x faster** parsing, **12.35x faster** evaluation
-- List comprehension `filter().map()`: **2.29x faster** parsing, **7.46x faster** evaluation
+Each benchmark emits operations-per-second plus the raw histogram information that bench-node
+captures. The suite focuses exclusively on our runtime so we can spot regressions quickly without
+juggling extra configuration.
 
 ## Setup
 
-Before running the benchmarks, install the comparison package:
-
 ```bash
-npm install cel-js
-```
+# from the repository root
+npm install
 
-## Benchmark Files
-
-### 1. `index.js` - Complete Performance Benchmark
-The main benchmark suite that tests:
-- **Parsing Performance**: How fast expressions are parsed into ASTs
-- **Evaluation Performance**: How fast pre-parsed expressions are evaluated
-- **Combined Performance**: Parse + evaluate in a single operation
-
-```bash
+# run the full benchmark suite (adds --allow-natives-syntax automatically)
 npm run benchmark
-# or
-node benchmark/index.js
+
+# or run manually
+node --allow-natives-syntax benchmark/index.js
 ```
 
-**Features tested:**
-- Simple literals (numbers, strings, booleans)
-- Arithmetic and logical operations
-- Property access and array operations
-- String methods (only supported by @marcbachmann/cel-js)
-- Macros like `filter` and `map` (only supported by @marcbachmann/cel-js)
-- Complex real-world authorization expressions
+The script refuses to run unless `--allow-natives-syntax` is present, because bench-node relies on a
+V8 internal for accurate sampling. The npm script handles this flag for you.
 
-### 2. `memory.js` - Memory Usage Analysis
-Analyzes memory consumption patterns:
+There are no CLI flags anymore—the benchmark always uses the pretty reporter, prints results to the
+console, and exits.
 
-```bash
-npm run benchmark:memory
-# or for more accurate results:
-node --expose-gc benchmark/memory.js
-```
+## Sample console output
 
-**Measures:**
-- Heap memory usage during parsing
-- Memory retention over 50,000 operations
-- AST size estimates
-- Memory efficiency ratios
-
-## Understanding the Results
-
-### Performance Indicators
-- 🚀 **Faster**: When @marcbachmann/cel-js outperforms cel-js
-- 🔴 **Not Supported**: When cel-js doesn't support a feature
-- ✅ **Exclusive Feature**: When only @marcbachmann/cel-js supports it
-
-### Key Metrics
-- **Operations per second**: Higher is better
-- **Speedup ratio**: >1.0x means @marcbachmann/cel-js is faster
-- **Memory usage**: Lower is better
-- **Feature support**: More is better
-
-## Sample Output
+Using the default reporter:
 
 ```
+════════════════════════════════════════════════════════════
 @marcbachmann/cel-js Performance Benchmark Suite
 ════════════════════════════════════════════════════════════
-
-Benchmark Configuration:
-  Parse iterations:    10,000
-  Evaluate iterations: 10,000
-  Warmup iterations:   5,000
-  Test expressions:    21
-
-Comparing against: cel-js package
+Node.js: v20.11.0
 Platform: darwin arm64
-Node.js: v24.6.0
+Reporter: pretty
+# built-in reporter output only
+Test expressions: 32
 
 ============================================================
-EVALUATION PERFORMANCE
+PARSING BENCHMARKS
 ============================================================
+[parse] Simple Number                 7,460,482 ops/sec (11 runs sampled)
+[parse] Array Creation                1,471,597 ops/sec (10 runs sampled)
+...
 
-▸ Array Creation
-  Expression: [1, 2, 3, 4, 5]
-
-  @marcbachmann/cel-js:
-    Total: 0.71ms (14,046,581 ops/sec)
-    Mean:  0.000ms
-
-  cel-js package:
-    Total: 20.32ms (492,192 ops/sec)
-    Mean:  0.002ms
-
-  Result: @marcbachmann/cel-js is 28.54x faster 🚀
-
-▸ String Methods
-  Expression: name.startsWith("John") && email.endsWith("@example.com")
-
-  @marcbachmann/cel-js:
-    Total: 2.60ms (3,839,324 ops/sec)
-    Mean:  0.000ms
-
-  cel-js package:
-    Not Supported: 🔴
-
-  Result: Only @marcbachmann/cel-js supports this expression ✅
+============================================================
+EVALUATION BENCHMARKS
+============================================================
+[eval] Simple Number                 50,743,607 ops/sec (10 runs sampled)
+[eval] Authorization Check            1,250,031 ops/sec (10 runs sampled)
+...
 ```
 
-## Performance Characteristics
+Because we now standardize on the pretty reporter, everyone sees the same output, which keeps
+comparisons simple when reviewing PRs or CI logs.
 
-### Why @marcbachmann/cel-js is Faster
+## Adding or focusing tests
 
-1. **Optimized Lexer**
-   - Hand-written character-by-character processing
-   - No regex overhead
-   - Minimal memory allocations
-
-2. **Efficient Parser**
-   - Direct recursive descent
-   - Array-based AST (cache-friendly)
-   - No intermediate representations
-
-3. **Fast Evaluator**
-   - Direct interpretation
-   - Optimized for common operations
-   - Minimal object creation
-
-4. **Better Memory Usage**
-   - Compact AST representation
-   - Efficient garbage collection patterns
-   - Less memory fragmentation
-
-### Feature Comparison
-
-| Feature | @marcbachmann/cel-js | cel-js |
-|---------|---------------------|---------|
-| **Basic Operations** | | |
-| Basic CEL syntax | ✅ | ✅ |
-| Arithmetic operators | ✅ | ✅ |
-| Logical operators | ✅ | ✅ |
-| Comparison operators | ✅ | ✅ |
-| **Advanced Features** | | |
-| String methods (`startsWith`, `endsWith`, `contains`, `matches`) | ✅ | ❌ |
-| Macros (`has`, `all`, `exists`, `exists_one`, `map`, `filter`) | ✅ | ❌ |
-| Bytes literals (e.g., `b"hello"`) | ✅ | ❌ |
-| Type conversions (`string()`, `bytes()`, `timestamp()`) | ✅ | ❌ |
-| Function calls (`size()`, etc.) | ✅ | ❌ |
-| Raw strings (e.g., `r"\n"`) | ✅ | ❌ |
-| Unicode escapes (`\u`, `\U`) | ✅ | Limited |
-| Triple-quoted strings | ✅ | ❌ |
-
-### Performance Summary Table
-
-| Expression Type | Parse Speedup | Evaluate Speedup | Combined Speedup |
-|----------------|---------------|------------------|------------------|
-| Simple Number (42) | 5.36x | 17.88x | 17.87x |
-| Simple Boolean (true) | 5.85x | 19.66x | 18.92x |
-| Simple String | 2.60x | 15.16x | 5.57x |
-| Basic Arithmetic | 2.77x | 11.08x | 5.63x |
-| Complex Arithmetic | 2.19x | 7.30x | 3.49x |
-| Variable Access | 2.70x | 10.28x | 4.23x |
-| Deep Property Access | 1.62x | 8.12x | 2.49x |
-| Array Index Access | 3.96x | 13.54x | 6.69x |
-| Array Creation | 10.91x | 28.54x | 13.72x |
-| Map Creation | 6.69x | 21.80x | 9.28x |
-| Logical Expression | 2.31x | 9.90x | 4.19x |
-| Complex Authorization | 1.63x | 5.88x | 2.16x |
-| List Comprehension | 2.29x | 7.46x | 3.59x |
-| **Average** | **3.38x** | **12.94x** | **6.10x** |
-
-## Customizing Benchmarks
-
-You can modify test expressions and iterations by editing the respective files:
-
-```javascript
-// Add custom expressions to TEST_EXPRESSIONS array
-{
-  name: 'My Custom Test',
-  expression: 'custom.expression > 100',
-  context: { custom: { expression: 150 } }
-}
-```
-
-## Tips for Accurate Benchmarking
-
-1. **Close unnecessary applications** to reduce system noise
-2. **Run multiple times** for consistent results
-3. **Use `--expose-gc`** for accurate memory measurements
-4. **Let the system warm up** (handled automatically)
-5. **Check CPU throttling** on laptops
-
-## Interpreting Results
-
-- **Parsing**: Focus on simple to medium complexity - these are most common
-- **Evaluation**: Look at repeated evaluation scenarios
-- **Memory**: Important for long-running processes
-- **Features**: Consider the CEL features you actually need
-
-## Contributing
-
-To add new benchmarks:
-1. Add test cases to `TEST_EXPRESSIONS`
-2. Ensure both implementations are tested fairly
-3. Document any new metrics or categories
-4. Submit a PR with benchmark results
+- Append new cases to `TEST_EXPRESSIONS` in `benchmark/index.js`.
+- Set `only: true` on any object to focus the run on those expressions.
+- Provide realistic `context` objects so evaluation benchmarks exercise the same paths as real
+  workloads.
 
 ## Troubleshooting
 
-**Import errors**: Ensure Node.js 18+ and `cel-js` is installed
-**Memory benchmark issues**: Run with `--expose-gc` flag
-**Inconsistent results**: Check for background processes
+- **Missing --allow-natives-syntax** – rerun via `npm run benchmark` or add the flag manually.
+- **Reporter errors** – double-check the reporter name matches one of the allowed values.
+- **Missing output** – the script only writes to stdout; capture the terminal output if you need to
+  compare runs later.
+

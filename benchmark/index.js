@@ -1,620 +1,317 @@
-/* eslint-disable no-console */
-/**
- * Performance benchmark suite for @marcbachmann/cel-js
- *
- * Compares the performance of @marcbachmann/cel-js against the cel-js package
- * across various expression types and complexity levels.
- */
+#! /usr/bin/env -S node --allow-natives-syntax
+import process from 'node:process'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+import {parseArgs as parseNodeArgs} from 'node:util'
+import {Suite} from 'bench-node'
+import {toPretty} from 'bench-node/lib/reporter/pretty.js'
+import {parse} from '../lib/index.js'
 
-import {performance} from 'node:perf_hooks'
-import * as celJsLocal from '../lib/index.js'
-import {serialize} from '../lib/serialize.js'
-import * as celJsPackage from 'cel-js'
+import literals from './suites/literals.js'
+import arithmetic from './suites/arithmetic.js'
+import accessors from './suites/accessors.js'
+import collections from './suites/collections.js'
+import logic from './suites/logic.js'
+import functions from './suites/functions.js'
+import macros from './suites/macros.js'
 
-// Benchmark configuration
-const ITERATIONS = {
-  parse: 100000,
-  evaluate: 500000,
-  warmup: 10000
-}
+class BenchSuite extends Suite {
+  constructor(options) {
+    super(options)
+    this.name = options.name
+  }
 
-// Test expressions of varying complexity
-let TEST_EXPRESSIONS = [
-  // Simple literals
-  {
-    name: 'Simple Number',
-    expression: '42',
-    context: {}
-  },
-  {
-    name: 'Simple String',
-    expression: '"hello world"',
-    context: {}
-  },
-  {
-    name: 'String concat',
-    expression:
-      '"hello world" + "hello world" + "hello world" + "hello world" + "hello world" + "hello world"',
-    context: {}
-  },
-  {
-    name: 'hex concat',
-    expression: '0x01 + 0x02 + 0x03 + 0x04 + 0x05 + 0x06 + 0x07 + 0x08',
-    context: {}
-  },
-  {
-    name: 'double concat',
-    expression: '1.0 + 1.0 + 1.0 + 1.0 + 1.0 + 1.0 + 1.0 + 1.0',
-    context: {}
-  },
-  {
-    name: 'long int',
-    expression: '12345678901234567 + 12345678901234567 + 12345678901234567 + 12345678901234567',
-    context: {}
-  },
-  {
-    name: 'long identifier',
-    expression: 'somelongidentifier + somelongidentifier + somelongidentifier + somelongidentifier',
-    context: {somelongidentifier: '12345678901234567'}
-  },
-  {
-    name: 'Simple Boolean',
-    expression: 'true',
-    context: {}
-  },
-
-  // Arithmetic operations
-  {
-    name: 'Basic Arithmetic',
-    expression: '1 + 2 * 3',
-    context: {}
-  },
-  {
-    name: 'Complex Arithmetic',
-    expression: '(10.0 + 20.0) * 5.0 - 100.0 / 4.0'
-  },
-  {
-    name: 'Complex Arithmetic with int',
-    expression: '(10u + 20u) * 5u - 100u / 4u'
-  },
-  {
-    name: 'Complex Arithmetic with variables',
-    expression: '(a + b) * c - d / e',
-    context: {a: 10, b: 20, c: 5, d: 100, e: 4}
-  },
-
-  // Variable access
-  {
-    name: 'Variable Access',
-    expression: 'user.name',
-    context: {user: {name: 'John Doe'}}
-  },
-  {
-    name: 'Deep Property Access',
-    expression: 'user.profile.settings.theme',
-    context: {
-      user: {
-        profile: {
-          settings: {
-            theme: 'dark'
-          }
-        }
-      }
+  addParse(test) {
+    try {
+      parse(test.expression)
+    } catch (err) {
+      err.message = `Error in test "${test.name}": ${err.message}`
+      throw err
     }
-  },
+    return this.add(benchLabel('parse', test), parse.bind(null, test.expression))
+  }
 
-  // Array operations
-  {
-    name: 'Array Index Access',
-    expression: 'items[2]',
-    context: {items: ['first', 'second', 'third']}
-  },
-  {
-    name: 'Array Membership',
-    expression: '"admin" in roles',
-    context: {roles: ['user', 'admin', 'moderator']}
-  },
-  {
-    name: 'Array Creation',
-    expression: '[1, 2, 3, 4, 5]',
-    context: {roles: ['user', 'admin', 'moderator']}
-  },
-
-  // Logical operations
-  {
-    name: 'Logical Expression',
-    expression: 'a && b || c',
-    context: {a: true, b: false, c: true}
-  },
-  {
-    name: 'Logical OR',
-    expression: 'false || false || false || false || false || true',
-    context: {a: true, b: false, c: true}
-  },
-  {
-    name: 'Logical OR with variables',
-    expression: 'a.b.c || a.b.c || a.b.c || false || false || true',
-    context: {a: true, b: false, c: true}
-  },
-  {
-    name: 'Complex Logical',
-    expression: 'user.isActive && ("admin" in user.roles || "moderator" in user.roles)',
-    context: {
-      user: {
-        isActive: true,
-        roles: ['admin', 'user']
-      }
-    }
-  },
-
-  // Comparison operations
-  {
-    name: 'Range Check',
-    expression: 'age >= 18 && age < 65',
-    context: {age: 25}
-  },
-
-  // Ternary operations
-  {
-    name: 'Nested Ternary',
-    expression: 'score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : "F"',
-    context: {score: 85}
-  },
-
-  // String operations (may not be supported by cel-js)
-  {
-    name: 'String Methods',
-    expression: 'name.startsWith("John") && email.endsWith("@example.com")',
-    context: {name: 'John Doe', email: 'john@example.com'}
-  },
-
-  // Function calls (may not be supported by cel-js)
-  {
-    name: 'Function Calls',
-    expression: 'size(items) > 0 && string(count) == "5"',
-    context: {items: [1, 2, 3], count: 5}
-  },
-
-  // Map operations
-  {
-    name: 'Map Access',
-    expression: 'config["timeout"] > 30 && config["retries"] <= 3',
-    context: {config: {timeout: 60, retries: 2}}
-  },
-  {
-    name: 'Map Creation',
-    expression: '{"foo": 1, "bar": 2, "baz": 3, "test": 4}'
-  },
-
-  // Complex real-world example
-  {
-    name: 'Authorization Check',
-    expression: `
-      user.isActive &&
-      user.emailVerified &&
-      (user.role == "admin" || (
-        user.role == "editor" &&
-        resource.authorId == user.id &&
-        resource.status != "archived"
-      )) &&
-      request.timestamp - user.lastActivity < 3600
-    `,
-    context: {
-      user: {
-        id: 123,
-        isActive: true,
-        emailVerified: true,
-        role: 'editor',
-        lastActivity: 1000
-      },
-      resource: {
-        authorId: 123,
-        status: 'published'
-      },
-      request: {
-        timestamp: 1500
-      }
-    }
-  },
-
-  // Macro operations (may not be supported by cel-js)
-  {
-    name: 'Multiple .map calls',
-    expression:
-      'items.map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0)',
-    context: {items: [5, 10, 15, 20, 25]}
-  },
-  {
-    name: 'List Comprehension',
-    expression: 'items.filter(x, x > 10).map(x, x > 2)',
-    context: {items: [5, 10, 15, 20, 25]}
-  },
-
-  {
-    name: 'Multiple has calls',
-    expression: `
-      has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan) && has(user.subscription.plan)
-    `,
-    context: {
-      user: {
-        premium: true,
-        subscription: {
-          plan: 'pro',
-          expiresAt: new Date('2025-01-01')
-        }
-      }
-    }
-  },
-
-  // Mixed operations (may not be supported by cel-js)
-  {
-    name: 'Mixed Complex',
-    expression: `
-      has(user.premium) &&
-      user.premium &&
-      (user.subscription.plan in ["pro", "enterprise"]) &&
-      user.subscription.expiresAt > timestamp("2024-01-01T00:00:00Z")
-    `,
-    context: {
-      user: {
-        premium: true,
-        subscription: {
-          plan: 'pro',
-          expiresAt: new Date('2025-01-01')
-        }
-      }
+  addEval(test) {
+    try {
+      const evaluate = parse(test.expression)
+      return this.add(benchLabel('eval', test), evaluate.bind(null, test.context))
+    } catch (err) {
+      err.message = `Error in test "${test.name}": ${err.message}`
+      throw err
     }
   }
+}
+
+const TEST_SUITES = [
+  ['literals', literals],
+  ['arithmetic', arithmetic],
+  ['accessors', accessors],
+  ['collections', collections],
+  ['logic', logic],
+  ['functions', functions],
+  ['macros', macros]
 ]
 
-const withOnly = TEST_EXPRESSIONS.filter((t) => t.only)
-if (withOnly.length > 0) TEST_EXPRESSIONS = withOnly
+const CLI_OPTIONS = parseCliArgs(process.argv.slice(2))
+const BENCHMARK_DIR = fileURLToPath(new URL('.', import.meta.url))
+const RESULT_ROOT = path.join(BENCHMARK_DIR, 'results')
+const numberFormatter = new Intl.NumberFormat('en-US', {
+  notation: 'standard',
+  maximumFractionDigits: 2
+})
 
-/**
- * Format number with thousands separator
- */
-function formatNumber(num) {
-  return Math.round(num).toLocaleString()
-}
+runBenchmarks().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
 
-/**
- * Run a single benchmark with error handling
- */
-function runBenchmark(name, fn, iterations) {
-  try {
-    for (let i = 0; i < ITERATIONS.warmup; i++) fn()
+async function runBenchmarks() {
+  ensureNativesSyntaxFlag()
 
-    const totalStart = performance.now()
+  const suites = TEST_SUITES.map(([name, tests]) =>
+    setupSuite({
+      name,
+      saveTarget: CLI_OPTIONS.save,
+      compareTarget: CLI_OPTIONS.compare,
+      tests
+    })
+  )
 
-    for (let i = 0; i < iterations; i++) fn()
-
-    const totalTime = performance.now() - totalStart
-    const opsPerSec = Math.round((iterations / totalTime) * 1000)
-
-    return {
-      totalTime,
-      opsPerSec,
-      supported: true
-    }
-  } catch (error) {
-    return {
-      supported: false,
-      error: error.message
-    }
-  }
-}
-
-/**
- * Benchmark parsing performance
- */
-function benchmarkParsing() {
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('PARSING PERFORMANCE')
-  console.log(`${'='.repeat(60)}\n`)
-
-  const results = []
-  let supportedByBoth = 0
-  let onlyLocal = 0
-  let onlyPackage = 0
-
-  for (const test of TEST_EXPRESSIONS) {
-    console.log(`\n▸ ${test.name}`)
-    const expr = serialize(celJsLocal.parse(test.expression).ast)
-    console.log(`  Expression: ${expr}`)
-
-    // Benchmark @marcbachmann/cel-js
-    const localResults = runBenchmark(
-      '@marcbachmann/cel-js',
-      () => celJsLocal.parse(test.expression),
-      ITERATIONS.parse
-    )
-
-    // Benchmark cel-js package
-    const packageResults = test.skipThirdParty
-      ? {supported: false}
-      : runBenchmark('cel-js', () => celJsPackage.parse(test.expression), ITERATIONS.parse)
-
-    const speedup =
-      localResults.supported && packageResults.supported
-        ? (packageResults.totalTime / localResults.totalTime).toFixed(2)
-        : null
-    const faster = speedup && speedup > 1
-
-    console.log(`\n  @marcbachmann/cel-js:`)
-    if (localResults.supported) {
-      console.log(
-        `    Total: ${localResults.totalTime.toFixed(2)}ms (${formatNumber(
-          localResults.opsPerSec
-        )} ops/sec)`
-      )
-    } else {
-      console.log(`    Not Supported: 🔴`)
-      console.log(`    Error: ${localResults.error}`)
-    }
-
-    console.log(`\n  cel-js package:`)
-    if (packageResults.supported) {
-      console.log(
-        `    Total: ${packageResults.totalTime.toFixed(2)}ms (${formatNumber(
-          packageResults.opsPerSec
-        )} ops/sec)`
-      )
-    } else {
-      console.log(`    Not Supported: 🔴`)
-    }
-
-    if (localResults.supported && packageResults.supported) {
-      console.log(
-        `\n  Result: @marcbachmann/cel-js is ${speedup}x ${faster ? 'faster 🚀' : 'slower'}`
-      )
-      supportedByBoth++
-    } else if (localResults.supported && !packageResults.supported) {
-      console.log(`\n  Result: Only @marcbachmann/cel-js supports this expression ✅`)
-      onlyLocal++
-    } else if (!localResults.supported && packageResults.supported) {
-      console.log(`\n  Result: Only cel-js package supports this expression`)
-      onlyPackage++
-    }
-
-    if (localResults.supported && packageResults.supported) {
-      results.push({
-        name: test.name,
-        localTime: localResults.totalTime,
-        packageTime: packageResults.totalTime,
-        speedup: parseFloat(speedup),
-        localOpsPerSec: localResults.opsPerSec,
-        packageOpsPerSec: packageResults.opsPerSec
-      })
-    }
-  }
-
-  console.log(`\n\nSupport Summary:`)
-  console.log(`  Supported by both: ${supportedByBoth}`)
-  console.log(`  Only @marcbachmann/cel-js: ${onlyLocal}`)
-  console.log(`  Only cel-js package: ${onlyPackage}`)
-
-  return results
-}
-
-/**
- * Benchmark evaluation performance
- */
-function benchmarkEvaluation() {
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('EVALUATION PERFORMANCE')
-  console.log(`${'='.repeat(60)}\n`)
-
-  const results = []
-  let supportedByBoth = 0
-  let onlyLocal = 0
-  let onlyPackage = 0
-
-  for (const test of TEST_EXPRESSIONS) {
-    console.log(`\n▸ ${test.name}`)
-    const expr = serialize(celJsLocal.parse(test.expression).ast)
-    console.log(`  Expression: ${expr}`)
-
-    let localParsed, packageParsed
-    const parseSupported = {local: true, package: true}
-
-    // Try to parse with both implementations
-    try {
-      localParsed = celJsLocal.parse(test.expression)
-    } catch (error) {
-      parseSupported.local = false
-    }
-
-    try {
-      packageParsed = celJsPackage.parse(test.expression).cst
-    } catch (error) {
-      parseSupported.package = false
-    }
-
-    if (!parseSupported.local || !parseSupported.package) {
-      console.log(`\n  Skipping evaluation benchmark (parse failed)`)
-      if (!parseSupported.local) console.log(`    @marcbachmann/cel-js: Parse failed`)
-      if (!parseSupported.package) console.log(`    cel-js package: Parse failed`)
+  const hasOnly = suites.some((suite) => suite.hasOnly)
+  const toRun = hasOnly ? suites.filter((suite) => suite.hasOnly) : suites
+  for (const suite of toRun) {
+    if (CLI_OPTIONS.suite.length > 0 && !CLI_OPTIONS.suite.includes(suite.name)) {
       continue
     }
 
-    // Benchmark @marcbachmann/cel-js
-    const localResults = runBenchmark(
-      '@marcbachmann/cel-js',
-      () => localParsed(test.context),
-      ITERATIONS.evaluate
-    )
-
-    // Benchmark cel-js package
-    const packageResults = test.skipThirdParty
-      ? {supported: false}
-      : runBenchmark(
-          'cel-js',
-          () => celJsPackage.evaluate(packageParsed, test.context),
-          ITERATIONS.evaluate
-        )
-
-    const speedup =
-      localResults.supported && packageResults.supported
-        ? (packageResults.totalTime / localResults.totalTime).toFixed(2)
-        : null
-    const faster = speedup && speedup > 1
-
-    console.log(`\n  @marcbachmann/cel-js:`)
-    if (localResults.supported) {
-      console.log(
-        `    Total: ${localResults.totalTime.toFixed(2)}ms (${formatNumber(
-          localResults.opsPerSec
-        )} ops/sec)`
-      )
-    } else {
-      console.log(`    Not Supported: 🔴`)
-      console.log(`    Error: ${localResults.error}`)
-    }
-
-    console.log(`\n  cel-js package:`)
-    if (packageResults.supported) {
-      console.log(
-        `    Total: ${packageResults.totalTime.toFixed(2)}ms (${formatNumber(
-          packageResults.opsPerSec
-        )} ops/sec)`
-      )
-    } else {
-      console.log(`    Not Supported: 🔴`)
-    }
-
-    if (localResults.supported && packageResults.supported) {
-      console.log(
-        `\n  Result: @marcbachmann/cel-js is ${speedup}x ${faster ? 'faster 🚀' : 'slower'}`
-      )
-      supportedByBoth++
-    } else if (localResults.supported && !packageResults.supported) {
-      console.log(`\n  Result: Only @marcbachmann/cel-js supports this expression ✅`)
-      onlyLocal++
-    } else if (!localResults.supported && packageResults.supported) {
-      console.log(`\n  Result: Only cel-js package supports this expression`)
-      onlyPackage++
-    }
-
-    if (localResults.supported && packageResults.supported) {
-      results.push({
-        name: test.name,
-        localTime: localResults.totalTime,
-        packageTime: packageResults.totalTime,
-        speedup: parseFloat(speedup),
-        localOpsPerSec: localResults.opsPerSec,
-        packageOpsPerSec: packageResults.opsPerSec
-      })
-    }
-  }
-
-  console.log(`\n\nSupport Summary:`)
-  console.log(`  Supported by both: ${supportedByBoth}`)
-  console.log(`  Only @marcbachmann/cel-js: ${onlyLocal}`)
-  console.log(`  Only cel-js package: ${onlyPackage}`)
-
-  return results
-}
-
-/**
- * Display summary statistics
- */
-function displaySummary(parseResults, evalResults) {
-  console.log(`\n${'='.repeat(60)}`)
-  console.log('PERFORMANCE SUMMARY')
-  console.log(`${'='.repeat(60)}\n`)
-
-  const calculateBenchmarkStats = (results) => {
-    if (results.length === 0) {
-      return {
-        avgSpeedup: 0,
-        minSpeedup: 0,
-        maxSpeedup: 0,
-        fasterCount: 0,
-        total: 0
-      }
-    }
-
-    const speedups = results.map((r) => r.speedup)
-    const avgSpeedup = speedups.reduce((a, b) => a + b, 0) / speedups.length
-    const minSpeedup = Math.min(...speedups)
-    const maxSpeedup = Math.max(...speedups)
-    const fasterCount = speedups.filter((s) => s > 1).length
-
-    return {
-      avgSpeedup,
-      minSpeedup,
-      maxSpeedup,
-      fasterCount,
-      total: speedups.length
-    }
-  }
-
-  const parseStats = calculateBenchmarkStats(parseResults)
-  const evalStats = calculateBenchmarkStats(evalResults)
-
-  if (parseStats.total > 0) {
-    console.log('PARSING PERFORMANCE (for expressions supported by both):')
-    console.log(`  Average speedup: ${parseStats.avgSpeedup.toFixed(2)}x`)
-    console.log(
-      `  Range: ${parseStats.minSpeedup.toFixed(2)}x - ${parseStats.maxSpeedup.toFixed(2)}x`
-    )
-    console.log(`  Faster in ${parseStats.fasterCount}/${parseStats.total} tests`)
-  }
-
-  if (evalStats.total > 0) {
-    console.log('\nEVALUATION PERFORMANCE (for expressions supported by both):')
-    console.log(`  Average speedup: ${evalStats.avgSpeedup.toFixed(2)}x`)
-    console.log(
-      `  Range: ${evalStats.minSpeedup.toFixed(2)}x - ${evalStats.maxSpeedup.toFixed(2)}x`
-    )
-    console.log(`  Faster in ${evalStats.fasterCount}/${evalStats.total} tests`)
-  }
-
-  console.log(`\n📊 Note: Speedup > 1.0 means @marcbachmann/cel-js is faster than cel-js package`)
-
-  // Overall verdict
-  const totalTests = parseStats.total + evalStats.total
-  if (totalTests > 0) {
-    const overallAvg = (parseStats.avgSpeedup + evalStats.avgSpeedup) / 2
-    if (overallAvg > 1.5) {
-      console.log('✅ Overall: @marcbachmann/cel-js shows significant performance improvements!')
-    } else if (overallAvg > 1.1) {
-      console.log('✅ Overall: @marcbachmann/cel-js shows moderate performance improvements.')
-    } else if (overallAvg > 0.9) {
-      console.log('⚖️  Overall: Performance is comparable between implementations.')
-    } else {
-      console.log("📈 Overall: There's room for performance optimization.")
-    }
+    await suite.runAndReport()
   }
 }
 
-/**
- * Main benchmark runner
- */
-async function runBenchmarks() {
-  console.log(`\n${'═'.repeat(60)}`)
-  console.log('@marcbachmann/cel-js Performance Benchmark Suite')
-  console.log('═'.repeat(60))
-  console.log(`\nBenchmark Configuration:`)
-  console.log(`  Parse iterations:    ${formatNumber(ITERATIONS.parse)}`)
-  console.log(`  Evaluate iterations: ${formatNumber(ITERATIONS.evaluate)}`)
-  console.log(`  Warmup iterations:   ${formatNumber(ITERATIONS.warmup)}`)
-  console.log(`  Test expressions:    ${TEST_EXPRESSIONS.length}`)
-  console.log(`\nComparing against: cel-js package`)
-  console.log(`Platform: ${process.platform} ${process.arch}`)
-  console.log(`Node.js: ${process.version}`)
+function setupSuite({name, compareTarget, saveTarget, tests}) {
+  const suite = new BenchSuite({name, minSamples: 10, reporter: false})
+  const withOnly = tests.filter((test) => test.only)
+  const toRun = withOnly.length > 0 ? withOnly : tests
+  suite.hasOnly = withOnly.length > 0
 
-  const startTime = performance.now()
+  for (const test of toRun) {
+    suite.addParse(test)
+    suite.addEval(test)
+  }
 
-  const parseResults = benchmarkParsing()
-  const evalResults = benchmarkEvaluation()
+  suite.runAndReport = async function () {
+    const results = await suite.run()
 
-  displaySummary(parseResults, evalResults)
+    const snapshot = captureSuiteSnapshot(suite.name, results)
+    const report = compareTarget
+      ? await compareSuiteSnapshot(snapshot, compareTarget, toPretty(results))
+      : toPretty(results)
 
-  const totalTime = ((performance.now() - startTime) / 1000).toFixed(1)
-  console.log(`⏱️  Total benchmark time: ${totalTime}s\n`)
-  console.log('═'.repeat(60))
+    process.stdout.write(`${report}\n`)
+
+    if (saveTarget) await persistSuiteSnapshot(snapshot, saveTarget)
+    return results
+  }
+
+  return suite
 }
 
-// Run the benchmark
-runBenchmarks().catch(console.error)
+function benchLabel(kind, test) {
+  return `${kind}/${test.suite || 'general'}/${test.name}`
+}
+
+function ensureNativesSyntaxFlag() {
+  if (process.execArgv.includes('--allow-natives-syntax')) return
+  throw new Error(
+    `bench-node requires --allow-natives-syntax. ` +
+      `Rerun with 'node --allow-natives-syntax benchmark/index.js' or use 'npm run benchmark'.`
+  )
+}
+
+function parseCliArgs(argv) {
+  const {values} = parseNodeArgs({
+    args: argv,
+    allowPositionals: false,
+    options: {
+      save: {type: 'string', default: 'false'},
+      compare: {type: 'string', default: 'latest'},
+      suite: {type: 'string', multiple: true, default: []}
+    }
+  })
+
+  return {
+    save: pathOption(values.save),
+    compare: pathOption(values.compare),
+    suite: values.suite
+  }
+}
+
+function pathOption(v) {
+  if (v === 'false') return null
+  if (v === 'true') return 'latest'
+  if (v === 'timestamp') return new Date().toISOString().replace(/[:.]/g, '-')
+  return v || 'latest'
+}
+
+function captureSuiteSnapshot(name, results) {
+  return {
+    suite: name,
+    capturedAt: new Date().toISOString(),
+    nodeVersion: process.version,
+    results: results.map(normalizeBenchmarkResult)
+  }
+}
+
+function normalizeOpsSec(opsSec) {
+  if (typeof opsSec !== 'number') return undefined
+  return Number(opsSec < 100 ? opsSec.toFixed(2) : opsSec.toFixed(0))
+}
+
+function normalizeBenchmarkResult(result) {
+  const stats = result.histogram || {}
+  return {
+    name: result.name,
+    opsSec: normalizeOpsSec(result.opsSec),
+    totalTime: result.totalTime || undefined,
+    runsSampled: (stats.samples ?? stats.count) || undefined,
+    min: stats.min ?? undefined,
+    max: stats.max ?? undefined,
+    baseline: result.baseline ? true : undefined
+  }
+}
+
+async function persistSuiteSnapshot(snapshot, saveTarget) {
+  const filePath = path.join(RESULT_ROOT, saveTarget, `${snapshot.suite}.json`)
+  const payload = `${JSON.stringify(snapshot, null, 2)}\n`
+  try {
+    await fs.writeFile(filePath, payload, 'utf8')
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err
+    await fs.mkdir(path.join(RESULT_ROOT, saveTarget), {recursive: true})
+    await fs.writeFile(filePath, payload, 'utf8')
+  }
+}
+
+async function compareSuiteSnapshot(snapshot, compareTarget, report) {
+  const baseline = await loadBaselineSnapshot(snapshot.suite, compareTarget)
+  return baseline ? printComparison(snapshot, baseline, report) : report
+}
+
+async function loadBaselineSnapshot(suiteName, compareTarget) {
+  if (!compareTarget) return null
+  const sourcePath = path.join(RESULT_ROOT, compareTarget, `${suiteName}.json`)
+
+  try {
+    const raw = await fs.readFile(sourcePath, 'utf8')
+    return JSON.parse(raw)
+  } catch (err) {
+    if (err.code === 'ENOENT') return null
+    if (err.name === 'SyntaxError') {
+      console.error(`[benchmark] Invalid JSON in ${sourcePath}: ${err.message}`)
+    } else {
+      console.error(`[benchmark] Failed to read baseline for ${suiteName}: ${err.message}`)
+    }
+    return null
+  }
+}
+
+function maybePatchLine(lines, i, comparison, maxLength) {
+  let line = lines[i]
+  if (!line.includes(' runs sampled')) return
+
+  const improvement = comparison.find(
+    (c) => line.includes(c.currentValueFormatted) && line.includes(c.shortName)
+  )
+
+  line = line.replace(/\(\d+ runs sampled\)/, '')
+  if (!improvement) return (lines[i] = line)
+
+  const padding = ' '.repeat(maxLength - line.length)
+
+  lines[i] =
+    `${line}${padding}${improvement.direction} (${improvement.factor.toFixed(2)}x, ` +
+    `${improvement.percent.toFixed(2)}%, ` +
+    `was ${improvement.previousValueFormatted})`
+}
+
+function printComparison(current, base, report) {
+  const comparison = buildComparison(current.results, base.results)
+  if (!comparison.length) return report
+  const lines = report.split('\n')
+
+  // Remove header lines up to CPU info
+  const cpuLine = lines.findIndex((line) => line.includes('CPU:'))
+  lines.splice(0, cpuLine + 1)
+
+  const maxLength = Math.max(...lines.map((line) => line.length)) - '(10 runs sampled)'.length + 1
+  for (let i = 0; i < lines.length; i++) maybePatchLine(lines, i, comparison, maxLength)
+  return lines.join('\n')
+}
+
+function buildComparison(currentResults, baselineResults) {
+  const baselineMap = new Map(baselineResults.map((result) => [result.name, result]))
+  const matches = []
+
+  for (const current of currentResults) {
+    const previous = baselineMap.get(current.name)
+    if (!previous) continue
+
+    baselineMap.delete(current.name)
+
+    const metric = detectComparableMetric(current, previous)
+    if (!metric) continue
+
+    const currentValue = current[metric]
+    const previousValue = previous[metric]
+    if (!(currentValue > 0 && previousValue > 0)) continue
+
+    const improvement =
+      metric === 'opsSec' ? currentValue / previousValue : previousValue / currentValue
+    const direction = improvement >= 1 ? 'faster' : 'slower'
+    const factor = direction === 'faster' ? improvement : 1 / improvement
+    const percent = (factor - 1) * 100
+
+    matches.push({
+      name: current.name,
+      metric,
+      direction,
+      factor,
+      percent,
+      currentValue,
+      previousValue,
+
+      shortName: current.name.split('/').pop(),
+      currentValueFormatted: formatMetric(metric, currentValue),
+      previousValueFormatted: formatMetric(metric, previousValue)
+    })
+  }
+
+  return matches
+}
+
+function metricFor(result) {
+  if (typeof result.opsSec === 'number') return 'opsSec'
+  if (typeof result.totalTime === 'number') return 'totalTime'
+  return null
+}
+
+function detectComparableMetric(current, previous) {
+  const currentMetric = metricFor(current)
+  const previousMetric = metricFor(previous)
+  if (currentMetric === previousMetric) return currentMetric
+  return null
+}
+
+function formatMetric(metric, value) {
+  if (value === null || value === undefined) return 'n/a'
+  if (metric === 'totalTime') return formatDurationSeconds(value)
+  return `${numberFormatter.format(value)} ops/sec`
+}
+
+function formatDurationSeconds(seconds) {
+  if (seconds < 1e-6) return `${(seconds * 1e9).toFixed(2)} ns`
+  if (seconds < 1e-3) return `${(seconds * 1e6).toFixed(2)} us`
+  if (seconds < 1) return `${(seconds * 1e3).toFixed(2)} ms`
+  return `${seconds.toFixed(2)} s`
+}
