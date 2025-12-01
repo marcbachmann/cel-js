@@ -688,6 +688,7 @@ describe('built-in functions', () => {
       assert.strictEqual(evaluate('double(-5)'), -5)
       assert.strictEqual(evaluate('double(0)'), 0)
       assert.strictEqual(evaluate('double(-0)'), 0)
+      assert.strictEqual(evaluate('double(1u)'), 1)
       assert.strictEqual(
         evaluate('double(inf)', {inf: Number.POSITIVE_INFINITY}),
         Number.POSITIVE_INFINITY
@@ -747,12 +748,14 @@ describe('built-in functions', () => {
     test('should work with variables from context', () => {
       const context = {
         num: 42,
+        integer: 42n,
         str: '3.14',
         bool: true,
         nullVal: null
       }
       assert.strictEqual(evaluate('double(num)', context), 42)
       assert.strictEqual(evaluate('double(str)', context), 3.14)
+      assert.strictEqual(evaluate('double(integer)', context), 42)
     })
 
     test('should throw error for objects, arrays, and bytes', () => {
