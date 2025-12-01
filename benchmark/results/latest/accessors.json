@@ -1,63 +1,63 @@
 {
   "suite": "accessors",
-  "capturedAt": "2025-12-01T11:59:19.668Z",
+  "capturedAt": "2025-12-01T13:44:34.470Z",
   "nodeVersion": "v24.11.0",
   "results": [
     {
       "name": "parse/general/Variable Access",
-      "opsSec": 6574979,
-      "runsSampled": 10,
-      "min": 150.30614731914713,
-      "max": 153.79350201952042
+      "opsSec": 6958102,
+      "runsSampled": 13,
+      "min": 142.16954220580052,
+      "max": 150
     },
     {
       "name": "eval/general/Variable Access",
-      "opsSec": 8136781,
-      "runsSampled": 10,
-      "min": 122.12779947884839,
-      "max": 124.67582778494844
+      "opsSec": 9087339,
+      "runsSampled": 11,
+      "min": 107.55759167945381,
+      "max": 112.37683521593006
     },
     {
       "name": "parse/general/Deep Property Access",
-      "opsSec": 3488709,
-      "runsSampled": 11,
-      "min": 285.47586748618215,
-      "max": 288.2862008267922
+      "opsSec": 3526587,
+      "runsSampled": 12,
+      "min": 278.6212639413501,
+      "max": 292.7363934001102
     },
     {
       "name": "eval/general/Deep Property Access",
-      "opsSec": 4804988,
-      "runsSampled": 9,
-      "min": 207.76526198457788,
-      "max": 208.78848048409503
+      "opsSec": 5285113,
+      "runsSampled": 12,
+      "min": 182.7686353805298,
+      "max": 195.554280626561
     },
     {
       "name": "parse/general/Array Index Access",
-      "opsSec": 5495717,
-      "runsSampled": 10,
-      "min": 180.34046798607227,
-      "max": 183.31723882621156
+      "opsSec": 5285991,
+      "runsSampled": 11,
+      "min": 186.03084681134297,
+      "max": 193.35572381580738
     },
     {
       "name": "eval/general/Array Index Access",
-      "opsSec": 6310635,
+      "opsSec": 7339452,
       "runsSampled": 11,
-      "min": 157.58508470500382,
-      "max": 160.31978242936688
+      "min": 134.5362836050264,
+      "max": 137.86554501939318
     },
     {
       "name": "parse/general/Array Membership",
-      "opsSec": 4884725,
-      "runsSampled": 11,
-      "min": 203.93540011594013,
-      "max": 207.157840045865
+      "opsSec": 4720605,
+      "runsSampled": 12,
+      "min": 207.06060606060606,
+      "max": 215.9666201194449
     },
     {
       "name": "eval/general/Array Membership",
-      "opsSec": 5861262,
-      "runsSampled": 10,
-      "min": 168.79868791188147,
-      "max": 173.75220781428158
+      "opsSec": 6439676,
+      "runsSampled": 11,
+      "min": 154.87645424202438,
+      "max": 155.8488565397954
     }
   ]
 }

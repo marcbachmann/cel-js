@@ -1,0 +1,105 @@
+{
+  "suite": "logic",
+  "capturedAt": "2025-12-01T13:34:26.378Z",
+  "nodeVersion": "v24.11.0",
+  "results": [
+    {
+      "name": "parse/general/Logical Expression",
+      "opsSec": 1393073,
+      "runsSampled": 10,
+      "min": 715.2821618987559,
+      "max": 720.0446722626627
+    },
+    {
+      "name": "eval/general/Logical Expression",
+      "opsSec": 8894367,
+      "runsSampled": 12,
+      "min": 111.00856666397698,
+      "max": 113.11503398721247
+    },
+    {
+      "name": "parse/general/Logical OR",
+      "opsSec": 626892,
+      "runsSampled": 10,
+      "min": 1588.625,
+      "max": 1596.532502969407
+    },
+    {
+      "name": "eval/general/Logical OR",
+      "opsSec": 7004983,
+      "runsSampled": 12,
+      "min": 140.64124950233935,
+      "max": 143.58285714285714
+    },
+    {
+      "name": "parse/general/Logical OR with variables",
+      "opsSec": 407401,
+      "runsSampled": 11,
+      "min": 2442.791619811275,
+      "max": 2471.078552080768
+    },
+    {
+      "name": "eval/general/Logical OR with variables",
+      "opsSec": 47386,
+      "runsSampled": 8,
+      "min": 20906.018433179725,
+      "max": 21003.26859504132
+    },
+    {
+      "name": "parse/general/Range Check",
+      "opsSec": 958841,
+      "runsSampled": 10,
+      "min": 1036.3108940459156,
+      "max": 1046.5978339350181
+    },
+    {
+      "name": "eval/general/Range Check",
+      "opsSec": 6014615,
+      "runsSampled": 12,
+      "min": 165.66300411249668,
+      "max": 168.54054054054055
+    },
+    {
+      "name": "parse/general/Nested Ternary",
+      "opsSec": 407413,
+      "runsSampled": 11,
+      "min": 2442.2514782778676,
+      "max": 2469.555904430162
+    },
+    {
+      "name": "eval/general/Nested Ternary",
+      "opsSec": 5219194,
+      "runsSampled": 12,
+      "min": 191.0545466068574,
+      "max": 192.53343458051452
+    },
+    {
+      "name": "parse/general/Complex Logical",
+      "opsSec": 497798,
+      "runsSampled": 11,
+      "min": 2002.1994260539186,
+      "max": 2023.6227281303063
+    },
+    {
+      "name": "eval/general/Complex Logical",
+      "opsSec": 4385205,
+      "runsSampled": 12,
+      "min": 226.1963716842311,
+      "max": 230.13643659711076
+    },
+    {
+      "name": "parse/general/Authorization Check",
+      "opsSec": 205994,
+      "runsSampled": 12,
+      "min": 4804.274171802774,
+      "max": 4967.862775565699
+    },
+    {
+      "name": "eval/general/Authorization Check",
+      "opsSec": 1704143,
+      "runsSampled": 11,
+      "min": 581.9011057013089,
+      "max": 592.8062717359269
+    }
+  ]
+}

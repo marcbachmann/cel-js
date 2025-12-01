@@ -1,0 +1,49 @@
+{
+  "suite": "functions",
+  "capturedAt": "2025-12-01T13:33:22.051Z",
+  "nodeVersion": "v24.11.0",
+  "results": [
+    {
+      "name": "parse/general/String Methods",
+      "opsSec": 752695,
+      "runsSampled": 11,
+      "min": 1319.063556959673,
+      "max": 1340.7200128116158
+    },
+    {
+      "name": "eval/general/String Methods",
+      "opsSec": 3953085,
+      "runsSampled": 11,
+      "min": 251.7361830131446,
+      "max": 255.5763607482089
+    },
+    {
+      "name": "parse/general/Function Calls",
+      "opsSec": 686808,
+      "runsSampled": 11,
+      "min": 1446.6580659892682,
+      "max": 1463.1417148838427
+    },
+    {
+      "name": "eval/general/Function Calls",
+      "opsSec": 2600431,
+      "runsSampled": 11,
+      "min": 383.1719437454652,
+      "max": 387.72838320262656
+    },
+    {
+      "name": "parse/general/String Regex",
+      "opsSec": 1335887,
+      "runsSampled": 10,
+      "min": 746.687928638666,
+      "max": 749.8028322440088
+    },
+    {
+      "name": "eval/general/String Regex",
+      "opsSec": 5460787,
+      "runsSampled": 12,
+      "min": 180.835734870317,
+      "max": 185.503983400648
+    }
+  ]
+}
