@@ -1,7 +1,7 @@
 {
   "name": "benchmark",
   "version": "1.0.0",
-  "description": "This directory contains comprehensive benchmarks comparing the performance of the handmade CEL implementation against the `cel-js` npm package.",
+  "description": "This directory contains comprehensive benchmarks comparing the performance against older runs",
   "license": "ISC",
   "author": "",
   "type": "module",
