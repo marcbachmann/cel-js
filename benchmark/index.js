@@ -224,7 +224,7 @@ function maybePatchLine(lines, i, comparison, maxLength) {
     (c) => line.includes(c.currentValueFormatted) && line.includes(c.shortName)
   )
 
-  line = line.replace(/\(\d+ runs sampled\)/, '')
+  line = line.replace(/ \(\d+ runs sampled\)/, '')
   if (!improvement) return (lines[i] = line)
 
   const padding = ' '.repeat(maxLength - line.length)
@@ -240,9 +240,10 @@ function printComparison(current, base, report) {
   if (!comparison.length) return report
   const lines = report.split('\n')
 
-  // Remove header lines up to CPU info
-  const cpuLine = lines.findIndex((line) => line.includes('CPU:'))
-  lines.splice(0, cpuLine + 1)
+  // Remove header lines
+  const startLine = lines.findIndex((line) => line.includes('Benchmark results'))
+  lines.splice(0, startLine)
+  lines[0] = lines[0].replace('Benchmark results', `Benchmark results for '${current.suite}'`)
 
   const maxLength = Math.max(...lines.map((line) => line.length)) - '(10 runs sampled)'.length + 1
   for (let i = 0; i < lines.length; i++) maybePatchLine(lines, i, comparison, maxLength)
