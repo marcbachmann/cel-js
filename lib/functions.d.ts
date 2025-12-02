@@ -1,3 +1,5 @@
+import type {Registry} from './registry.js'
+
 /**
  * Represents an unsigned integer value in CEL.
  * Used for uint type values.
@@ -44,3 +46,8 @@ export class Duration {
   /** Convert to string representation in format like "5s", "1h30m", etc. */
   toString(): string
 }
+
+/**
+ * Register all built-in CEL functions on the provided registry instance.
+ */
+export function registerFunctions(registry: Registry): void

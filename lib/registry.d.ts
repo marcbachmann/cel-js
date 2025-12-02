@@ -82,6 +82,27 @@ export const TYPES: {
 }
 
 /**
+ * Common CEL type declarations used throughout the registry.
+ */
+export const celTypes: {
+  string: TypeDeclaration
+  bool: TypeDeclaration
+  int: TypeDeclaration
+  uint: TypeDeclaration
+  double: TypeDeclaration
+  bytes: TypeDeclaration
+  dyn: TypeDeclaration
+  null: TypeDeclaration
+  type: TypeDeclaration
+  'google.protobuf.Timestamp': TypeDeclaration
+  'google.protobuf.Duration': TypeDeclaration
+  list: TypeDeclaration
+  'list<dyn>': TypeDeclaration
+  map: TypeDeclaration
+  'map<dyn, dyn>': TypeDeclaration
+}
+
+/**
  * Registry for managing function overloads, operator overloads, and type mappings.
  */
 export class Registry {
@@ -137,7 +158,7 @@ export class Registry {
    * @param name - The variable name
    * @param type - The variable type name or declaration
    */
-  registerVariable(name: string, type: string | TypeDeclaration): void
+  registerVariable(name: string, type: string | TypeDeclaration): this
 
   /**
    * Register a unary operator overload.
@@ -168,34 +189,33 @@ export class Registry {
    * Clone this registry to create a new isolated instance.
    * @returns A new registry with a deep copy of all registrations
    */
-  clone(): Registry
+  clone(opts?: {unlistedVariablesAreDyn?: boolean}): Registry
 
-  /** The operator overload map. */
-  readonly overloads: Record<string, any>
-
-  /** The function overload map. */
-  readonly functions: Record<string, any>
-
-  /** Map of type names to their constructor functions. */
+  /** Registered object types keyed by CEL typename. */
   readonly objectTypes: Map<string, any>
 
-  /** Map of constructor functions to their type names. */
-  readonly objectTypesByConstructor: Map<any, string>
+  /** Map of constructors to their registered type metadata. */
+  readonly objectTypesByConstructor: Map<Function | undefined, any>
 
-  /** Map of type names to their Type instances. */
+  /** Map of type names to their exported Type handles. */
   readonly objectTypeInstances: Map<string, Type>
+
+  /** Registered variables and their type declarations. */
+  readonly variables: Map<string, TypeDeclaration>
 }
 
 /**
  * Options for creating a new registry.
  */
 export interface RegistryOptions {
-  functions?: Record<string, any>
-  overloads?: Record<string, any>
   objectTypes?: Map<string, any>
-  objectTypesByConstructor?: Map<any, string>
+  objectTypesByConstructor?: Map<Function | undefined, any>
+  objectTypeInstances?: Map<string, Type>
+  functionDeclarations?: Map<string, any>
+  operatorDeclarations?: Map<string, any>
+  typeDeclarations?: Map<string, TypeDeclaration>
   variables?: Map<string, TypeDeclaration>
-  unlistedVariablesAreDyn: boolean
+  unlistedVariablesAreDyn?: boolean
 }
 
 /**
@@ -204,3 +224,44 @@ export interface RegistryOptions {
  * @returns A new registry instance
  */
 export function createRegistry(opts?: RegistryOptions): Registry
+
+/**
+ * Root context wiring together registered variable types and fallback values.
+ */
+export class RootContext {
+  constructor(variables: Map<string, TypeDeclaration>, fallbackValues: Map<string, any>)
+
+  /** Look up the declared type for a variable name. */
+  getType(name: string): TypeDeclaration | undefined
+
+  /** Look up the fallback value (built-ins) for a name. */
+  getValue(name: string): any
+
+  /** Create an overlay context for scoped evaluation. */
+  fork(): OverlayContext
+}
+
+/**
+ * Overlay context layered on top of the root context for evaluation/type-checking.
+ */
+export class OverlayContext {
+  constructor(parent: RootContext | OverlayContext)
+
+  /** Create a nested overlay context that inherits from this instance. */
+  fork(): OverlayContext
+
+  /** Fork with a placeholder variable binding (used for comprehensions). */
+  forkWithVariable(variableType: TypeDeclaration, variableName: string): OverlayContext
+
+  /** Attach runtime context data for lookups. */
+  withContext(context: Record<string, any> | Map<string, any> | null | undefined): this
+
+  /** Set the current variable placeholder value. */
+  setVariableValue(value: any): this
+
+  /** Resolve a value by name, falling back to parent scopes. */
+  getValue(name: string): any
+
+  /** Resolve a declared type by name, respecting overlays. */
+  getType(name: string): TypeDeclaration | undefined
+}
