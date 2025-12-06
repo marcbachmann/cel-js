@@ -1,14 +1,33 @@
 export default [
   {
-    name: 'List .filter and .map',
-    expression: 'items.filter(x, x > 10).map(x, x > 2)',
-    context: {items: [5, 10, 15, 20, 25]}
+    name: 'List .map',
+    expression: 'items.map(x, x)',
+    context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
-    name: 'Multiple list .map calls',
-    expression:
-      'items.map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0).map(x, x + 1.0)',
-    context: {items: [5, 10, 15, 20, 25]}
+    name: 'List .map with async',
+    expression: 'identityAsync(items).map(x, identityAsync(x))',
+    context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+  },
+  {
+    name: 'List .map 5 times',
+    expression: 'items.map(x, x).map(x, x).map(x, x).map(x, x).map(x, x)',
+    context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+  },
+  {
+    name: 'List .filter',
+    expression: 'items.filter(x, x > 5.0)',
+    context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+  },
+  {
+    name: 'List .filter and .map',
+    expression: 'items.filter(x, x > 5.0).map(x, x)',
+    context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+  },
+  {
+    name: 'List .map with filter',
+    expression: 'items.map(x, x > 5.0, x)',
+    context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
     name: 'Multiple has calls',

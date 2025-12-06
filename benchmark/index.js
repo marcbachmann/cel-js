@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url'
 import {parseArgs as parseNodeArgs} from 'node:util'
 import {Suite} from 'bench-node'
 import {toPretty} from 'bench-node/lib/reporter/pretty.js'
-import {parse} from '../lib/index.js'
+import {Environment} from '../lib/index.js'
 
 import literals from './suites/literals.js'
 import arithmetic from './suites/arithmetic.js'
@@ -16,6 +16,13 @@ import logic from './suites/logic.js'
 import functions from './suites/functions.js'
 import macros from './suites/macros.js'
 
+const env = new Environment({
+  unlistedVariablesAreDyn: true
+})
+  .registerVariable('items', 'list<dyn>')
+  .registerFunction('identityAsync(double): double', async (a) => a)
+  .registerFunction('identityAsync(list): list', async (a) => a)
+
 class BenchSuite extends Suite {
   constructor(options) {
     super(options)
@@ -24,17 +31,17 @@ class BenchSuite extends Suite {
 
   addParse(test) {
     try {
-      parse(test.expression)
+      env.parse(test.expression)
     } catch (err) {
       err.message = `Error in test "${test.name}": ${err.message}`
       throw err
     }
-    return this.add(benchLabel('parse', test), parse.bind(null, test.expression))
+    return this.add(benchLabel('parse', test), env.parse.bind(env, test.expression))
   }
 
   addEval(test) {
     try {
-      const evaluate = parse(test.expression)
+      const evaluate = env.parse(test.expression)
       return this.add(benchLabel('eval', test), evaluate.bind(null, test.context))
     } catch (err) {
       err.message = `Error in test "${test.name}": ${err.message}`
