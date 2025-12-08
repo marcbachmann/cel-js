@@ -20,6 +20,14 @@ describe('double literals', () => {
     expectEval('1.23456789', 1.23456789)
   })
 
+  test('should parse scientific notation literals', () => {
+    expectEval('1e1', 10)
+    expectEval('1.1e1', 11)
+    expectEval('1e-2', 0.01)
+    expectEval('1E+2', 100)
+    expectEval('1e3+1e1-1e0+1e-0+1e0', 1011)
+  })
+
   test('should handle double literals in complex expressions', () => {
     expectEval('(0.5 + 0.25) * 2.0', 1.5)
     expectEval('0.1 + (0.2 * 5.0)', 1.1)
