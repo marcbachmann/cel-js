@@ -1,6 +1,25 @@
 import {test, describe} from 'node:test'
 import {TestEnvironment, expectEval, expectEvalDeep, expectEvalThrows} from './helpers.js'
 
+class User {
+  constructor({name, age}) {
+    this.name = name
+    this.age = age
+  }
+}
+
+const envWithUser = new TestEnvironment()
+  .registerType('User', {ctor: User, fields: {name: 'string', age: 'double'}})
+  .registerOperator('User == User', (a, b) => a.name === b.name && a.age === b.age)
+  .registerOperator('User in list<User>', (a, b) =>
+    b.some((u) => a.name === u.name && a.age === u.age)
+  )
+  .registerVariable('likeUser', 'map')
+  .registerVariable('existingUser', 'User')
+  .registerVariable('otherUser', 'User')
+  .registerVariable('users', 'list<User>')
+  .registerVariable('dynUser', 'dyn')
+
 describe('lists expressions', () => {
   describe('literals', () => {
     test('should create an empty list', () => {
@@ -152,27 +171,11 @@ describe('lists expressions', () => {
       expectEvalDeep('dyn([1]) + dyn([2.0])', [1n, 2])
       expectEvalDeep('i + [2.0]', [1n, 2], {i: [1n]})
     })
+  })
+
+  describe('value in list', () => {
 
     test('does not support in check with invalid types', () => {
-      class User {
-        constructor({name, age}) {
-          this.name = name
-          this.age = age
-        }
-      }
-
-      const env = new TestEnvironment()
-        .registerType('User', {ctor: User, fields: {name: 'string', age: 'double'}})
-        .registerOperator('User == User', (a, b) => a.name === b.name && a.age === b.age)
-        .registerOperator('User in list<User>', (a, b) =>
-          b.some((u) => a.name === u.name && a.age === u.age)
-        )
-        .registerVariable('likeUser', 'map')
-        .registerVariable('existingUser', 'User')
-        .registerVariable('otherUser', 'User')
-        .registerVariable('users', 'list<User>')
-        .registerVariable('dynUser', 'dyn')
-
       const context = {
         likeUser: {name: 'Alice', age: 25},
         otherUser: new User({name: 'Dave', age: 22}),
@@ -185,21 +188,21 @@ describe('lists expressions', () => {
         ]
       }
 
-      env.expectEval('users[0] in users', true, context)
-      env.expectEval('existingUser in users', true, context)
-      env.expectEval('otherUser in users', false, context)
-
-      env.expectEval('existingUser == existingUser', true, context)
-      env.expectEval('existingUser == users[0]', true, context)
-      env.expectEval('existingUser == dynUser', true, context)
-
-      env.expectEvalThrows(
+      envWithUser.expectEval('users[0] in users', true, context)
+      envWithUser.expectEval('existingUser in users', true, context)
+      envWithUser.expectEval('otherUser in users', false, context)
+      envWithUser.expectEval('existingUser == existingUser', true, context)
+      envWithUser.expectEval('existingUser == users[0]', true, context)
+      envWithUser.expectEval('existingUser == dynUser', true, context)
+      envWithUser.expectEvalThrows(
         'likeUser in users',
         /no such overload: map<dyn, dyn> in list<User>/,
         context
       )
     })
+  })
 
+  describe('equality checks', () => {
     test('does not support equality check with invalid types', () => {
       expectEvalThrows('[1] == [1.0]', /no such overload: list<int> == list<double>/)
     })

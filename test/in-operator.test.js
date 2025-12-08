@@ -29,6 +29,24 @@ describe('in operator and membership tests', () => {
       expectEval('dyn("apple") in items', true, ctx)
     })
 
+    test('should work with dyn double in list', () => {
+      const ctx = {i: 2n, d: 2.0, doubles: [1.0, 2.0, 3.0], ints: [1n, 2n, 3n]}
+      expectEval('d in doubles', true, ctx)
+      expectEval('d in ints', true, ctx)
+      expectEval('i in doubles', true, ctx)
+
+      expectEval('2 in doubles', true, ctx)
+      expectEval('2 in ints', true, ctx)
+      expectEval('2.0 in doubles', true, ctx)
+      expectEval('2.0 in ints', true, ctx)
+
+      expectEval('d in [1, 2, 3]', true, ctx)
+      expectEval('dyn(2.0) in [1, 2, 3]', true, ctx)
+      expectEval('2.0 in dyn([1, 2, 3])', true, ctx)
+      expectEval('2.0 in [dyn(1), dyn(2), dyn(3)]', true, ctx)
+      expectEval('dyn(4.0) in [1, 2, 3]', false, ctx)
+    })
+
     test('should work if dyn in list<string>', () => {
       const ctx = {plan: 'pro'}
       expectEval('plan in ["pro", "enterprise"]', true, ctx)
