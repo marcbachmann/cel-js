@@ -1,12 +1,5 @@
 import {test, describe} from 'node:test'
-import {
-  assert,
-  evaluate,
-  expectEval,
-  expectEvalThrows,
-  expectParseThrows,
-  parse
-} from './helpers.js'
+import {assert, evaluate, expectEval, expectEvalThrows, expectParseThrows} from './helpers.js'
 
 describe('string literals and escapes', () => {
   describe('basic string literals', () => {
@@ -19,8 +12,8 @@ describe('string literals and escapes', () => {
     })
 
     test('should handle strings with quotes inside', () => {
-      expectEval('\'"hello"\'', '"hello"')
-      expectEval('"\'hello\'"', "'hello'")
+      expectEval(`'"hello"'`, '"hello"')
+      expectEval(`"'hello'"`, "'hello'")
     })
   })
 
@@ -125,11 +118,14 @@ describe('string literals and escapes', () => {
 
     test('should throw on invalid escape sequences', () => {
       expectParseThrows('"\\s"', /Invalid escape/)
+      expectParseThrows('"\\ "', /Invalid escape/)
     })
 
     test('should throw on newlines in single quoted strings', () => {
-      const result = parse('"hello\\nworld"') // This should work
-      assert.strictEqual(typeof result, 'function')
+      expectParseThrows('"\n"', /Newlines not allowed in single-quoted strings/)
+
+      // Escaped \n should be fine
+      expectEval('"hello\\nworld"', 'hello\nworld')
     })
 
     test('should throw on invalid Unicode escapes', () => {
