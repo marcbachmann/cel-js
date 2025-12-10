@@ -1,0 +1,91 @@
+{
+  "suite": "collections",
+  "capturedAt": "2025-12-10T02:17:01.186Z",
+  "nodeVersion": "v24.11.0",
+  "results": [
+    {
+      "name": "parse/general/List Creation",
+      "opsSec": 1940610,
+      "runsSampled": 10,
+      "min": 508.3138454038843,
+      "max": 527.246950941132
+    },
+    {
+      "name": "eval/general/List Creation",
+      "opsSec": 15302892,
+      "runsSampled": 9,
+      "min": 65.19509702577989,
+      "max": 65.37995039164491
+    },
+    {
+      "name": "parse/general/Large List Creation",
+      "opsSec": 331735,
+      "runsSampled": 9,
+      "min": 2933.831862101873,
+      "max": 3017.691517214295
+    },
+    {
+      "name": "eval/general/Large List Creation",
+      "opsSec": 2975243,
+      "runsSampled": 10,
+      "min": 335.0105519807633,
+      "max": 337.7317695998682
+    },
+    {
+      "name": "parse/general/Map Creation",
+      "opsSec": 1282825,
+      "runsSampled": 9,
+      "min": 762.0681578621031,
+      "max": 778.6975453311952
+    },
+    {
+      "name": "eval/general/Map Creation",
+      "opsSec": 8583130,
+      "runsSampled": 11,
+      "min": 115.69561907743092,
+      "max": 118.56985982535043
+    },
+    {
+      "name": "parse/general/Nested Map Creation",
+      "opsSec": 178238,
+      "runsSampled": 9,
+      "min": 5481.252823962432,
+      "max": 5623.406333630687
+    },
+    {
+      "name": "eval/general/Nested Map Creation",
+      "opsSec": 579554,
+      "runsSampled": 11,
+      "min": 1711.8250684931506,
+      "max": 1746.8106969888397
+    },
+    {
+      "name": "parse/general/List of Maps Access",
+      "opsSec": 1794446,
+      "runsSampled": 10,
+      "min": 549.8912219661378,
+      "max": 562.2831437034577
+    },
+    {
+      "name": "eval/general/List of Maps Access",
+      "opsSec": 2588634,
+      "runsSampled": 11,
+      "min": 383.9391521892355,
+      "max": 388.7018770543798
+    },
+    {
+      "name": "parse/general/Map Access",
+      "opsSec": 1379917,
+      "runsSampled": 10,
+      "min": 713.3994035957128,
+      "max": 728.4760304263223
+    },
+    {
+      "name": "eval/general/Map Access",
+      "opsSec": 2795084,
+      "runsSampled": 11,
+      "min": 355.45749279538904,
+      "max": 360.23037750153776
+    }
+  ]
+}

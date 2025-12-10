@@ -1,49 +1,49 @@
 {
   "suite": "functions",
-  "capturedAt": "2025-12-01T13:33:22.051Z",
+  "capturedAt": "2025-12-10T02:15:18.392Z",
   "nodeVersion": "v24.11.0",
   "results": [
     {
       "name": "parse/general/String Methods",
-      "opsSec": 752695,
-      "runsSampled": 11,
-      "min": 1319.063556959673,
-      "max": 1340.7200128116158
+      "opsSec": 651798,
+      "runsSampled": 9,
+      "min": 1465.7987456782182,
+      "max": 1527.3223123123123
     },
     {
       "name": "eval/general/String Methods",
-      "opsSec": 3953085,
+      "opsSec": 3970211,
       "runsSampled": 11,
-      "min": 251.7361830131446,
-      "max": 255.5763607482089
+      "min": 250.08547263329677,
+      "max": 254.088488235915
     },
     {
       "name": "parse/general/Function Calls",
-      "opsSec": 686808,
-      "runsSampled": 11,
-      "min": 1446.6580659892682,
-      "max": 1463.1417148838427
+      "opsSec": 544638,
+      "runsSampled": 8,
+      "min": 1794.9974633596391,
+      "max": 1820.3405059191825
     },
     {
       "name": "eval/general/Function Calls",
-      "opsSec": 2600431,
+      "opsSec": 2697411,
       "runsSampled": 11,
-      "min": 383.1719437454652,
-      "max": 387.72838320262656
+      "min": 368.90344363415824,
+      "max": 373.3058069265928
     },
     {
       "name": "parse/general/String Regex",
-      "opsSec": 1335887,
+      "opsSec": 1137692,
       "runsSampled": 10,
-      "min": 746.687928638666,
-      "max": 749.8028322440088
+      "min": 837.4232184221283,
+      "max": 936.520072157454
     },
     {
       "name": "eval/general/String Regex",
-      "opsSec": 5460787,
-      "runsSampled": 12,
-      "min": 180.835734870317,
-      "max": 185.503983400648
+      "opsSec": 5402720,
+      "runsSampled": 11,
+      "min": 182.61714798588963,
+      "max": 190.19986266880292
     }
   ]
 }

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {parseArgs as parseNodeArgs} from 'node:util'
-import {Suite} from 'bench-node'
+import {MemoryPlugin, Suite, V8NeverOptimizePlugin} from 'bench-node'
 import {toPretty} from 'bench-node/lib/reporter/pretty.js'
 import {Environment} from '../lib/index.js'
 
@@ -97,7 +97,12 @@ async function runBenchmarks() {
 }
 
 function setupSuite({name, compareTarget, saveTarget, tests}) {
-  const suite = new BenchSuite({name, minSamples: 10, reporter: false})
+  const suite = new BenchSuite({
+    name,
+    minSamples: 10,
+    reporter: false,
+    plugins: [new V8NeverOptimizePlugin(), new MemoryPlugin()]
+  })
   const withOnly = tests.filter((test) => test.only)
   const toRun = withOnly.length > 0 ? withOnly : tests
   suite.hasOnly = withOnly.length > 0
