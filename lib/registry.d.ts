@@ -71,14 +71,6 @@ export const TYPES: {
   bytes: Type
   null_type: Type
   type: Type
-  google: {
-    protobuf: {
-      Timestamp: Type
-      Duration: Type
-    }
-  }
-  'google.protobuf.Timestamp': Type
-  'google.protobuf.Duration': Type
 }
 
 /**
@@ -94,8 +86,6 @@ export const celTypes: {
   dyn: TypeDeclaration
   null: TypeDeclaration
   type: TypeDeclaration
-  'google.protobuf.Timestamp': TypeDeclaration
-  'google.protobuf.Duration': TypeDeclaration
   list: TypeDeclaration
   'list<dyn>': TypeDeclaration
   map: TypeDeclaration
@@ -189,7 +179,7 @@ export class Registry {
    * Clone this registry to create a new isolated instance.
    * @returns A new registry with a deep copy of all registrations
    */
-  clone(opts?: {unlistedVariablesAreDyn?: boolean}): Registry
+  clone(opts?: {unlistedVariablesAreDyn?: boolean; enableOptionalTypes?: boolean}): Registry
 
   /** Registered object types keyed by CEL typename. */
   readonly objectTypes: Map<string, any>
@@ -202,6 +192,9 @@ export class Registry {
 
   /** Registered variables and their type declarations. */
   readonly variables: Map<string, TypeDeclaration>
+
+  /** Whether optional types/functions are enabled for this registry. */
+  readonly enableOptionalTypes: boolean
 }
 
 /**
@@ -216,6 +209,7 @@ export interface RegistryOptions {
   typeDeclarations?: Map<string, TypeDeclaration>
   variables?: Map<string, TypeDeclaration>
   unlistedVariablesAreDyn?: boolean
+  enableOptionalTypes?: boolean
 }
 
 /**

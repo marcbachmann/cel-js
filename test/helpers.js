@@ -86,10 +86,26 @@ function assertThrows(fn, matcher) {
   return assertError(err, matcher)
 }
 
-const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true})
-const {evaluate, parse, expectEval, expectEvalDeep, expectEvalThrows, expectParseThrows} =
-  defaultExpectations
-export {assert, evaluate, parse, expectEval, expectEvalDeep, expectEvalThrows, expectParseThrows}
+const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true, enableOptionalTypes: true})
+const {
+  evaluate,
+  parse,
+  expectType,
+  expectEval,
+  expectEvalDeep,
+  expectEvalThrows,
+  expectParseThrows
+} = defaultExpectations
+export {
+  assert,
+  evaluate,
+  parse,
+  expectType,
+  expectEval,
+  expectEvalDeep,
+  expectEvalThrows,
+  expectParseThrows
+}
 
 export function expectParseAst(expression, expectedAst) {
   const result = parse(expression)
