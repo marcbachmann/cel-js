@@ -164,6 +164,10 @@ export interface EnvironmentOptions {
    * When false, mixed literals are inferred as list<dyn> or map with dyn components.
    */
   homogeneousAggregateLiterals?: boolean
+  /**
+   * Enable experimental optional types (.?/.[]? chaining and optional.* helpers). Disabled by default.
+   */
+  enableOptionalTypes?: boolean
   /** Optional overrides for parser/evaluator structural limits */
   limits?: Partial<Limits>
 }
@@ -219,6 +223,22 @@ export class Environment {
    * ```
    */
   registerVariable(name: string, type: string): this
+
+  /**
+   * Register a constant value that is always available in expressions without providing it via context.
+   *
+   * @param name - The constant identifier exposed to CEL expressions
+   * @param type - The CEL type name of the constant (e.g., 'int', 'string')
+   * @param value - The concrete value supplied during registration
+   * @returns This environment for chaining further registrations
+   *
+   * @example
+   * ```typescript
+   * const env = new Environment().registerConstant('timezone', 'string', 'UTC')
+   * env.evaluate('timezone == "UTC"') // true
+   * ```
+   */
+  registerConstant(name: string, type: string, value: any): this
 
   /**
    * Register a custom function or method.

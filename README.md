@@ -14,7 +14,7 @@ CEL (Common Expression Language) is a non-Turing complete language designed for 
 - ⚡ **High Performance** - Up to 22x faster evaluation, 3x faster parsing than alternatives
 - 📦 **ES Modules** - Modern ESM with full tree-shaking support
 - 🔒 **Type Safe** - Environment API with type checking for variables, custom types and functions
-- 🎯 **Most of the CEL Spec** - Including macros, custom functions and types, input variables, and all operators (except optional chaining)
+- 🎯 **Most of the CEL Spec** - Including macros, custom functions and types, optional chaining, input variables, and all operators
 - 📘 **TypeScript Support** - Full type definitions included
 
 ## Installation
@@ -71,18 +71,30 @@ import {Environment} from '@marcbachmann/cel-js'
 
 const env = new Environment()
   .registerVariable('user', 'map')
-  .registerVariable('minAge', 'int')
+  .registerConstant('minAge', 'int', 18n)
   .registerFunction('isAdult(int): bool', age => age >= 18n)
   .registerOperator('string * int', (str, n) => str.repeat(Number(n)))
 
-// Type-checked evaluation
-env.evaluate('isAdult(user.age)', {
-  user: {age: 25n},
-  minAge: 18n
+// Type-checked evaluation with constant
+env.evaluate('isAdult(user.age) && user.age >= minAge', {
+  user: {age: 25n}
 })
 
 // Custom operators
 env.evaluate('"Hi" * 3') // "HiHiHi"
+```
+
+#### Register constants
+
+Use `registerConstant(name, type, value)` to expose shared configuration without passing it through every evaluation context.
+
+```javascript
+import {Environment} from '@marcbachmann/cel-js'
+
+const env = new Environment()
+  .registerConstant('minAge', 'int', 18n)
+
+env.evaluate('user.age >= minAge', {user: {age: 20n}}) // true
 ```
 
 #### Environment Options
@@ -92,7 +104,9 @@ new Environment({
   // Treat undeclared variables as dynamic type
   unlistedVariablesAreDyn: false,
   // Require list/map literals to stay strictly homogeneous (default: true)
-  homogeneousAggregateLiterals: true
+  homogeneousAggregateLiterals: true,
+  // Enable .?key/.[?key] optional chaining and optional.* helpers (default: false)
+  enableOptionalTypes: true,
   // Optional structural limits (parse time)
   limits: {
     maxAstNodes: 100000,
@@ -104,7 +118,8 @@ new Environment({
 })
 ```
 
-Set `homogeneousAggregateLiterals` to `false` if you need aggregate literals to accept mixed element/key/value types without wrapping everything in `dyn(...)`.
+- Set `homogeneousAggregateLiterals` to `false` if you need aggregate literals to accept mixed element/key/value types without wrapping everything in `dyn(...)`.
+- Set `enableOptionalTypes` to `true` to activate optional chaining.
 
 #### Environment Methods
 
@@ -112,6 +127,7 @@ Set `homogeneousAggregateLiterals` to `false` if you need aggregate literals to 
 - **`registerType(typename, constructor)`** - Register custom types
 - **`registerFunction(signature, handler)`** - Add custom functions
 - **`registerOperator(signature, handler)`** - Add custom operators
+- **`registerConstant(name, type, value)`** - Provide immutable values without passing them in context
 - **`clone()`** - Create a fast, isolated copy that stops the parent from registering more entries
 - **`hasVariable(name)`** - Check if variable is registered
 - **`parse(expression)`** - Parse expression for reuse
