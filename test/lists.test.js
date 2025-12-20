@@ -174,7 +174,6 @@ describe('lists expressions', () => {
   })
 
   describe('value in list', () => {
-
     test('does not support in check with invalid types', () => {
       const context = {
         likeUser: {name: 'Alice', age: 25},
@@ -215,6 +214,15 @@ describe('lists expressions', () => {
 
     test('should access list element using variable index', () => {
       expectEval('items[index]', 'b', {items: ['a', 'b', 'c'], index: 1})
+    })
+  })
+
+  describe('list.join():', () => {
+    test('should join list elements into a string', () => {
+      expectEval('["1", "2", "3"].join(", ")', '1, 2, 3')
+    })
+    test('should work with an empty list', () => {
+      expectEval('[].join(", ")', '')
     })
   })
 })
