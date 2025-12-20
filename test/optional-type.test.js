@@ -60,86 +60,63 @@ describe('optional type:', () => {
 
   describe('optional.or() method', () => {
     test('or() returns original optional when it has a value', () => {
-      expectEval('optional.of(42).or(99).hasValue()', true)
-      expectEval('optional.of(42).or(99).value()', 42n)
+      expectEval('optional.of(42).or(optional.of(99)).hasValue()', true)
+      expectEval('optional.of(42).or(optional.of(99)).value()', 42n)
     })
 
     test('or() returns new optional with default when original is empty', () => {
-      expectEval('optional.none().or(99).hasValue()', true)
-      expectEval('optional.none().or(99).value()', 99n)
+      expectEval('optional.none().or(optional.of(99)).hasValue()', true)
+      expectEval('optional.none().or(optional.of(99)).value()', 99n)
     })
 
     test('or() via CEL expression - with value', () => {
-      expectEval('optional.of(42).or(99).value()', 42n)
+      expectEval('optional.of(42).or(optional.of(99)).value()', 42n)
     })
 
     test('or() via CEL expression - without value', () => {
-      expectEval('optional.none().or(99).value()', 99n)
+      expectEval('optional.none().or(optional.of(99)).value()', 99n)
     })
 
     test('or() with different types - string', () => {
-      expectEval('optional.of("hello").or("world").value()', 'hello')
-      expectEval('optional.none().or("world").value()', 'world')
+      expectEval('optional.of("hello").or(optional.of("world")).value()', 'hello')
+      expectEval('optional.none().or(optional.of("world")).value()', 'world')
     })
 
     test('or() with list values', () => {
-      expectEvalDeep('optional.of([1, 2, 3]).or([4, 5, 6]).value()', [1n, 2n, 3n])
-      expectEvalDeep('optional.none().or([4, 5, 6]).value()', [4n, 5n, 6n])
+      expectEvalDeep('optional.of([1, 2, 3]).or(optional.of([4, 5, 6])).value()', [1n, 2n, 3n])
+      expectEvalDeep('optional.none().or(optional.of([4, 5, 6])).value()', [4n, 5n, 6n])
     })
 
-    test('or() chaining - first has value via JS', () => {
-      expectEval('optional.of(1).or(2).or(3).value()', 1n)
-    })
-
-    test('or() chaining - takes first default via JS', () => {
-      expectEval('optional.none().or(2).or(3).value()', 2n)
-    })
-
-    test('or() chaining - uses last default if all none via JS', () => {
-      // Note: optional.none().or(x) returns optional<dyn>, so chaining still works
-      expectEval('optional.none().or(null).or(3).value()', null)
-    })
-
-    test('or() with null value is still considered present', () => {
-      expectEval('optional.of(dyn(null)).or(42).value()', null)
+    test('or() chaining', () => {
+      expectEval('optional.of(1).or(optional.of(2)).or(optional.of(3)).value()', 1n)
+      expectEval('optional.none().or(optional.of(2)).or(optional.of(3)).value()', 2n)
+      expectEval('optional.none().or(optional.of(null)).or(optional.of(3)).value()', null)
+      expectEval('optional.of(dyn(null)).or(optional.of(42)).value()', null)
     })
 
     test('or() return type is optional', () => {
-      expectEval('optional.of(42).or(99).hasValue()', true)
-      expectEval('optional.of(42).or(99).value()', 42n)
+      expectEval('optional.of(42).or(optional.of(99)).hasValue()', true)
+      expectEval('optional.of(42).or(optional.of(99)).value()', 42n)
     })
 
     test('or() combined with orValue()', () => {
-      expectEval('optional.none().or(99).orValue(0)', 99n)
-      expectEval('optional.none().or(null).orValue(0)', null)
+      expectEval('optional.none().or(optional.of(99)).orValue(0)', 99n)
+      expectEval('optional.none().or(optional.of(null)).orValue(0)', null)
     })
 
     test('or() accepts dyn fallback', () => {
-      expectEval('optional.of(1).or(dyn("fallback")).value()', 1n)
-      expectEval('optional.none().or(dyn("fallback")).value()', 'fallback')
+      expectEval('optional.of(1).or(dyn({"v": "fallback"}).?v).value()', 1n)
+      expectEval('optional.none().or(dyn({"v": "fallback"}).?v).value()', 'fallback')
     })
 
     test('or() with .? operator result', () => {
-      const obj1 = {field: 42}
-      const obj2 = {field: 99}
-      expectEval('obj1.?field.or(obj2.field).value()', 42, {obj1, obj2})
-
-      const obj3 = {}
-      expectEval('obj3.?field.or(obj2.field).value()', 99, {obj3, obj2})
-    })
-
-    test('or() preserves type parameter in template matching', () => {
-      // This test verifies that optional<A>.or(A): optional<A> properly binds types
-      expectEval('optional.of(42).or(99).value()', 42n)
-    })
-
-    test('or() with mixed numeric types', () => {
-      // In dynamic context, optional<dyn>.or(int) should work
-      expectEval('optional.none().or(42).value()', 42n)
+      const ctx = {a: {field: 42}, b: {field: 99}, c: {}}
+      expectEval('a.?field.or(b.?field).value()', 42, ctx)
+      expectEval('c.?field.or(b.?field).value()', 99, ctx)
     })
 
     test('or() returns same optional instance when value exists', () => {
-      expectEval('optional.of("test").or("default").value()', 'test')
+      expectEval('optional.of("test").or(optional.of("default")).value()', 'test')
     })
   })
 
@@ -179,7 +156,7 @@ describe('optional type:', () => {
 
       test('should support chaining with other optional methods', () => {
         expectEval('optional.of(10).orValue(20)', 10n)
-        expectEval('optional.of("test").or("default").value()', 'test')
+        expectEval('optional.of("test").or(optional.of("default")).value()', 'test')
       })
 
       test('should work with variables', () => {
@@ -209,8 +186,8 @@ describe('optional type:', () => {
       })
 
       test('should return another optional with or', () => {
-        expectEval('optional.none().or(99).value()', 99n)
-        expectEval('optional.none().or("fallback").value()', 'fallback')
+        expectEval('optional.none().or(optional.of(99)).value()', 99n)
+        expectEval('optional.none().or(optional.of("fallback")).value()', 'fallback')
       })
 
       test('should throw when accessing value()', () => {
