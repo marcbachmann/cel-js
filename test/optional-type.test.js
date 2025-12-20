@@ -5,7 +5,8 @@ import {
   expectEval,
   expectEvalDeep,
   expectEvalThrows,
-  expectParseAst
+  expectParseAst,
+  TestEnvironment
 } from './helpers.js'
 import {Environment, serialize, parse, evaluate} from '../lib/index.js'
 
@@ -21,40 +22,6 @@ describe('optional type:', () => {
       const env = new Environment({enableOptionalTypes: true, unlistedVariablesAreDyn: true})
       const fn = env.parse('user.?name.orValue("-")')
       assert.strictEqual(typeof fn, 'function')
-    })
-  })
-
-  describe('optional class:', () => {
-    test('optional.of() should create an optional with value', () => {
-      expectEval('optional.of(42).hasValue()', true)
-      expectEval('optional.of(42).value()', 42n)
-      expectEval('optional.of(42).orValue(0)', 42n)
-    })
-
-    test('optional.none() should create an empty optional', () => {
-      expectEval('optional.none().hasValue()', false)
-      expectEval('optional.none().orValue(99)', 99n)
-    })
-
-    test('optional.value() should throw on none', () => {
-      expectEvalThrows('optional.none().value()', /optional value is not present/i)
-    })
-
-    test('optional with string value', () => {
-      expectEval('optional.of("hello").hasValue()', true)
-      expectEval('optional.of("hello").value()', 'hello')
-      expectEval('optional.of("hello").orValue("default")', 'hello')
-    })
-
-    test('optional with null value', () => {
-      expectEval('optional.of(null).hasValue()', true)
-      expectEval('optional.of(null).value()', null)
-      expectEval('optional.of(dyn(null)).orValue("default")', null)
-    })
-
-    test('optional with list value', () => {
-      expectEval('optional.of([1, 2, 3]).hasValue()', true)
-      expectEvalDeep('optional.of([1, 2, 3]).value()', [1n, 2n, 3n])
     })
   })
 
@@ -90,7 +57,8 @@ describe('optional type:', () => {
     test('or() chaining', () => {
       expectEval('optional.of(1).or(optional.of(2)).or(optional.of(3)).value()', 1n)
       expectEval('optional.none().or(optional.of(2)).or(optional.of(3)).value()', 2n)
-      expectEval('optional.none().or(optional.of(null)).or(optional.of(3)).value()', null)
+      expectEval('optional.none().or(optional.none()).or(optional.of(2)).value()', 2n)
+      expectEval('optional.none().or(optional.of(dyn(42))).or(optional.of(1)).value()', 42n)
       expectEval('optional.of(dyn(null)).or(optional.of(42)).value()', null)
     })
 
@@ -101,7 +69,7 @@ describe('optional type:', () => {
 
     test('or() combined with orValue()', () => {
       expectEval('optional.none().or(optional.of(99)).orValue(0)', 99n)
-      expectEval('optional.none().or(optional.of(null)).orValue(0)', null)
+      expectEval('optional.none().or(optional.of(null)).orValue(dyn(0))', null)
     })
 
     test('or() accepts dyn fallback', () => {
@@ -118,6 +86,14 @@ describe('optional type:', () => {
     test('or() returns same optional instance when value exists', () => {
       expectEval('optional.of("test").or(optional.of("default")).value()', 'test')
     })
+
+    test('should short curcuit evaluation in or()', () => {
+      expectEval('optional.of(1).or(dyn({}).foo.bar.test).value()', 1n)
+    })
+
+    test('should short curcuit evaluation in orValue()', () => {
+      expectEval('optional.of(1).orValue(dyn({}).foo.bar.test)', 1n)
+    })
   })
 
   describe('optional namespace functions', () => {
@@ -125,11 +101,13 @@ describe('optional type:', () => {
       test('should create optional with value', () => {
         expectEval('optional.of(42).hasValue()', true)
         expectEval('optional.of(42).value()', 42n)
+        expectEval('optional.of(42).orValue(0)', 42n)
       })
 
       test('should work with string values', () => {
         expectEval('optional.of("hello").hasValue()', true)
         expectEval('optional.of("hello").value()', 'hello')
+        expectEval('optional.of("hello").orValue("default")', 'hello')
       })
 
       test('should work with boolean values', () => {
@@ -142,6 +120,8 @@ describe('optional type:', () => {
       test('should work with null', () => {
         expectEval('optional.of(null).hasValue()', true)
         expectEval('optional.of(null).value()', null)
+        expectEval('optional.of(dyn(null)).orValue("default")', null)
+        expectEval('optional.of(null).orValue(dyn("default"))', null)
       })
 
       test('should work with lists', () => {
@@ -191,7 +171,7 @@ describe('optional type:', () => {
       })
 
       test('should throw when accessing value()', () => {
-        expectEvalThrows('optional.none().value()')
+        expectEvalThrows('optional.none().value()', /optional value is not present/i)
       })
 
       test('should work in conditional expressions', () => {
@@ -222,7 +202,8 @@ describe('optional type:', () => {
       })
 
       test('optional.none should return optional', () => {
-        expectType('optional.none()', 'optional<dyn>')
+        // optional<T> is semantically equivalent to optional<dyn> but uses param parameters
+        expectType('optional.none()', 'optional<T>')
       })
 
       test('should type check chained methods', () => {
@@ -474,6 +455,36 @@ describe('optional type:', () => {
       // The last prop can't have .? as it would make has() arg invalid
       expectEvalThrows(`has(obj1.?field)`, /has\(\) invalid argument/, {obj1})
       expectEvalThrows(`has(obj1.?field.?foo.?bar)`, /has\(\) invalid argument/, {obj1})
+    })
+  })
+
+  describe('ternary behavior with optional types', () => {
+    test('ternary with incompatible branch types', () => {
+      const env = new TestEnvironment()
+      env.expectCheckThrows(
+        'true ? optional.of(1) : optional.of(1.1)',
+        /Ternary branches must have the same type, got 'optional<int>' and 'optional<double>'/
+      )
+    })
+
+    test('ternary with compatible optional types', () => {
+      const env = new TestEnvironment({enableOptionalTypes: true})
+      env.expectType('true ? optional.none() : optional.of(42)', 'optional<int>')
+      env.expectType('true ? optional.of(42) : optional.none()', 'optional<int>')
+      env.expectType('true ? optional.of(1) : optional.of(2)', 'optional<int>')
+      env.expectType('(true ? optional.of(42) : optional.none()).value()', 'int')
+    })
+
+    test('ternary with incompatible optional types', () => {
+      const env = new TestEnvironment({enableOptionalTypes: true})
+      env.expectEval('(true ? optional.none() : optional.of(42)).orValue(dyn(null))', null)
+      env.expectEval('(false ? optional.none() : optional.of(42)).orValue(dyn(null))', 42n)
+      env.expectEval('(false ? optional.of(dyn(1)) : optional.of(42)).orValue(null)', 42n)
+
+      env.expectEvalThrows(
+        '(true ? optional.none() : optional.of(42)).orValue(null)',
+        /optional\.orValue\(value\) argument must be compatible type, got 'int' and 'null'/
+      )
     })
   })
 

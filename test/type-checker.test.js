@@ -230,9 +230,10 @@ describe('Type Checker', () => {
     const env = new TestEnvironment().registerVariable('condition', 'bool')
     env.expectType('condition ? dyn("yes") : 42', 'dyn')
     env.expectType('condition ? "yes" : dyn(42)', 'dyn')
+    env.expectType('condition ? "yes" : dyn({"foo": "bar"}).foo', 'dyn')
   })
 
-  test('ternary with different branch types', () => {
+  test('ternary with incompatible branch types', () => {
     const env = new TestEnvironment().registerVariable('condition', 'bool')
 
     env.expectCheckThrows(
