@@ -439,6 +439,13 @@ describe('macros', () => {
     })
   })
 
+  describe('cel.bind(var, value, transform) macro', () => {
+    test('should bind a variable and execute transform', () => {
+      expectEval('cel.bind(x, 10, x * 2)', 20n)
+      expectEval('cel.bind(name, "World", "Hello, " + name + "!")', 'Hello, World!')
+    })
+  })
+
   describe('macro chaining and composition', () => {
     const context = {
       numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
