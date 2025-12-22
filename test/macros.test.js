@@ -39,11 +39,11 @@ describe('macros', () => {
     })
 
     test('should throw when no arguments are passed', () => {
-      expectEvalThrows('has()', /Function not found: 'has'/)
+      expectEvalThrows('has()', /found no matching overload for 'has\(\)'/)
     })
 
     test('should throw when multiple arguments are passed', () => {
-      expectEvalThrows('has(a, b)', /Function not found: 'has'/, {
+      expectEvalThrows('has(a, b)', /found no matching overload for 'has\(dyn, dyn\)'/, {
         a: 1,
         b: 2
       })
@@ -148,7 +148,7 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      const err = /Function not found: 'all' for receiver of type 'dyn'/
+      const err = /found no matching overload for 'dyn.all\(/
       expectEvalThrows('numbers.all()', err, context)
       expectEvalThrows('numbers.all(x)', err, context)
       expectEvalThrows(
@@ -169,7 +169,10 @@ describe('macros', () => {
     })
 
     test('does not expose function for non-receiver call', () => {
-      expectEvalThrows('all(numbers, x, x > 4)', /Function not found: 'all'/)
+      expectEvalThrows(
+        'all(numbers, x, x > 4)',
+        /found no matching overload for 'all\(dyn, dyn, bool\)'/
+      )
     })
   })
 
@@ -215,13 +218,16 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      const err = /Function not found: 'exists' for receiver of type 'dyn'/
+      const err = /found no matching overload for 'dyn.exists\(/
       expectEvalThrows('numbers.exists()', err, context)
       expectEvalThrows('numbers.exists(x)', err, context)
     })
 
     test('does not expose function for non-receiver call', () => {
-      expectEvalThrows('exists(numbers, x, x > 4)', /Function not found: 'exists'/)
+      expectEvalThrows(
+        'exists(numbers, x, x > 4)',
+        /found no matching overload for 'exists\(dyn, dyn, bool\)'/
+      )
     })
   })
 
@@ -267,13 +273,16 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      const err = /Function not found: 'exists_one' for receiver of type 'dyn'/
+      const err = /found no matching overload for 'dyn.exists_one\(/
       expectEvalThrows('numbers.exists_one()', err, context)
       expectEvalThrows('numbers.exists_one(x)', err, context)
     })
 
     test('does not expose function for non-receiver call', () => {
-      expectEvalThrows('exists_one(numbers, x, x > 4)', /Function not found: 'exists_one'/)
+      expectEvalThrows(
+        'exists_one(numbers, x, x > 4)',
+        /found no matching overload for 'exists_one\(dyn, dyn, bool\)/
+      )
     })
   })
 
@@ -334,7 +343,7 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      const err = /Function not found: 'map' for receiver of type 'dyn'/
+      const err = /found no matching overload for 'dyn.map\(/
       expectEvalThrows('numbers.map()', err, context)
       expectEvalThrows('numbers.map(x)', err, context)
       expectEvalThrows('numbers.map(x, x, x, x)', err, context)
@@ -351,7 +360,10 @@ describe('macros', () => {
     })
 
     test('does not expose function for non-receiver call', () => {
-      expectEvalThrows('map(numbers, x, x > 4)', /Function not found: 'map'/)
+      expectEvalThrows(
+        'map(numbers, x, x > 4)',
+        /found no matching overload for 'map\(dyn, dyn, bool\)'/
+      )
     })
   })
 
@@ -429,13 +441,16 @@ describe('macros', () => {
     })
 
     test('should throw with wrong number of arguments', () => {
-      const err = /Function not found: 'filter' for receiver of type 'dyn'/
+      const err = /found no matching overload for 'dyn.filter\(/
       expectEvalThrows('numbers.filter()', err, context)
       expectEvalThrows('numbers.filter(x)', err, context)
     })
 
     test('does not expose function for non-receiver call', () => {
-      expectEvalThrows('filter(numbers, x, x > 4)', /Function not found: 'filter'/)
+      expectEvalThrows(
+        'filter(numbers, x, x > 4)',
+        /found no matching overload for 'filter\(dyn, dyn, bool\)/
+      )
     })
   })
 

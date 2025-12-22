@@ -103,7 +103,7 @@ describe('CEL Implementation Integration Tests', () => {
 
   test('does not supports legacy argument format with functions', () => {
     const fns = {max: (_a, b) => b}
-    const err = /Function not found: 'max'/
+    const err = /found no matching overload for 'max\(/
     assert.throws(() => evaluate('max(a, b) == 15.0', {a: 5, b: 15}, fns), err)
     assert.throws(() => parse('max(a, b) == 15.0')({a: 5, b: 15}, fns), err)
   })
