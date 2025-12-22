@@ -576,7 +576,7 @@ describe('built-in functions', () => {
       test('function syntax should raise when unregistered', () => {
         assert.throws(
           () => evaluate('startsWith("world", "he")'),
-          /Function not found: 'startsWith'/
+          /found no matching overload for 'startsWith\(string, string\)/
         )
       })
 

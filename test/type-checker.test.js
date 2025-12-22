@@ -393,8 +393,7 @@ describe('Type Checker', () => {
 
   test('unknown function', () => {
     const env = new TestEnvironment()
-
-    env.expectCheckThrows('unknownFunc()', /Function not found/)
+    env.expectCheckThrows('unknownFunc()', /found no matching overload for 'unknownFunc/)
   })
 
   test('function overloads', () => {

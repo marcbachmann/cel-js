@@ -378,6 +378,9 @@ evaluate('numbers.filter(n, n > 2)', ctx)
 // Filter + Transform
 evaluate('users.filter(u, u.admin).map(u, u.name)', ctx)
 
+// Bind a temporary value within the expression
+evaluate('cel.bind(total, users.map(u, u.admin, u.score).sum(), total >= 90)', ctx)
+
 // Or using three arg form of .map
 evaluate('users.map(u, u.admin, u.name)', ctx)
 // ["Alice"]
