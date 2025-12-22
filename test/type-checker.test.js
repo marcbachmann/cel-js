@@ -46,11 +46,16 @@ describe('Type Checker', () => {
     env.expectType('[1, "two"]', 'list')
   })
 
-  test('list literal rejects assignable nested types by default', () => {
+  test('list literal infers nested types after empty literal', () => {
+    const env = new TestEnvironment()
+    env.expectType('[[], [1]]', 'list<list<int>>')
+  })
+
+  test('list literal still rejects mismatched nested types by default', () => {
     const env = new TestEnvironment()
     env.expectCheckThrows(
-      '[[], [1]]',
-      /List elements must have the same type, expected type 'list<dyn>' but found 'list<int>'/
+      '[[1], [1.0]]',
+      /List elements must have the same type, expected type 'list<int>' but found 'list<double>'/
     )
   })
 
@@ -78,6 +83,13 @@ describe('Type Checker', () => {
     env.expectType('{"name": "John", "age": 30}', 'map<string, dyn>')
   })
 
+  test('map literal accepts empty map as value together with more specific types', () => {
+    const env = new TestEnvironment()
+    env.expectType('{"a": {}, "b": {"id": 1}}', 'map<string, map<string, int>>')
+    env.expectType('{"a": {"id": 1}, "b": {}}', 'map<string, map<string, int>>')
+    env.expectType('{"a": {}, "b": ({"c": {}}).c, "d": {"c": 1}}', 'map<string, map<string, int>>')
+  })
+
   test('map literal accepts mixed value types when wrapped with dyn', () => {
     const env = new TestEnvironment()
     env.expectType('{"name": dyn("John"), "age": dyn(30)}', 'map<string, dyn>')
@@ -98,16 +110,12 @@ describe('Type Checker', () => {
     env.expectType('{dyn("name"): "John", dyn(1): "other"}', 'map<dyn, string>')
   })
 
-  test('map literal rejects assignable nested map types by default', () => {
+  test('map literal rejects mixed types', () => {
     const env = new TestEnvironment()
     env.expectCheckThrows(
-      '{"primary": {}, "secondary": {"id": 1}}',
-      /Map value uses wrong type, expected type 'map<dyn, dyn>' but found 'map<string, int>'/
+      '{"primary": {"id": 1.0}, "secondary": {"id": 1}}',
+      /Map value uses wrong type, expected type 'map<string, double>' but found 'map<string, int>'/
     )
-  })
-
-  test('map literal rejects mixing dyn keys or values with concrete ones', () => {
-    const env = new TestEnvironment()
 
     env.expectCheckThrows(
       '{"name": "John", "age": dyn(30)}',

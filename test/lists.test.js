@@ -84,6 +84,10 @@ describe('lists expressions', () => {
       expectEvalDeep('[[1]]', [[1n]])
     })
 
+    test('should allow mixing an empty list and one with elements', () => {
+      expectEvalDeep('[[], [1]]', [[], [1n]])
+    })
+
     test('should create a many element nested list', () => {
       expectEvalDeep('[[1], [2], [3]]', [[1n], [2n], [3n]])
     })
