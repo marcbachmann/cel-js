@@ -194,6 +194,14 @@ export class Environment {
   constructor(opts?: EnvironmentOptions)
 
   /**
+   * Create a fast, isolated copy that stops the parent from registering more entries.
+   *
+   * @param opts - Optional configuration options 
+   * @returns A new environment
+   */
+  clone(opts?: EnvironmentOptions): Environment
+
+  /**
    * Register a custom type for use in expressions.
    *
    * @param typename - The name of the type (e.g., 'Vector', 'Point')
