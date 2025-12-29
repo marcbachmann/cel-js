@@ -86,7 +86,10 @@ function assertThrows(fn, matcher) {
   return assertError(err, matcher)
 }
 
-const defaultExpectations = new TestEnvironment({unlistedVariablesAreDyn: true, enableOptionalTypes: true})
+const defaultExpectations = new TestEnvironment({
+  unlistedVariablesAreDyn: true,
+  enableOptionalTypes: true
+})
 const {
   evaluate,
   parse,
@@ -110,15 +113,8 @@ export {
 export function expectParseAst(expression, expectedAst) {
   const result = parse(expression)
   strictEqual(typeof result, 'function')
-  deepStrictEqual(toPlainAst(result.ast), expectedAst)
+  deepStrictEqual(result.ast.toOldStructure(), expectedAst)
   return result
-}
-
-function toPlainAst(node) {
-  if (!Array.isArray(node)) return node
-  const plain = new Array(node.length)
-  for (let i = 0; i < node.length; i++) plain[i] = toPlainAst(node[i])
-  return plain
 }
 
 function normalize(value) {

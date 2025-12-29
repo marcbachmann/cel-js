@@ -18,8 +18,8 @@ describe('Type Checker', () => {
     const env = new TestEnvironment().registerVariable('x', 'int')
 
     const error = env.expectCheckThrows('unknownVar', /Unknown variable: unknownVar/)
-    assert.strictEqual(error.node[0], 'id')
-    assert.strictEqual(error.node[1], 'unknownVar')
+    assert.strictEqual(error.node.op, 'id')
+    assert.strictEqual(error.node.args, 'unknownVar')
   })
 
   test('literals', () => {
@@ -179,11 +179,11 @@ describe('Type Checker', () => {
       .registerVariable('num', 'int')
 
     const error = env.expectCheckThrows('str + num', /no such overload: string \+ int/)
-    assert.strictEqual(error.node[0], '+')
-    assert.strictEqual(error.node[1][0], 'id')
-    assert.strictEqual(error.node[1][1], 'str')
-    assert.strictEqual(error.node[2][0], 'id')
-    assert.strictEqual(error.node[2][1], 'num')
+    assert.strictEqual(error.node.op, '+')
+    assert.strictEqual(error.node.args[0].op, 'id')
+    assert.strictEqual(error.node.args[0].args, 'str')
+    assert.strictEqual(error.node.args[1].op, 'id')
+    assert.strictEqual(error.node.args[1].args, 'num')
   })
 
   test('comparison operators', () => {
