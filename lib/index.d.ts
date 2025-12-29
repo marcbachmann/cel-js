@@ -1,28 +1,84 @@
+import type {TypeDeclaration} from './registry.js'
+import type {UnsignedInt} from './functions.js'
+
 /**
- * Represents a CEL expression AST node.
- * An array-like object with position tracking that represents an operation or value.
- * Format: [operator, ...operands] where operator is a string like 'value', '+', 'call', etc.
- *
- * Special node types:
- * - ['value', primitiveValue] - Wraps literal values (string, number, bigint, boolean, null, Uint8Array)
- * - ['id', name] - Variable reference
- * - ['+', left, right] - Binary operation
- * - ['call', name, args] - Function call
- * - ['rcall', name, receiver, args] - Method call
- * - ['.', object, property] - Property access
- * - ['[]', object, index] - Index access
- * - ['?:', condition, consequent, alternate] - Ternary
- * - ['list', elements] - Array literal
- * - ['map', entries] - Object literal
+ * Represents a CEL expression AST node produced by the parser.
+ * Each node stores its operator, operands, type metadata, and helpers for
+ * evaluation/type-checking. Nodes are immutable wrappers around the compact
+ * array form returned by toOldStructure().
  */
-export interface ASTNode extends Array<any> {
+
+export type BinaryOperator =
+  | '!='
+  | '=='
+  | 'in'
+  | '+'
+  | '-'
+  | '*'
+  | '/'
+  | '%'
+  | '<'
+  | '<='
+  | '>'
+  | '>='
+export type UnaryOperator = '!_' | '-_'
+export type AccessOperator = '.' | '.?' | '[]' | '[?]'
+export type StructuralOperator =
+  | 'value'
+  | 'id'
+  | 'call'
+  | 'rcall'
+  | 'list'
+  | 'map'
+  | '?:'
+  | '||'
+  | '&&'
+
+type LiteralValue = string | number | bigint | boolean | null | Uint8Array | UnsignedInt
+type BinaryArgs = [ASTNode, ASTNode]
+type MapEntry = [ASTNode, ASTNode]
+
+interface ASTNodeArgsMap {
+  value: LiteralValue
+  id: string
+  '.': [ASTNode, string]
+  '.?': [ASTNode, string]
+  '[]': BinaryArgs
+  '[?]': BinaryArgs
+  call: [string, ASTNode[]]
+  rcall: [string, ASTNode, ASTNode[]]
+  list: ASTNode[]
+  map: MapEntry[]
+  '?:': [ASTNode, ASTNode, ASTNode]
+  '||': BinaryArgs
+  '&&': BinaryArgs
+  '!_': [ASTNode]
+  '-_': [ASTNode]
+}
+
+type ASTNodeArgsMapWithBinary = ASTNodeArgsMap & {[K in BinaryOperator]: BinaryArgs}
+export type ASTOperator = keyof ASTNodeArgsMapWithBinary
+
+type LegacyAstTuple = [string, ...any[]]
+
+type ASTNodeArgs<T extends ASTOperator> = ASTNodeArgsMapWithBinary[T]
+
+interface ASTNodeBase<T extends ASTOperator> {
   /** The position in the source string where this node starts */
   readonly pos: number
-  /** The original input string being parsed */
+  /** The original CEL input string */
   readonly input: string
-  /** The operator/node type as the first element */
-  0: string
+  /** Operator for this node */
+  readonly op: T
+  /** Operator-specific operand payload */
+  readonly args: ASTNodeArgs<T>
+  /** Convert back to the historical tuple representation. */
+  toOldStructure(): LegacyAstTuple
 }
+
+export type ASTNode = {
+  [K in ASTOperator]: ASTNodeBase<K>
+}[ASTOperator]
 
 /**
  * Context object for variable resolution during evaluation.
@@ -89,6 +145,7 @@ export class TypeError extends Error {
  *
  * @param expression - The CEL expression string to parse
  * @returns A function that can be called with context to evaluate the expression
+ * @throws ParseError if the expression is syntactically invalid
  *
  * @example
  * ```typescript
@@ -105,6 +162,8 @@ export function parse(expression: string): ParseResult
  * @param expression - The CEL expression string to evaluate
  * @param context - Optional context object for variable resolution
  * @returns The result of evaluating the expression
+ * @throws ParseError if the expression syntax is invalid
+ * @throws EvaluationError if evaluation fails
  *
  * @example
  * ```typescript
@@ -196,7 +255,7 @@ export class Environment {
   /**
    * Create a fast, isolated copy that stops the parent from registering more entries.
    *
-   * @param opts - Optional configuration options 
+   * @param opts - Optional configuration options
    * @returns A new environment
    */
   clone(opts?: EnvironmentOptions): Environment
@@ -307,6 +366,7 @@ export class Environment {
    *
    * @param expression - The CEL expression string to parse
    * @returns A function that can be called with context to evaluate the expression
+   * @throws ParseError if the expression is syntactically invalid
    *
    * @example
    * ```typescript

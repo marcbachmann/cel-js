@@ -23,15 +23,15 @@ describe('CEL Implementation Integration Tests', () => {
   test('should handle evaluation errors', () => {
     const err = expectEvalThrows('unknownVar', /Unknown variable: unknownVar/)
     assert.ok(err instanceof EvaluationError)
-    assert.strictEqual(err.node[0], 'id')
-    assert.strictEqual(err.node[1], 'unknownVar')
+    assert.strictEqual(err.node.op, 'id')
+    assert.strictEqual(err.node.args, 'unknownVar')
 
     const err2 = expectEvalThrows('obj.prop', /No such key: prop/, {obj: null})
     assert.ok(err2 instanceof EvaluationError)
-    assert.strictEqual(err2.node[0], '.')
-    assert.strictEqual(err2.node[1][0], 'id')
-    assert.strictEqual(err2.node[1][1], 'obj')
-    assert.strictEqual(err2.node[2], 'prop')
+    assert.strictEqual(err2.node.op, '.')
+    assert.strictEqual(err2.node.args[0].op, 'id')
+    assert.strictEqual(err2.node.args[0].args, 'obj')
+    assert.strictEqual(err2.node.args[1], 'prop')
   })
 
   test('should work with parse function directly', () => {
