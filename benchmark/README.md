@@ -55,20 +55,28 @@ Each benchmark entry automatically yields `parse/<suite>/<name>` and `eval/<suit
 
 ```
 $ npm run benchmark -- --suite=macros
-Benchmark results for 'macros' (8 total):
-Plugins enabled: V8NeverOptimizePlugin
+Benchmark results for 'macros' (16 total):
+Plugins enabled: V8NeverOptimizePlugin, MemoryPlugin
 ├─ parse
 │ └─ general
-│   ├─ List .filter and .map                           1,196,079 ops/sec min..max=(831.08ns...838.27ns)  faster (1.01x, 0.79%, was 1,186,756 ops/sec)
-│   ├─ Multiple list .map calls                        516,788 ops/sec min..max=(1.93us...1.95us)        slower (1.02x, 2.36%, was 528,989 ops/sec)
-│   ├─ Multiple has calls                              542,786 ops/sec min..max=(1.83us...1.86us)        faster (1.02x, 2.20%, was 531,091 ops/sec)
-│   └─ Mixed Complex                                   534,205 ops/sec min..max=(1.86us...1.90us)        slower (1.04x, 3.94%, was 555,227 ops/sec)
+│   ├─ List .map                                       3,073,906 ops/sec min..max=(323.73ns...325.56ns)  faster (1.19x, 19.49%, was 2,572,582 ops/sec)
+│   ├─ List .map with async                            1,526,257 ops/sec min..max=(651.99ns...656.94ns)  faster (1.18x, 17.73%, was 1,296,415 ops/sec)
+│   ├─ List .map 5 times                               759,693 ops/sec min..max=(1.27us...1.40us)        faster (1.34x, 34.01%, was 566,872 ops/sec)
+│   ├─ List .filter                                    2,304,237 ops/sec min..max=(431.47ns...435.22ns)  faster (1.15x, 14.84%, was 2,006,460 ops/sec)
+│   ├─ List .filter and .map                           1,468,648 ops/sec min..max=(677.48ns...686.87ns)  faster (1.21x, 20.78%, was 1,216,019 ops/sec)
+│   ├─ List .map with filter                           2,047,319 ops/sec min..max=(485.73ns...494.17ns)  faster (1.16x, 15.54%, was 1,771,887 ops/sec)
+│   ├─ Multiple has calls                              625,853 ops/sec min..max=(1.59us...1.62us)        faster (1.11x, 10.89%, was 564,375 ops/sec)
+│   └─ Mixed Complex                                   640,556 ops/sec min..max=(1.55us...1.56us)        faster (1.07x, 6.57%, was 601,087 ops/sec)
 └─ eval
   └─ general
-    ├─ List .filter and .map                           1,042,444 ops/sec min..max=(956.36ns...959.58ns)  faster (1.01x, 1.48%, was 1,027,244 ops/sec)
-    ├─ Multiple list .map calls                        453,065 ops/sec min..max=(2.20us...2.22us)        faster (1.10x, 10.14%, was 411,361 ops/sec)
-    ├─ Multiple has calls                              997,858 ops/sec min..max=(989.36ns...1.02us)      faster (1.05x, 5.05%, was 949,852 ops/sec)
-    └─ Mixed Complex                                   901,903 ops/sec min..max=(1.07us...1.16us)        faster (1.02x, 1.77%, was 886,208 ops/sec)
+    ├─ List .map                                       4,157,649 ops/sec min..max=(232.22ns...241.50ns)  faster (1.49x, 49.34%, was 2,784,025 ops/sec)
+    ├─ List .map with async                            2,591,739 ops/sec min..max=(225.41ns...514.60ns)  faster (1.05x, 5.05%, was 2,467,225 ops/sec)
+    ├─ List .map 5 times                               923,369 ops/sec min..max=(1.05us...1.13us)        faster (1.38x, 37.98%, was 669,220 ops/sec)
+    ├─ List .filter                                    1,403,684 ops/sec min..max=(697.35ns...720.12ns)  faster (1.44x, 43.92%, was 975,310 ops/sec)
+    ├─ List .filter and .map                           1,162,760 ops/sec min..max=(841.64ns...869.10ns)  faster (1.43x, 42.96%, was 813,325 ops/sec)
+    ├─ List .map with filter                           1,286,515 ops/sec min..max=(758.14ns...788.40ns)  faster (1.46x, 45.81%, was 882,310 ops/sec)
+    ├─ Multiple has calls                              1,261,973 ops/sec min..max=(781.47ns...797.60ns)  faster (1.30x, 29.75%, was 972,610 ops/sec)
+    └─ Mixed Complex                                   1,215,772 ops/sec min..max=(813.46ns...826.39ns)  faster (1.32x, 32.35%, was 918,634 ops/sec)
 ```
 
 The full JSON snapshot lives at `benchmark/results/latest/macros.json` and updates whenever the suite reruns without a custom `--save` tag.

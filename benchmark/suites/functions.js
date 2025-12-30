@@ -1,5 +1,9 @@
 export default [
   {
+    name: 'String .upperAscii()',
+    expression: '"John Doe".upperAscii()'
+  },
+  {
     name: 'String Methods',
     expression: 'name.startsWith("John") && email.endsWith("@example.com")',
     context: {name: 'John Doe', email: 'john@example.com'}
