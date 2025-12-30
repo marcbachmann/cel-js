@@ -18,6 +18,19 @@ export default [
     }
   },
   {
+    name: 'Deep Property Access (bracket notation)',
+    expression: 'user["profile"]["settings"]["theme"]',
+    context: {
+      user: {
+        profile: {
+          settings: {
+            theme: 'dark'
+          }
+        }
+      }
+    }
+  },
+  {
     name: 'Array Index Access',
     expression: 'items[2]',
     context: {items: ['first', 'second', 'third']}

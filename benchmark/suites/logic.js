@@ -5,14 +5,22 @@ export default [
     context: {a: true, b: false, c: true}
   },
   {
+    name: 'Logical AND',
+    expression: 'true && true && true && true && true && false'
+  },
+  {
+    name: 'Logical AND with variables',
+    expression: 'a && a && a && a && a && b',
+    context: {a: true, b: false}
+  },
+  {
     name: 'Logical OR',
-    expression: 'false || false || false || false || false || true',
-    context: {a: true, b: false, c: true}
+    expression: 'false || false || false || false || false || true'
   },
   {
     name: 'Logical OR with variables',
-    expression: 'a.b.c || a.b.c || a.b.c || false || false || true',
-    context: {a: true, b: false, c: true}
+    expression: 'b || b || b || b || b || a',
+    context: {a: true, b: false}
   },
   {
     name: 'Range Check',
