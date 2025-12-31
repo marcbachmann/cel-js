@@ -223,7 +223,7 @@ export function createRegistry(opts?: RegistryOptions): Registry
  * Root context wiring together registered variable types and fallback values.
  */
 export class RootContext {
-  constructor(variables: Map<string, TypeDeclaration>, fallbackValues: Map<string, any>)
+  constructor(registry: Registry, context?: Object | Map)
 
   /** Look up the declared type for a variable name. */
   getType(name: string): TypeDeclaration | undefined
@@ -231,24 +231,22 @@ export class RootContext {
   /** Look up the fallback value (built-ins) for a name. */
   getValue(name: string): any
 
-  /** Create an overlay context for scoped evaluation. */
-  fork(): OverlayContext
+  /** Fork with a placeholder variable binding (used for comprehensions). */
+  forkWithVariable(variableType: TypeDeclaration, variableName: string): OverlayContext
 }
 
 /**
  * Overlay context layered on top of the root context for evaluation/type-checking.
  */
-export class OverlayContext {
-  constructor(parent: RootContext | OverlayContext)
-
-  /** Create a nested overlay context that inherits from this instance. */
-  fork(): OverlayContext
+class OverlayContext {
+  constructor(
+    parent: RootContext | OverlayContext,
+    variableType: TypeDeclaration,
+    variableName: string
+  )
 
   /** Fork with a placeholder variable binding (used for comprehensions). */
   forkWithVariable(variableType: TypeDeclaration, variableName: string): OverlayContext
-
-  /** Attach runtime context data for lookups. */
-  withContext(context: Record<string, any> | Map<string, any> | null | undefined): this
 
   /** Set the current variable placeholder value. */
   setVariableValue(value: any): this

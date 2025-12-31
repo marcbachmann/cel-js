@@ -1,119 +1,119 @@
 {
   "suite": "literals",
-  "capturedAt": "2025-12-30T20:06:10.912Z",
+  "capturedAt": "2025-12-31T13:06:21.153Z",
   "nodeVersion": "v24.12.0",
   "results": [
     {
       "name": "parse/general/Simple Number",
-      "opsSec": 11179462,
-      "runsSampled": 10,
-      "min": 88.7459450008118,
-      "max": 89.94212157863922
+      "opsSec": 11951121,
+      "runsSampled": 11,
+      "min": 83.31350769256456,
+      "max": 84.58871198150698
     },
     {
       "name": "eval/general/Simple Number",
-      "opsSec": 228404690,
-      "runsSampled": 11,
-      "min": 4.245093202449736,
-      "max": 4.736101970815307
+      "opsSec": 206705540,
+      "runsSampled": 10,
+      "min": 4.461360309316132,
+      "max": 4.761746955685904
     },
     {
       "name": "parse/general/Simple String",
-      "opsSec": 10871147,
-      "runsSampled": 11,
-      "min": 91.29248228873846,
-      "max": 92.87511824885769
+      "opsSec": 10932556,
+      "runsSampled": 10,
+      "min": 84.826909152492,
+      "max": 86.89887373150357
     },
     {
       "name": "eval/general/Simple String",
-      "opsSec": 223775208,
+      "opsSec": 221195851,
       "runsSampled": 11,
-      "min": 4.266855180204934,
-      "max": 4.78744525098636
+      "min": 4.461117061335913,
+      "max": 4.625138459618093
     },
     {
       "name": "parse/general/Simple Boolean",
-      "opsSec": 16169045,
-      "runsSampled": 11,
-      "min": 61.01634579876413,
-      "max": 62.53449923302496
+      "opsSec": 18197977,
+      "runsSampled": 10,
+      "min": 54.09618274003587,
+      "max": 56.337631982392736
     },
     {
       "name": "eval/general/Simple Boolean",
-      "opsSec": 225688281,
+      "opsSec": 217671991,
       "runsSampled": 11,
-      "min": 4.2270739170658995,
-      "max": 4.790815818534007
+      "min": 4.4924898400439215,
+      "max": 4.714268583384406
     },
     {
       "name": "parse/general/String concat",
-      "opsSec": 1713560,
+      "opsSec": 1898232,
       "runsSampled": 11,
-      "min": 579.0448700854503,
-      "max": 593.9784733168206
+      "min": 522.7291504368881,
+      "max": 533.3943371618494
     },
     {
       "name": "eval/general/String concat",
-      "opsSec": 6373652,
-      "runsSampled": 10,
-      "min": 156.0314739940383,
-      "max": 157.64946037215284
+      "opsSec": 7431600,
+      "runsSampled": 9,
+      "min": 133.83702362403673,
+      "max": 134.73668035121875
     },
     {
       "name": "parse/general/hex concat",
-      "opsSec": 1152597,
-      "runsSampled": 11,
-      "min": 863.4441350504699,
-      "max": 876.6644911425088
+      "opsSec": 1281594,
+      "runsSampled": 10,
+      "min": 775.4402645527464,
+      "max": 787.4428816199377
     },
     {
       "name": "eval/general/hex concat",
-      "opsSec": 4536359,
-      "runsSampled": 10,
-      "min": 218.53094541374227,
-      "max": 223.2288234982893
+      "opsSec": 4167172,
+      "runsSampled": 11,
+      "min": 236.86989532409544,
+      "max": 247.02399823580538
     },
     {
       "name": "parse/general/double concat",
-      "opsSec": 1224244,
-      "runsSampled": 10,
-      "min": 809.9923823505424,
-      "max": 822.5878757088072
+      "opsSec": 1340483,
+      "runsSampled": 11,
+      "min": 740.7928533655662,
+      "max": 755.4616515232495
     },
     {
       "name": "eval/general/double concat",
-      "opsSec": 5564475,
-      "runsSampled": 9,
-      "min": 178.62616983903015,
-      "max": 179.97550048245756
+      "opsSec": 5693903,
+      "runsSampled": 11,
+      "min": 173.68248166254898,
+      "max": 179.37682363949045
     },
     {
       "name": "parse/general/long int",
-      "opsSec": 1837754,
+      "opsSec": 1956913,
       "runsSampled": 11,
-      "min": 540.2312131232575,
-      "max": 551.8978049355284
+      "min": 503.70785125246414,
+      "max": 522.8967059038233
     },
     {
       "name": "eval/general/long int",
-      "opsSec": 10144217,
-      "runsSampled": 9,
-      "min": 97.93230363155742,
-      "max": 98.48586747342684
+      "opsSec": 9369922,
+      "runsSampled": 11,
+      "min": 105.39832885022606,
+      "max": 110.37258623143711
     },
     {
       "name": "parse/general/long identifier",
-      "opsSec": 1989784,
+      "opsSec": 2110348,
       "runsSampled": 11,
-      "min": 498.9859660704997,
-      "max": 508.0591823727579
+      "min": 471.3401862423426,
+      "max": 477.36711070020186
     },
     {
       "name": "eval/general/long identifier",
-      "opsSec": 6565866,
-      "runsSampled": 9,
-      "min": 149.50661043410773,
-      "max": 152.89324297121385
+      "opsSec": 6588630,
+      "runsSampled": 10,
+      "min": 148.4820692379841,
+      "max": 155.21512901362345
     }
   ]
 }
