@@ -357,7 +357,7 @@ describe('macros', () => {
     test('must return a boolean in filter of map(var, filter, transform)', () => {
       expectEvalThrows(
         'numbers.map(x, x, x)',
-        /map\(var, filter, transform\) predicate must return bool, got/,
+        /map\(var, filter, transform\) filter predicate must return bool, got/,
         context
       )
 
@@ -543,10 +543,12 @@ describe('macros', () => {
     })
 
     test('quantifiers throws error if none match', () => {
-      const ctx = {items: [false, 1, false, {}]}
-      expectEvalThrows(`items.exists(i, i.foo == 'bar')`, /No such key: foo/, ctx)
-      expectEvalThrows(`items.all(i, i.foo == true)`, /No such key: foo/, ctx)
+      const ctx = {items: [false, 1, false, {foo: 'bar'}]}
+      expectEvalThrows(`items.exists(i, i.bar == 'bar')`, /No such key: bar/, ctx)
+      expectEvalThrows(`items.all(i, i.bar == true)`, /No such key: bar/, ctx)
       expectEvalThrows(`items.filter(i, (i + 1) == 2)`, /no such overload/, ctx)
+      expectEvalThrows(`items.exists_one(i, i)`, /predicate must return bool/, ctx)
+      expectEvalThrows(`items.exists_one(i, i.foo == 'bar')`, /No such key: foo/, ctx)
     })
   })
 })

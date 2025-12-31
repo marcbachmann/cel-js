@@ -232,24 +232,23 @@ export class RootContext {
   getValue(name: string): any
 
   /** Fork with a placeholder variable binding (used for comprehensions). */
-  forkWithVariable(variableType: TypeDeclaration, variableName: string): OverlayContext
+  forkWithVariable(name: string, type: TypeDeclaration, value: any): OverlayContext
 }
 
 /**
  * Overlay context layered on top of the root context for evaluation/type-checking.
  */
 class OverlayContext {
-  constructor(
-    parent: RootContext | OverlayContext,
-    variableType: TypeDeclaration,
-    variableName: string
-  )
+  constructor(parent: RootContext | OverlayContext, name: string, type: TypeDeclaration, value: any)
 
   /** Fork with a placeholder variable binding (used for comprehensions). */
-  forkWithVariable(variableType: TypeDeclaration, variableName: string): OverlayContext
+  forkWithVariable(name: string, type: TypeDeclaration, value: any): OverlayContext
 
-  /** Set the current variable placeholder value. */
-  setVariableValue(value: any): this
+  /** Set a secondary variable type */
+  setSecondary(name: string, type: TypeDeclaration): this
+
+  /** Set the primary and secondary values */
+  setValues(pimaryValue: any, secondaryValue: any): this
 
   /** Resolve a value by name, falling back to parent scopes. */
   getValue(name: string): any
