@@ -392,10 +392,10 @@ describe('macros with async', () => {
         return n === 2n
       }
     )
-    // Should return false when finding second match at index 2
+    // exists_one evaluates all items to ensure no errors (strict error checking)
     await env.expectEval('[1, 2, 2, 3].exists_one(x, asyncIsTwo(x))', false)
-    if (callCount !== 3)
-      throw new Error(`Expected 3 calls (stop after 2nd match), got ${callCount}`)
+    if (callCount !== 4)
+      throw new Error(`Expected 4 calls (exists_one checks all items), got ${callCount}`)
   })
 
   it('should handle .map() with filter where filter becomes async mid-array', async () => {

@@ -52,8 +52,8 @@ interface ASTNodeArgsMap {
   '?:': [ASTNode, ASTNode, ASTNode]
   '||': BinaryArgs
   '&&': BinaryArgs
-  '!_': [ASTNode]
-  '-_': [ASTNode]
+  '!_': ASTNode
+  '-_': ASTNode
 }
 
 type ASTNodeArgsMapWithBinary = ASTNodeArgsMap & {[K in BinaryOperator]: BinaryArgs}
