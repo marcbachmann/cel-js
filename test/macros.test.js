@@ -342,6 +342,11 @@ describe('macros', () => {
       )
     })
 
+    test('throws an error if transform uses wrong types', () => {
+      const err = /no such overload: dyn<double> \+ int/
+      expectEvalThrows('numbers.map(x, x + 1)', err, context)
+    })
+
     test('should throw with wrong number of arguments', () => {
       const err = /found no matching overload for 'dyn.map\(/
       expectEvalThrows('numbers.map()', err, context)
@@ -527,6 +532,21 @@ describe('macros', () => {
       expectEval('mapScores.all(s, mapScores[s] > 70)', true, context)
       expectEval('mapScores.exists(s, mapScores[s] > 85)', true, context)
       expectEvalDeep('mapScores.filter(s, mapScores[s] > 80)', ['alice', 'bob'], context)
+    })
+
+    test('quantifiers should swallow errors if some matches', () => {
+      const ctx = {items: [false, 1, false, {foo: 'bar'}]}
+      expectEval(`items.exists(i, i.foo == 'bar')`, true, ctx)
+      expectEval(`items.all(i, i == true)`, false, ctx)
+      expectEval(`items.all(i, i.foo == true)`, false, ctx)
+      expectEval(`items.exists(i, i)`, true, {items: [{foo: 'bar'}, true]})
+    })
+
+    test('quantifiers throws error if none match', () => {
+      const ctx = {items: [false, 1, false, {}]}
+      expectEvalThrows(`items.exists(i, i.foo == 'bar')`, /No such key: foo/, ctx)
+      expectEvalThrows(`items.all(i, i.foo == true)`, /No such key: foo/, ctx)
+      expectEvalThrows(`items.filter(i, (i + 1) == 2)`, /no such overload/, ctx)
     })
   })
 })
