@@ -1,12 +1,12 @@
 export default [
   {
     name: 'List .map',
-    expression: 'items.map(x, x)',
+    expression: 'items.map(x, x + 1.0)',
     context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
     name: 'List .map with async',
-    expression: 'identityAsync(items).map(x, identityAsync(x))',
+    expression: 'identityAsync(items).map(x, identityAsync(x + 1.0))',
     context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
@@ -21,12 +21,12 @@ export default [
   },
   {
     name: 'List .filter and .map',
-    expression: 'items.filter(x, x > 5.0).map(x, x)',
+    expression: 'items.filter(x, x > 5.0).map(x, x + 1.0)',
     context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
     name: 'List .map with filter',
-    expression: 'items.map(x, x > 5.0, x)',
+    expression: 'items.map(x, x > 5.0, x + 1.0)',
     context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
