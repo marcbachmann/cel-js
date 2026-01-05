@@ -1,6 +1,7 @@
 import {describe, test} from 'node:test'
 import assert from 'node:assert'
 import {Environment} from '../lib/evaluator.js'
+import {TestEnvironment} from './helpers.js'
 
 // Define a custom Vector type
 class Vector {
@@ -433,5 +434,24 @@ describe('Custom Type Registration', () => {
 
     const result = env.evaluate('vectors.map(v, magnitude(v))', context)
     assert.deepStrictEqual(result, [5, 13, 17])
+  })
+
+  test('custom type operator overload using equality (against spec)', () => {
+    class CustomType {
+      constructor(value) {
+        this.value = value
+      }
+    }
+
+    const env = new TestEnvironment({
+      unlistedVariablesAreDyn: true,
+      homogeneousAggregateLiterals: false
+    })
+
+    env.registerType('CustomType', CustomType)
+    env.registerOperator('CustomType == string', (a, b) => a.value === b)
+
+    env.expectEval('ct == "equal-test"', true, {ct: new CustomType('equal-test')})
+    env.expectEval('ct != "equal-test"', false, {ct: new CustomType('equal-test')})
   })
 })
