@@ -1,6 +1,5 @@
 import {describe, test} from 'node:test'
 import assert from 'node:assert'
-import {Environment} from '../lib/evaluator.js'
 import {TestEnvironment} from './helpers.js'
 
 // Define a custom Vector type
@@ -51,7 +50,7 @@ class Point {
 
 describe('Custom Type Registration', () => {
   test('Vector type', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerVariable('v1', 'Vector')
       .registerVariable('v2', 'Vector')
@@ -83,38 +82,29 @@ describe('Custom Type Registration', () => {
     assert.strictEqual(result2.y, 2)
 
     // Test equality
-    const result3 = env.evaluate('v1 == v2', context)
-    assert.strictEqual(result3, false)
-
-    const result4 = env.evaluate('v1 == v1', context)
-    assert.strictEqual(result4, true)
+    env.expectEval('v1 == v2', false, context)
+    env.expectEval('v1 == v1', true, context)
 
     // Test method calls
-    const result5 = env.evaluate('v1.magnitude()', context)
-    assert.strictEqual(result5, 5) // sqrt(3^2 + 4^2) = 5
+    env.expectEval('v1.magnitude()', 5, context)
   })
 
   test('type checking', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Point', {ctor: Point, fields: {x: 'int', y: 'int'}})
       .registerType('Vector', Vector)
       .registerVariable('p1', 'Point')
 
     // Should work with correct type
-    const result1 = env.evaluate('p1.x', {p1: new Point(10n, 20n)})
-    assert.strictEqual(result1, 10n)
+    env.expectEval('p1.x', 10n, {p1: new Point(10n, 20n)})
 
     // Should fail with wrong field type
-    assert.throws(() => env.evaluate('p1.x', {p1: new Point(10, 20n)}), {
-      name: 'EvaluationError',
-      message: /Field 'x' is not of type 'int', got 'double'/
+    env.expectEvalThrows('p1.x', /Field 'x' is not of type 'int', got 'double'/, {
+      p1: new Point(10, 20n)
     })
 
     // Should fail with wrong variable type
-    assert.throws(() => env.evaluate('p1', {p1: new Vector(1, 2)}), {
-      name: 'EvaluationError',
-      message: /Variable 'p1' is not of type 'Point'/
-    })
+    env.expectEvalThrows('p1', /Variable 'p1' is not of type 'Point'/, {p1: new Vector(1, 2)})
   })
 
   test('field restrictions', () => {
@@ -127,17 +117,17 @@ describe('Custom Type Registration', () => {
       }
     }
 
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('User', {ctor: User, fields: {name: 'string', age: 'int'}})
       .registerVariable('user', 'User')
 
     const context = {user: new User('Alice', 30n, 'secret123')}
 
-    assert.strictEqual(env.evaluate('user.name', context), 'Alice')
-    assert.strictEqual(env.evaluate('user.age', context), 30n)
+    env.expectEval('user.name', 'Alice', context)
+    env.expectEval('user.age', 30n, context)
 
-    assert.throws(() => env.evaluate('user.password', context), /No such key: password/)
-    assert.throws(() => env.evaluate('user.secretField', context), /No such key: secretField/)
+    env.expectEvalThrows('user.password', /No such key: password/, context)
+    env.expectEvalThrows('user.secretField', /No such key: secretField/, context)
   })
 
   test('no field restrictions when fields not specified', () => {
@@ -149,7 +139,7 @@ describe('Custom Type Registration', () => {
       }
     }
 
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Config', Config)
       .registerVariable('config', 'Config')
 
@@ -157,10 +147,10 @@ describe('Custom Type Registration', () => {
       config: new Config({option1: 'a', option2: 'b', option3: 'c'})
     }
 
-    assert.strictEqual(env.evaluate('config.option1', context), 'a')
-    assert.strictEqual(env.evaluate('config.option2', context), 'b')
-    assert.strictEqual(env.evaluate('config.option3', context), 'c')
-    assert.throws(() => env.evaluate('config.option4', context), /No such key: option4/)
+    env.expectEval('config.option1', 'a', context)
+    env.expectEval('config.option2', 'b', context)
+    env.expectEval('config.option3', 'c', context)
+    env.expectEvalThrows('config.option4', /No such key: option4/, context)
   })
 
   test('empty fields object denies all access', () => {
@@ -170,16 +160,16 @@ describe('Custom Type Registration', () => {
       }
     }
 
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Private', {ctor: Private, fields: {}})
       .registerVariable('priv', 'Private')
 
     const context = {priv: new Private(42)}
-    assert.throws(() => env.evaluate('priv.value', context), /No such key: value/)
+    env.expectEvalThrows('priv.value', /No such key: value/, context)
   })
 
   test('mixed with built-in types', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerVariable('vec', 'Vector')
       .registerVariable('scale', 'double')
@@ -211,7 +201,7 @@ describe('Custom Type Registration', () => {
   })
 
   test('with functions', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerFunction('createVector(int, int): Vector', (x, y) => new Vector(x, y))
       .registerFunction('length(Vector): double', (vec) => vec.magnitude())
@@ -223,12 +213,11 @@ describe('Custom Type Registration', () => {
     assert.strictEqual(result1.y, 4)
 
     // Test method on custom type
-    const result2 = env.evaluate('length(createVector(3, 4))')
-    assert.strictEqual(result2, 5)
+    env.expectEval('length(createVector(3, 4))', 5)
   })
 
   test('inheritance from built-in overloads', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerVariable('str', 'string')
       .registerType('Vector', Vector)
       .registerVariable('vec', 'Vector')
@@ -239,16 +228,14 @@ describe('Custom Type Registration', () => {
     }
 
     // Built-in string operations should still work
-    const result1 = env.evaluate('str + " world"', context)
-    assert.strictEqual(result1, 'hello world')
+    env.expectEval('str + " world"', 'hello world', context)
 
     // Built-in numeric operations should still work
-    const result2 = env.evaluate('1 + 2')
-    assert.strictEqual(result2, 3n)
+    env.expectEval('1 + 2', 3n)
   })
 
   test('multiple custom types', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerType('Point', Point)
       .registerVariable('vec', 'Vector')
@@ -270,17 +257,16 @@ describe('Custom Type Registration', () => {
   })
 
   test('error handling', () => {
-    const env = new Environment().registerType('Vector', Vector).registerVariable('vec', 'Vector')
+    const env = new TestEnvironment()
+      .registerType('Vector', Vector)
+      .registerVariable('vec', 'Vector')
     const context = {vec: new Vector(1, 2)}
 
-    assert.throws(
-      () => env.evaluate('vec * "invalid"', context),
-      /no such overload: Vector \* string/
-    )
+    env.expectEvalThrows('vec * "invalid"', /no such overload: Vector \* string/, context)
   })
 
   test('complex expressions', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerVariable('vectors', 'list')
       .registerOperator('Vector + Vector', (a, b) => a.add(b))
@@ -291,13 +277,12 @@ describe('Custom Type Registration', () => {
     }
 
     // Complex expression with custom types
-    const expr = 'vectors.filter(v, magnitude(v) > 1.0).size()'
-    const result = env.evaluate(expr, context)
-    assert.strictEqual(result, 1n) // Only Vector(1,1) has magnitude > 1.0
+    // Only Vector(1,1) has magnitude > 1.0
+    env.expectEval('vectors.filter(v, magnitude(v) > 1.0).size()', 1n, context)
   })
 
   test('instance methods', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerVariable('vec', 'Vector')
       .registerFunction('Vector.add(Vector): Vector', (vec, other) => {
@@ -329,7 +314,7 @@ describe('Custom Type Registration', () => {
       }
     }
 
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerType('Container', {ctor: Container, fields: {items: 'list<Vector>'}})
       .registerVariable('container', 'Container')
@@ -346,7 +331,7 @@ describe('Custom Type Registration', () => {
   })
 
   test('type validation in function return', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerType('Point', Point)
       .registerFunction('makePoint(int, int): Point', (x, y) => new Point(Number(x), Number(y)))
@@ -379,7 +364,7 @@ describe('Custom Type Registration', () => {
       }
     }
 
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Builder', Builder)
       .registerVariable('builder', 'Builder')
       .registerFunction('Builder.add(int): Builder', (builder, n) => {
@@ -396,34 +381,25 @@ describe('Custom Type Registration', () => {
       builder: new Builder(5)
     }
 
-    const result = env.evaluate('builder.add(3).multiply(2).build()', context)
-    assert.strictEqual(result, 16n) // (5 + 3) * 2 = 16
+    // (5 + 3) * 2 = 16
+    env.expectEval('builder.add(3).multiply(2).build()', 16n, context)
   })
 
   test('type checking with wrong constructor', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', {ctor: Vector, fields: {x: 'double', y: 'double'}})
       .registerType('Point', Point)
       .registerVariable('vec', 'Vector')
 
     // Should accept Vector instances
-    const result1 = env.evaluate('vec.x', {vec: new Vector(1, 2)})
-    assert.strictEqual(result1, 1)
+    env.expectEval('vec.x', 1, {vec: new Vector(1, 2)})
 
     // Should reject Point instances for Vector variable
-    assert.throws(
-      () => {
-        env.evaluate('vec.x', {vec: new Point(1, 2)})
-      },
-      {
-        name: 'EvaluationError',
-        message: /Variable 'vec' is not of type 'Vector'/
-      }
-    )
+    env.expectEvalThrows('vec.x', /Variable 'vec' is not of type 'Vector'/, {vec: new Point(1, 2)})
   })
 
   test('map operations with custom types', () => {
-    const env = new Environment()
+    const env = new TestEnvironment()
       .registerType('Vector', Vector)
       .registerVariable('vectors', 'list')
       .registerFunction('magnitude(Vector): double', (vec) => vec.magnitude())
@@ -432,8 +408,7 @@ describe('Custom Type Registration', () => {
       vectors: [new Vector(3, 4), new Vector(5, 12), new Vector(8, 15)]
     }
 
-    const result = env.evaluate('vectors.map(v, magnitude(v))', context)
-    assert.deepStrictEqual(result, [5, 13, 17])
+    env.expectEvalDeep('vectors.map(v, magnitude(v))', [5, 13, 17], context)
   })
 
   test('custom type operator overload using equality (against spec)', () => {
