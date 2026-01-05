@@ -21,6 +21,7 @@
   "license": "MIT",
   "author": "Marc Bachmann",
   "type": "module",
+  "bin": {"cel-evaluate": "./bin/cel-evaluate.js"},
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -38,6 +39,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
+    "bin/*",
     "lib/*",
     "LICENSE",
     "README.md"
