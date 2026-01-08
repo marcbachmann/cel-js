@@ -112,9 +112,19 @@ export {
 
 export function expectParseAst(expression, expectedAst) {
   const result = parse(expression)
-  strictEqual(typeof result, 'function')
-  deepStrictEqual(result.ast.toOldStructure(), expectedAst)
+  deepStrictEqual(toSimpleAst(result.ast), expectedAst)
   return result
+}
+
+function toSimpleAst(node) {
+  if (node === null || typeof node !== 'object') return node
+  const simple = {op: node.op}
+  if (Array.isArray(node.args)) {
+    simple.args = node.args.map(toSimpleAst)
+  } else if (node.args !== undefined) {
+    simple.args = toSimpleAst(node.args)
+  }
+  return simple
 }
 
 function normalize(value) {

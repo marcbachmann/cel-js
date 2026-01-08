@@ -1,11 +1,9 @@
-import type {TypeDeclaration} from './registry.js'
 import type {UnsignedInt} from './functions.js'
 
 /**
  * Represents a CEL expression AST node produced by the parser.
  * Each node stores its operator, operands, type metadata, and helpers for
- * evaluation/type-checking. Nodes are immutable wrappers around the compact
- * array form returned by toOldStructure().
+ * evaluation/type-checking.
  */
 
 export type BinaryOperator =
@@ -59,9 +57,8 @@ interface ASTNodeArgsMap {
 type ASTNodeArgsMapWithBinary = ASTNodeArgsMap & {[K in BinaryOperator]: BinaryArgs}
 export type ASTOperator = keyof ASTNodeArgsMapWithBinary
 
-type LegacyAstTuple = [string, ...any[]]
-
 type ASTNodeArgs<T extends ASTOperator> = ASTNodeArgsMapWithBinary[T]
+type LegacyAstTuple = [string, ...any[]]
 
 interface ASTNodeBase<T extends ASTOperator> {
   /** The position in the source string where this node starts */
