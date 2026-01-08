@@ -41,12 +41,20 @@ describe('operator precedence', () => {
   })
 
   test('ternary AST structure should be correct', () => {
-    expectParseAst('a && b ? "yes" : "no"', [
-      '?:',
-      ['&&', ['id', 'a'], ['id', 'b']],
-      ['value', 'yes'],
-      ['value', 'no']
-    ])
+    expectParseAst('a && b ? "yes" : "no"', {
+      op: '?:',
+      args: [
+        {
+          op: '&&',
+          args: [
+            {op: 'id', args: 'a'},
+            {op: 'id', args: 'b'}
+          ]
+        },
+        {op: 'value', args: 'yes'},
+        {op: 'value', args: 'no'}
+      ]
+    })
   })
 
   test('arithmetic precedence in ternary', () => {

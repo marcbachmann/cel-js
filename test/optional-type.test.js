@@ -494,15 +494,24 @@ describe('optional type:', () => {
       unlistedVariablesAreDyn: true
     })
     test('should parse .? operator', () => {
-      expectParseAst('obj.?field', ['.?', ['id', 'obj'], 'field'])
+      expectParseAst('obj.?field', {op: '.?', args: [{op: 'id', args: 'obj'}, 'field']})
     })
 
     test('should parse [? operator', () => {
-      expectParseAst('list[?0]', ['[?]', ['id', 'list'], ['value', 0n]])
+      expectParseAst('list[?0]', {
+        op: '[?]',
+        args: [
+          {op: 'id', args: 'list'},
+          {op: 'value', args: 0n}
+        ]
+      })
     })
 
     test('should parse chained optional access', () => {
-      expectParseAst('a.?b.c', ['.', ['.?', ['id', 'a'], 'b'], 'c'])
+      expectParseAst('a.?b.c', {
+        op: '.',
+        args: [{op: '.?', args: [{op: 'id', args: 'a'}, 'b']}, 'c']
+      })
     })
 
     test('should serialize .? operator', () => {

@@ -42,5 +42,5 @@ describe('comments', () => {
   })
 
   test('should parse expressions with comments successfully', () =>
-    expectParseAst('42 // Ultimate answer', ['value', 42n]))
+    expectParseAst('42 // Ultimate answer', {op: 'value', args: 42n}))
 })

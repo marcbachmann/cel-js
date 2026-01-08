@@ -8,7 +8,8 @@ describe('atomic expressions', () => {
   test('should evaluate null literal', () => expectEval('null', null))
   test('should evaluate a string literal', () => expectEval('"foo"', 'foo'))
   test('should evaluate a float', () => expectEval('1.2', 1.2))
-  test('should parse successfully', () => expectParseAst('42', ['value', 42n]))
-  test('should parse string successfully', () => expectParseAst('"hello"', ['value', 'hello']))
-  test('should parse boolean successfully', () => expectParseAst('true', ['value', true]))
+  test('should parse successfully', () => expectParseAst('42', {op: 'value', args: 42n}))
+  test('should parse string successfully', () =>
+    expectParseAst('"hello"', {op: 'value', args: 'hello'}))
+  test('should parse boolean successfully', () => expectParseAst('true', {op: 'value', args: true}))
 })
