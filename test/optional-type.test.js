@@ -8,7 +8,7 @@ import {
   expectParseAst,
   TestEnvironment
 } from './helpers.js'
-import {Environment, serialize, parse, evaluate} from '../lib/index.js'
+import {Environment, serialize, parse, evaluate, Optional} from '../lib/index.js'
 
 describe('optional type:', () => {
   describe('config flag:', () => {
@@ -524,6 +524,24 @@ describe('optional type:', () => {
       const parsed = serializationEnv.parse('list[?0]')
       const result = serialize(parsed.ast)
       expectEval('result', 'list[?0]', {result})
+    })
+  })
+
+  describe('External variable registration:', () => {
+    test('Environment with registered optional variable', () => {
+      const env = new Environment({enableOptionalTypes: true})
+      env.registerVariable('myVar', 'optional<int>')
+      const fn = env.parse('myVar.hasValue()')
+      assert.strictEqual(fn({myVar: Optional.of(42n)}), true)
+      assert.strictEqual(fn({myVar: Optional.none()}), false)
+    })
+
+    test('Environment with registered optional variable and orValue', () => {
+      const env = new Environment({enableOptionalTypes: true})
+      env.registerVariable('myVar', 'optional<int>')
+      const fn = env.parse('myVar.orValue(0)')
+      assert.strictEqual(fn({myVar: Optional.of(42n)}), 42n)
+      assert.strictEqual(fn({myVar: Optional.none()}), 0n)
     })
   })
 })
