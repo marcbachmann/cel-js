@@ -141,6 +141,49 @@ export class TypeError extends Error {
 }
 
 /**
+ * Represents an optional value that may or may not be present.
+ * Used with optional chaining (.?/.[]?) and optional.* helpers.
+ */
+export class Optional {
+  /**
+   * Create a new Optional with a value.
+   * @param value - The value to wrap
+   * @returns A new Optional instance
+   */
+  static of(value: any): Optional
+
+  /**
+   * Create an empty Optional.
+   * @returns The singleton empty Optional instance
+   */
+  static none(): Optional
+
+  /** Check if a value is present. */
+  hasValue(): boolean
+
+  /**
+   * Get the wrapped value.
+   * @returns The wrapped value
+   * @throws EvaluationError if no value is present
+   */
+  value(): any
+
+  /**
+   * Return this Optional if it has a value, otherwise return the provided Optional.
+   * @param optional - The fallback Optional
+   * @returns An Optional instance
+   */
+  or(optional: Optional): Optional
+
+  /**
+   * Return the wrapped value if present, otherwise return the default value.
+   * @param defaultValue - The fallback value
+   * @returns The resulting value
+   */
+  orValue(defaultValue: any): any
+}
+
+/**
  * Parse a CEL expression string into an evaluable function.
  *
  * @param expression - The CEL expression string to parse
@@ -428,6 +471,7 @@ declare const cel: {
   ParseError: typeof ParseError
   EvaluationError: typeof EvaluationError
   TypeError: typeof TypeError
+  Optional: typeof Optional
 }
 
 export default cel
