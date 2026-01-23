@@ -85,6 +85,8 @@ export interface Context {
   [key: string]: any
 }
 
+export type {RootContext, OverlayContext} from './registry.d'
+
 /**
  * Result of type checking an expression.
  */
@@ -103,13 +105,6 @@ export type ParseResult = {
   ast: ASTNode
   /** Type check the expression without evaluating it */
   check(): TypeCheckResult
-}
-
-/**
- * Map of custom type-specific method namespaces.
- */
-interface TypeMethods {
-  [methodName: string]: (value: any, ...args: any[]) => any
 }
 
 /**
