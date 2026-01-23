@@ -223,7 +223,7 @@ export function createRegistry(opts?: RegistryOptions): Registry
  * Root context wiring together registered variable types and fallback values.
  */
 export class RootContext {
-  constructor(registry: Registry, context?: Object | Map)
+  constructor(registry: Registry, context?: Map<string, any> | Record<string, any>)
 
   /** Look up the declared type for a variable name. */
   getType(name: string): TypeDeclaration | undefined
@@ -238,7 +238,7 @@ export class RootContext {
 /**
  * Overlay context layered on top of the root context for evaluation/type-checking.
  */
-class OverlayContext {
+export class OverlayContext {
   constructor(parent: RootContext | OverlayContext, name: string, type: TypeDeclaration, value: any)
 
   /** Fork with a placeholder variable binding (used for comprehensions). */
@@ -248,7 +248,7 @@ class OverlayContext {
   setSecondary(name: string, type: TypeDeclaration): this
 
   /** Set the primary and secondary values */
-  setValues(pimaryValue: any, secondaryValue: any): this
+  setValues(primaryValue: any, secondaryValue: any): this
 
   /** Resolve a value by name, falling back to parent scopes. */
   getValue(name: string): any
