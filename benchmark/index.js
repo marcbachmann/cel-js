@@ -104,7 +104,7 @@ function setupSuite({name, compareTarget, saveTarget, tests}) {
     plugins: [new V8NeverOptimizePlugin(), new MemoryPlugin()]
   })
   const withOnly = tests.filter((test) => test.only)
-  const toRun = withOnly.length > 0 ? withOnly : tests
+  const toRun = (withOnly.length > 0 ? withOnly : tests).filter((test) => !test.skip)
   suite.hasOnly = withOnly.length > 0
 
   for (const test of toRun) {

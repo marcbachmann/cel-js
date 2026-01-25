@@ -158,7 +158,7 @@ import assert from 'node:assert/strict'
 const parent = new Environment().registerVariable('user', 'map')
 const child = parent.clone()
 
-// Parent registries freeze once cloned
+// Parent registries is frozen once cloned
 assert.throws(() => parent.registerVariable('foo', 'dyn'))
 
 // Child stays fully extensible without deep-copy overhead
