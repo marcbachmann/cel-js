@@ -50,6 +50,7 @@ export class TestEnvironment extends Environment {
   get expectType() {
     return (this.#expectType ??= (expr, expected) => {
       const result = this.check(expr)
+      if (!result.valid) throw result.error
       strictEqual(result.type, expected)
     })
   }
