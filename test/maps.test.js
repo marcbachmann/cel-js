@@ -1,7 +1,5 @@
 import {test, describe} from 'node:test'
-import assert from 'node:assert/strict'
-import {Environment} from '../lib/index.js'
-import {expectEval, expectEvalDeep, expectEvalThrows} from './helpers.js'
+import {expectEval, expectEvalDeep, expectEvalThrows, TestEnvironment} from './helpers.js'
 
 describe('maps/objects expressions', () => {
   describe('literals', () => {
@@ -91,8 +89,8 @@ describe('maps/objects expressions', () => {
     })
 
     test('allows mixed value types when explicitly disabled', () => {
-      const env = new Environment({homogeneousAggregateLiterals: false})
-      assert.deepStrictEqual(env.evaluate('{"name": "John", "age": 30, "active": true}'), {
+      const env = new TestEnvironment({homogeneousAggregateLiterals: false})
+      env.expectEvalDeep('{"name": "John", "age": 30, "active": true}', {
         name: 'John',
         age: 30n,
         active: true
@@ -108,8 +106,8 @@ describe('maps/objects expressions', () => {
     })
 
     test('still enforces map values when explicitly enabled', () => {
-      const env = new Environment({homogeneousAggregateLiterals: true})
-      assert.throws(() => env.evaluate('{"name": "John", "age": 30}'), /Map value uses wrong type/)
+      const env = new TestEnvironment({homogeneousAggregateLiterals: true})
+      env.expectEvalThrows('{"name": "John", "age": 30}', /Map value uses wrong type/)
     })
 
     test('rejects mixed key types by default', () => {
@@ -117,8 +115,8 @@ describe('maps/objects expressions', () => {
     })
 
     test('allows mixed key types when explicitly disabled', () => {
-      const env = new Environment({homogeneousAggregateLiterals: false})
-      assert.deepStrictEqual(env.evaluate('{"name": "John", 1: "duplicate"}'), {
+      const env = new TestEnvironment({homogeneousAggregateLiterals: false})
+      env.expectEvalDeep('{"name": "John", 1: "duplicate"}', {
         name: 'John',
         1: 'duplicate'
       })
@@ -132,11 +130,8 @@ describe('maps/objects expressions', () => {
     })
 
     test('still enforces map keys when explicitly enabled', () => {
-      const env = new Environment({homogeneousAggregateLiterals: true})
-      assert.throws(
-        () => env.evaluate('{"name": "John", 1: "duplicate"}'),
-        /Map key uses wrong type/
-      )
+      const env = new TestEnvironment({homogeneousAggregateLiterals: true})
+      env.expectEvalThrows('{"name": "John", 1: "duplicate"}', /Map key uses wrong type/)
     })
 
     test('should create array of maps', () => {
@@ -199,32 +194,35 @@ describe('maps/objects expressions', () => {
   })
 
   describe('prototype pollution hardening', () => {
-    test('should ignore __proto__ assignments during map creation', () => {
-      delete Object.prototype.polluted
-      try {
-        const env = new Environment({homogeneousAggregateLiterals: false})
-        const result = env.evaluate('{"safe": true, "__proto__": {"polluted": true}}')
-        assert.deepStrictEqual(result, {safe: true})
-        assert.strictEqual(Object.prototype.polluted, undefined)
-        assert.strictEqual('polluted' in {}, false)
-      } finally {
-        delete Object.prototype.polluted
-      }
+    test('should ignore __proto__ assignments during map creation', (t) => {
+      const env = new TestEnvironment({homogeneousAggregateLiterals: false})
+      env.expectEvalDeep('{"safe": true, "__proto__": {"polluted": true}}', {safe: true})
+      t.assert.strictEqual(Object.prototype.polluted, undefined)
+      t.assert.strictEqual('polluted' in {}, false)
     })
 
-    test('should drop constructor/prototype keys to keep objects safe', () => {
-      delete Object.prototype.polluted
-      try {
-        const env = new Environment({homogeneousAggregateLiterals: false})
-        const result = env.evaluate(
-          '{"safe": true, "constructor": {"prototype": {"polluted": true}}, "prototype": {"polluted": true}}'
-        )
-        assert.deepStrictEqual(result, {safe: true})
-        assert.strictEqual(Object.prototype.polluted, undefined)
-        assert.strictEqual('polluted' in {}, false)
-      } finally {
-        delete Object.prototype.polluted
-      }
+    test('should drop constructor/prototype keys to keep objects safe', (t) => {
+      const env = new TestEnvironment({homogeneousAggregateLiterals: false})
+      env.expectEvalDeep(
+        '{"safe": true, "constructor": {"prototype": {"polluted": true}}, "prototype": {"polluted": true}}',
+        {safe: true}
+      )
+      t.assert.strictEqual(Object.prototype.polluted, undefined)
+      t.assert.strictEqual('polluted' in {}, false)
+    })
+
+    test('should prevent access to __proto__ and other non-enumerable properties', () => {
+      expectEvalThrows('data.__proto__', /No such key: __proto__/, {data: {}})
+      expectEvalThrows('data["__proto__"]', /No such key: __proto__/, {data: {}})
+      expectEvalThrows('data.constructor', /No such key: constructor/, {data: {}})
+      expectEvalThrows('data.toString', /No such key: toString/, {data: {}})
+    })
+
+    test('also does not allow root context access to __proto__ and other non-enumerable properties', () => {
+      expectEvalThrows('__proto__', /Reserved identifier: __proto__/, {})
+      expectEvalThrows('prototype', /Reserved identifier: prototype/, {})
+      expectEvalThrows('constructor', /Unsupported type: function/, {})
+      expectEvalThrows('toString', /Unsupported type: function/, {})
     })
   })
 })
