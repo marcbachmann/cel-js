@@ -232,7 +232,7 @@ export class RootContext {
   getValue(name: string): any
 
   /** Fork with a placeholder variable binding (used for comprehensions). */
-  forkWithVariable(name: string, type: TypeDeclaration, value: any): OverlayContext
+  forkWithVariable(iterVar: string, iterType: TypeDeclaration): OverlayContext
 }
 
 /**
@@ -242,13 +242,16 @@ export class OverlayContext {
   constructor(parent: RootContext | OverlayContext, name: string, type: TypeDeclaration, value: any)
 
   /** Fork with a placeholder variable binding (used for comprehensions). */
-  forkWithVariable(name: string, type: TypeDeclaration, value: any): OverlayContext
+  forkWithVariable(iterVar: string, iterType: TypeDeclaration): OverlayContext
 
-  /** Set a secondary variable type */
-  setSecondary(name: string, type: TypeDeclaration): this
+  /** Set a accumulator variable type */
+  setAccuType(type: TypeDeclaration): this
 
-  /** Set the primary and secondary values */
-  setValues(primaryValue: any, secondaryValue: any): this
+  /** Set a accumulator variable value */
+  setAccuValue(accuValue: any): this
+
+  /** Set the iteration variable value */
+  setIterValue(iterValue: any): this
 
   /** Resolve a value by name, falling back to parent scopes. */
   getValue(name: string): any
