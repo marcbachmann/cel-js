@@ -187,9 +187,6 @@ export class Registry {
   /** Map of constructors to their registered type metadata. */
   readonly objectTypesByConstructor: Map<Function | undefined, any>
 
-  /** Map of type names to their exported Type handles. */
-  readonly objectTypeInstances: Map<string, Type>
-
   /** Registered variables and their type declarations. */
   readonly variables: Map<string, TypeDeclaration>
 
@@ -203,7 +200,6 @@ export class Registry {
 export interface RegistryOptions {
   objectTypes?: Map<string, any>
   objectTypesByConstructor?: Map<Function | undefined, any>
-  objectTypeInstances?: Map<string, Type>
   functionDeclarations?: Map<string, any>
   operatorDeclarations?: Map<string, any>
   typeDeclarations?: Map<string, TypeDeclaration>

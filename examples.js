@@ -81,8 +81,8 @@ console.log('max(10, 20) =', env.evaluate('max(10, 20)', {}))
 console.log('\n🔍 Membership Testing:')
 console.log('2 in [1, 2, 3] =', evaluate('2 in [1, 2, 3]'))
 console.log(
-  '"name" in {"name": "John", "age": 30} =',
-  evaluate('"name" in {"name": "John", "age": 30}')
+  '"name" in {"name": dyn("John"), "age": dyn(30)} =',
+  evaluate('"name" in {"name": dyn("John"), "age": dyn(30)}')
 )
 
 // Array operations
