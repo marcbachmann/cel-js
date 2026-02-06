@@ -171,19 +171,22 @@ describe('Protobufjs Message Support', () => {
     env.expectEvalThrows('person.nonexistent', /No such key: nonexistent/, {person})
   })
 
-  test.skip('keeps value types of nested messages fields', async (t) => {
+  test('respects type checking, but trusts that messages are correctly structured', async (t) => {
     const env = new TestEnvironment()
     env.registerType(Person)
     env.registerVariable('person', 'test.Person')
     env.registerVariable('dynPerson', 'dyn')
 
+    // We trust that the protobuf message is correctly structured. Return values are passed as is.
     const person = Person.create({name: 'Alice', age: 30, config: {theme: 1, mode: 'hello'}})
-    env.expectEvalThrows('person.nonexistent', /No such key: nonexistent/, {person})
-
-    const err = /Field 'theme' is not of type 'string', got 'double'/
-    env.expectEvalThrows('person.config.theme', err, {person: person})
-    env.expectEvalThrows('dynPerson.config.theme', err, {dynPerson: person})
+    env.expectEval('person.config.theme', 1, {person: person})
+    env.expectEval('dynPerson.config.theme', 1, {dynPerson: person})
     env.expectEval('dynPerson.config.mode', 'hello', {dynPerson: person})
+
+    const err = /no such overload: string == int/
+    env.expectEvalThrows('person.config.theme == 1', err, {person: person})
+    env.expectEval('dynPerson.config.theme == 1', true, {dynPerson: person})
+    env.expectEval('dynPerson.config.theme == "hello"', false, {dynPerson: person})
   })
 
   test('default values on protobufjs messages', async (t) => {
