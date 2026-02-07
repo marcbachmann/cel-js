@@ -1,133 +1,133 @@
 {
   "suite": "logic",
-  "capturedAt": "2026-02-03T08:30:54.381Z",
+  "capturedAt": "2026-02-07T09:27:31.486Z",
   "nodeVersion": "v24.12.0",
   "results": [
     {
       "name": "parse/general/Logical Expression",
-      "opsSec": 5602604,
-      "runsSampled": 10,
-      "min": 174.89460875066953,
-      "max": 179.99335322744219
+      "opsSec": 5759005,
+      "runsSampled": 11,
+      "min": 172.35546604221918,
+      "max": 176.03073568764472
     },
     {
       "name": "eval/general/Logical Expression",
-      "opsSec": 16743549,
+      "opsSec": 19588806,
       "runsSampled": 10,
-      "min": 58.87502337040254,
-      "max": 60.16384745052568
+      "min": 50.04654734071006,
+      "max": 51.84292300668064
     },
     {
       "name": "parse/general/Logical AND",
-      "opsSec": 2552878,
+      "opsSec": 2502822,
       "runsSampled": 11,
-      "min": 389.20949348633036,
-      "max": 395.15231501173656
+      "min": 394.1948565776459,
+      "max": 408.11317022970115
     },
     {
       "name": "eval/general/Logical AND",
-      "opsSec": 16348964,
+      "opsSec": 15745979,
       "runsSampled": 10,
-      "min": 60.69725416310806,
-      "max": 61.50577838205302
+      "min": 61.864980990607044,
+      "max": 64.88288345137167
     },
     {
       "name": "parse/general/Logical AND with variables",
-      "opsSec": 2837984,
-      "runsSampled": 10,
-      "min": 351.2327574642935,
-      "max": 354.032394247277
+      "opsSec": 2829388,
+      "runsSampled": 11,
+      "min": 351.97854833346304,
+      "max": 355.0112844882616
     },
     {
       "name": "eval/general/Logical AND with variables",
-      "opsSec": 7898651,
+      "opsSec": 9172517,
       "runsSampled": 10,
-      "min": 123.80886463661234,
-      "max": 130.12858225628273
+      "min": 106.27438075654466,
+      "max": 110.57229576617152
     },
     {
       "name": "parse/general/Logical OR",
-      "opsSec": 2373049,
+      "opsSec": 2469547,
       "runsSampled": 11,
-      "min": 407.2025606502814,
-      "max": 431.0449877432018
+      "min": 401.5760099823365,
+      "max": 409.458015083247
     },
     {
       "name": "eval/general/Logical OR",
-      "opsSec": 16080216,
+      "opsSec": 15888936,
       "runsSampled": 10,
-      "min": 60.9177196641689,
-      "max": 63.71684618535909
+      "min": 61.97637392959677,
+      "max": 65.33609604485343
     },
     {
       "name": "parse/general/Logical OR with variables",
-      "opsSec": 2590149,
+      "opsSec": 2620203,
       "runsSampled": 10,
-      "min": 382.67235949519136,
-      "max": 388.5362220452498
+      "min": 378.8571929423421,
+      "max": 385.52666463970814
     },
     {
       "name": "eval/general/Logical OR with variables",
-      "opsSec": 7990441,
+      "opsSec": 9450943,
       "runsSampled": 10,
-      "min": 123.55683366503845,
-      "max": 127.06656555484903
+      "min": 104.03153477168081,
+      "max": 106.46424329621136
     },
     {
       "name": "parse/general/Range Check",
-      "opsSec": 2901343,
-      "runsSampled": 10,
-      "min": 342.9327908169631,
-      "max": 346.5811752333377
+      "opsSec": 2950908,
+      "runsSampled": 9,
+      "min": 338.3204501379367,
+      "max": 341.6495548116928
     },
     {
       "name": "eval/general/Range Check",
-      "opsSec": 8658050,
+      "opsSec": 9123814,
       "runsSampled": 10,
-      "min": 113.82651978936008,
-      "max": 116.2985097302598
+      "min": 107.63765115451056,
+      "max": 110.84249004014305
     },
     {
       "name": "parse/general/Nested Ternary",
-      "opsSec": 1140008,
+      "opsSec": 1194971,
       "runsSampled": 11,
-      "min": 870.356645197522,
-      "max": 890.1378792115196
+      "min": 825.5140551308464,
+      "max": 852.2143707426758
     },
     {
       "name": "eval/general/Nested Ternary",
-      "opsSec": 7940847,
+      "opsSec": 8239471,
       "runsSampled": 10,
-      "min": 123.75745837665836,
-      "max": 127.27106791919704
+      "min": 119.29286349901489,
+      "max": 122.76008897593056
     },
     {
       "name": "parse/general/Complex Logical",
-      "opsSec": 1412468,
-      "runsSampled": 11,
-      "min": 703.5789043336059,
-      "max": 717.2466198097496
+      "opsSec": 1402344,
+      "runsSampled": 10,
+      "min": 709.2121419410005,
+      "max": 719.0435880342122
     },
     {
       "name": "eval/general/Complex Logical",
-      "opsSec": 5420345,
+      "opsSec": 5472893,
       "runsSampled": 10,
-      "min": 183.26728972727793,
-      "max": 185.59734888692185
+      "min": 180.29679031565777,
+      "max": 185.1278709147297
     },
     {
       "name": "parse/general/Authorization Check",
-      "opsSec": 521706,
-      "runsSampled": 11,
-      "min": 1910.2942370285277,
-      "max": 1927.677247797906
+      "opsSec": 519480,
+      "runsSampled": 8,
+      "min": 1924.3000462142802,
+      "max": 1938.1513300650968
     },
     {
       "name": "eval/general/Authorization Check",
-      "opsSec": 2387392,
+      "opsSec": 2474133,
       "runsSampled": 10,
-      "min": 414.6847298879411,
-      "max": 422.9727477289774
+      "min": 398.5538995360097,
+      "max": 406.35300781692536
     }
   ]
 }
