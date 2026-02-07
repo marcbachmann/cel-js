@@ -24,7 +24,7 @@ export class TypeDeclaration {
    * @param options - Type declaration options
    */
   constructor(options: {
-    kind: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+    kind: 'primitive' | 'list' | 'map' | 'message' | 'enum' | 'schema'
     type: string
     name: string
     keyType?: TypeDeclaration
@@ -32,8 +32,8 @@ export class TypeDeclaration {
     values?: Record<string, bigint>
   })
 
-  /** The kind of type (primitive, list, map, message, enum). */
-  kind: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+  /** The kind of type (primitive, list, map, message, enum, schema). */
+  kind: 'primitive' | 'list' | 'map' | 'message' | 'enum' | 'schema'
 
   /** The type name. */
   type: string
@@ -93,6 +93,14 @@ export const celTypes: {
 }
 
 /**
+ * Schema definition for typed object validation.
+ * Maps field names to type strings or nested schemas.
+ */
+export interface ObjectSchema {
+  [field: string]: string | ObjectSchema
+}
+
+/**
  * Registry for managing function overloads, operator overloads, and type mappings.
  */
 export class Registry {
@@ -146,9 +154,9 @@ export class Registry {
   /**
    * Register a variable with its type, throwing if it already exists.
    * @param name - The variable name
-   * @param type - The variable type name or declaration
+   * @param type - The variable type name, declaration, or object schema
    */
-  registerVariable(name: string, type: string | TypeDeclaration): this
+  registerVariable(name: string, type: string | TypeDeclaration | ObjectSchema): this
 
   /**
    * Register a unary operator overload.
