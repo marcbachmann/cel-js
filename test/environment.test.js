@@ -414,5 +414,18 @@ describe('Environment', () => {
         'Alice is 30'
       )
     })
+
+    test('schema variable in list expression', () => {
+      const env = new Environment().registerVariable('user', {
+        name: 'string',
+        age: 'int'
+      })
+
+      // Using schema variable in a list should work
+      const ctx = {user: {name: 'Alice', age: 30n}}
+      const result = env.evaluate('[user]', ctx)
+      assert.strictEqual(result.length, 1)
+      assert.deepStrictEqual(result[0], {name: 'Alice', age: 30n})
+    })
   })
 })
