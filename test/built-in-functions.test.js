@@ -58,21 +58,21 @@ describe('built-in functions', () => {
     })
 
     test('is of type duration', () => {
-      assert.ok(evaluate('type(duration("1h")) == google.protobuf.Duration'))
-      assert.ok(evaluate('type(duration("1h")) == type(duration("2h"))'))
+      expectEval('type(duration("1h")) == google.protobuf.Duration', true)
+      expectEval('type(duration("1h")) == type(duration("2h"))', true)
     })
 
     test('parses duration string', () => {
-      assert.strictEqual(evaluate('duration("1h")').getMilliseconds(), 3600000n)
-      assert.strictEqual(evaluate('duration("1h1h")').getMilliseconds(), 7200000n)
-      assert.strictEqual(evaluate('duration("1.5h")').getMilliseconds(), 5400000n)
-      assert.strictEqual(evaluate('duration("2m")').getMilliseconds(), 120000n)
-      assert.strictEqual(evaluate('duration("2.5m")').getMilliseconds(), 150000n)
-      assert.strictEqual(evaluate('duration("30s")').getMilliseconds(), 30000n)
-      assert.strictEqual(evaluate('duration("30.5s")').getMilliseconds(), 30500n)
-      assert.strictEqual(evaluate('duration("1ms")').getMilliseconds(), 1n)
-      assert.strictEqual(evaluate('duration("1h2s3m.1m")').getMilliseconds(), 3788000n)
-      assert.strictEqual(evaluate('duration("-1h2s3m.1m")').getMilliseconds(), -3788000n)
+      expectEval('duration("1h").getMilliseconds()', 3600000n)
+      expectEval('duration("1h1h").getMilliseconds()', 7200000n)
+      expectEval('duration("1.5h").getMilliseconds()', 5400000n)
+      expectEval('duration("2m").getMilliseconds()', 120000n)
+      expectEval('duration("2.5m").getMilliseconds()', 150000n)
+      expectEval('duration("30s").getMilliseconds()', 30000n)
+      expectEval('duration("30.5s").getMilliseconds()', 30500n)
+      expectEval('duration("1ms").getMilliseconds()', 1n)
+      expectEval('duration("1h2s3m.1m").getMilliseconds()', 3788000n)
+      expectEval('duration("-1h2s3m.1m").getMilliseconds()', -3788000n)
     })
 
     test('equality', () => {
@@ -108,9 +108,10 @@ describe('built-in functions', () => {
     })
 
     test('addition of durations', () => {
-      assert.strictEqual(evaluate('duration("1h") + duration("1h")').getMilliseconds(), 7200000n)
-      assert.strictEqual(evaluate('duration("1h") + duration("30m")').getMilliseconds(), 5400000n)
-      assert.strictEqual(evaluate('duration("1s") + duration("1s1ms")').getMilliseconds(), 2001n)
+      assert.ok(evaluate('duration("1h") + duration("1h")') instanceof Duration)
+      expectEval('(duration("1h") + duration("1h")).getMilliseconds()', 7200000n)
+      expectEval('(duration("1h") + duration("30m")).getMilliseconds()', 5400000n)
+      expectEval('(duration("1s") + duration("1s1ms")).getMilliseconds()', 2001n)
     })
 
     test('addition of timestamp and duration', () => {
@@ -167,12 +168,12 @@ describe('built-in functions', () => {
 
       test('errors with too large dates (+-1)', () => {
         const intErr = /requires a valid integer unix timestamp/
-        assert.throws(() => evaluate(`timestamp(253402300800)`, context), intErr)
-        assert.throws(() => evaluate(`timestamp(-62135596801)`, context), intErr)
+        expectEvalThrows(`timestamp(253402300800)`, intErr, context)
+        expectEvalThrows(`timestamp(-62135596801)`, intErr, context)
 
         const dateErr = /requires a string in ISO 8601 format/
-        assert.throws(() => evaluate(`timestamp('10000-01-01T00:00:00Z')`, context), dateErr)
-        assert.throws(() => evaluate(`timestamp('0000-01-01T00:00:00Z')`, context), dateErr)
+        expectEvalThrows(`timestamp('10000-01-01T00:00:00Z')`, dateErr, context)
+        expectEvalThrows(`timestamp('0000-01-01T00:00:00Z')`, dateErr, context)
       })
 
       test('supports equality operator', () => {
@@ -190,6 +191,7 @@ describe('built-in functions', () => {
           context
         )
 
+        // Test that expectEvalDeep throws for non-equality
         assert.throws(() => {
           expectEvalDeep('timestamp(0) - timestamp(1000)', new Duration(0n), context)
         })
@@ -377,10 +379,7 @@ describe('built-in functions', () => {
 
   describe('string.split:', () => {
     test('requires string delimiter', () => {
-      assert.throws(
-        () => evaluate('"a,b,c".split()'),
-        /found no matching overload for 'string.split\(\)/
-      )
+      expectEvalThrows('"a,b,c".split()', /found no matching overload for 'string.split\(\)/)
     })
 
     test('should split string by delimiter', () => {
@@ -472,33 +471,33 @@ describe('built-in functions', () => {
         }
 
         test('should work with string variables', () => {
-          assert.strictEqual(evaluate('greeting.startsWith(prefix)', context), true)
-          assert.strictEqual(evaluate('greeting.startsWith("world")', context), false)
-          assert.strictEqual(evaluate('message.startsWith("Good")', context), true)
+          expectEval('greeting.startsWith(prefix)', true, context)
+          expectEval('greeting.startsWith("world")', false, context)
+          expectEval('message.startsWith("Good")', true, context)
         })
 
         test('should work with empty string variable', () => {
-          assert.strictEqual(evaluate('greeting.startsWith(emptyStr)', context), true)
-          assert.strictEqual(evaluate('emptyStr.startsWith("")', context), true)
-          assert.strictEqual(evaluate('emptyStr.startsWith("a")', context), false)
+          expectEval('greeting.startsWith(emptyStr)', true, context)
+          expectEval('emptyStr.startsWith("")', true, context)
+          expectEval('emptyStr.startsWith("a")', false, context)
         })
       })
 
       describe('error handling', () => {
         test('should throw error when called on non-string', () => {
-          assert.throws(
-            () => evaluate('(123).startsWith("1")'),
+          expectEvalThrows(
+            '(123).startsWith("1")',
             /found no matching overload for 'int.startsWith/
           )
         })
 
         test('should throw error when argument is not a string', () => {
           const error = /found no matching overload for 'string.startsWith/
-          assert.throws(() => evaluate('"hello".startsWith(123)'), error)
-          assert.throws(() => evaluate('"hello".startsWith(true)'), error)
-          assert.throws(() => evaluate('"hello".startsWith(null)'), error)
-          assert.throws(() => evaluate('"hello".startsWith([])'), error)
-          assert.throws(() => evaluate('"hello".startsWith({})'), error)
+          expectEvalThrows('"hello".startsWith(123)', error)
+          expectEvalThrows('"hello".startsWith(true)', error)
+          expectEvalThrows('"hello".startsWith(null)', error)
+          expectEvalThrows('"hello".startsWith([])', error)
+          expectEvalThrows('"hello".startsWith({})', error)
         })
 
         test('should work when called with variables of correct type', () => {
@@ -510,23 +509,27 @@ describe('built-in functions', () => {
             obj: {}
           }
 
-          assert.strictEqual(evaluate('str.startsWith("hello")', context), true)
+          expectEval('str.startsWith("hello")', true, context)
 
-          assert.throws(
-            () => evaluate('num.startsWith("1")', context),
-            /found no matching overload for 'double.startsWith/
+          expectEvalThrows(
+            'num.startsWith("1")',
+            /found no matching overload for 'double.startsWith/,
+            context
           )
-          assert.throws(
-            () => evaluate('boolean.startsWith("t")', context),
-            /found no matching overload for 'bool.startsWith/
+          expectEvalThrows(
+            'boolean.startsWith("t")',
+            /found no matching overload for 'bool.startsWith/,
+            context
           )
-          assert.throws(
-            () => evaluate('arr.startsWith("")', context),
-            /found no matching overload for 'list.startsWith/
+          expectEvalThrows(
+            'arr.startsWith("")',
+            /found no matching overload for 'list.startsWith/,
+            context
           )
-          assert.throws(
-            () => evaluate('obj.startsWith("")', context),
-            /found no matching overload for 'map.startsWith/
+          expectEvalThrows(
+            'obj.startsWith("")',
+            /found no matching overload for 'map.startsWith/,
+            context
           )
         })
       })
@@ -545,11 +548,10 @@ describe('built-in functions', () => {
         ]
 
         testCases.forEach(([str, prefix, expected]) => {
-          const methodResult = evaluate(`${str}.startsWith(${prefix})`)
-
-          assert.strictEqual(
-            methodResult,
+          expectEval(
+            `${str}.startsWith(${prefix})`,
             expected,
+            undefined,
             `Method syntax failed for ${str}.startsWith(${prefix})`
           )
         })
@@ -564,8 +566,8 @@ describe('built-in functions', () => {
         ]
 
         errorCases.forEach(([str, invalidPrefix, argType]) => {
-          assert.throws(
-            () => evaluate(`${str}.startsWith(${invalidPrefix})`),
+          expectEvalThrows(
+            `${str}.startsWith(${invalidPrefix})`,
             new RegExp(`found no matching overload for 'string.startsWith\\(${argType}\\)`)
           )
         })
@@ -574,175 +576,157 @@ describe('built-in functions', () => {
 
     describe('complex expressions', () => {
       test('function syntax should raise when unregistered', () => {
-        assert.throws(
-          () => evaluate('startsWith("world", "he")'),
+        expectEvalThrows(
+          'startsWith("world", "he")',
           /found no matching overload for 'startsWith\(string, string\)/
         )
       })
 
       test('should work in ternary expressions', () => {
-        assert.strictEqual(evaluate('"hello".startsWith("he") ? "yes" : "no"'), 'yes')
+        expectEval('"hello".startsWith("he") ? "yes" : "no"', 'yes')
       })
 
       test('should work with string concatenation', () => {
         const context = {prefix: 'hel'}
-        assert.strictEqual(evaluate('("hel" + "lo").startsWith(prefix)', context), true)
+        expectEval('("hel" + "lo").startsWith(prefix)', true, context)
       })
     })
 
     describe('edge cases', () => {
       test('should handle strings with quotes', () => {
-        assert.strictEqual(evaluate('"\\"quoted\\"".startsWith("\\"")'), true)
-        assert.strictEqual(evaluate("'single quotes'.startsWith('single')"), true)
+        expectEval('"\\"quoted\\"".startsWith("\\"")', true)
+        expectEval("'single quotes'.startsWith('single')", true)
       })
 
       test('should handle very long strings', () => {
         const longStr = 'a'.repeat(10000)
         const context = {longStr}
-        assert.strictEqual(evaluate('longStr.startsWith("a")', context), true)
-        assert.strictEqual(evaluate('longStr.startsWith("b")', context), false)
+        expectEval('longStr.startsWith("a")', true, context)
+        expectEval('longStr.startsWith("b")', false, context)
       })
 
       test('should handle strings with null bytes', () => {
-        assert.strictEqual(evaluate('"hello\\x00world".startsWith("hello")', {}), true)
+        expectEval('"hello\\x00world".startsWith("hello")', true)
       })
     })
   })
 
   describe('type function', () => {
     test('supports equality', () => {
-      assert.strictEqual(evaluate('int == int'), true)
-      assert.strictEqual(evaluate('type(1) == int'), true)
-      assert.strictEqual(evaluate('double == double'), true)
-      assert.strictEqual(evaluate('type(1.0) == double'), true)
-      assert.strictEqual(evaluate(`string == string`), true)
-      assert.strictEqual(evaluate(`type('string') == string`), true)
-      assert.strictEqual(evaluate('bool == bool'), true)
-      assert.strictEqual(evaluate('type(true) == bool'), true)
-      assert.strictEqual(evaluate('type(false) == bool'), true)
-      assert.strictEqual(evaluate('null_type == null_type'), true)
-      assert.strictEqual(evaluate('type(null) == null_type'), true)
-      assert.strictEqual(evaluate('bytes == bytes'), true)
-      assert.strictEqual(evaluate('type(bytes("test")) == bytes'), true)
-      assert.strictEqual(evaluate('list == list'), true)
-      assert.strictEqual(evaluate('type([]) == list'), true)
-      assert.strictEqual(evaluate('map == map'), true)
-      assert.strictEqual(evaluate('type({}) == map'), true)
-      assert.strictEqual(evaluate('type == type'), true)
-      assert.strictEqual(evaluate('type(string) == type'), true)
+      expectEval('int == int', true)
+      expectEval('type(1) == int', true)
+      expectEval('double == double', true)
+      expectEval('type(1.0) == double', true)
+      expectEval(`string == string`, true)
+      expectEval(`type('string') == string`, true)
+      expectEval('bool == bool', true)
+      expectEval('type(true) == bool', true)
+      expectEval('type(false) == bool', true)
+      expectEval('null_type == null_type', true)
+      expectEval('type(null) == null_type', true)
+      expectEval('bytes == bytes', true)
+      expectEval('type(bytes("test")) == bytes', true)
+      expectEval('list == list', true)
+      expectEval('type([]) == list', true)
+      expectEval('map == map', true)
+      expectEval('type({}) == map', true)
+      expectEval('type == type', true)
+      expectEval('type(string) == type', true)
     })
 
     test('supports inequality', () => {
-      assert.strictEqual(evaluate('type(1) != type'), true)
-      assert.strictEqual(evaluate('type(1.0) != type'), true)
-      assert.strictEqual(evaluate(`type('string') != type`), true)
-      assert.strictEqual(evaluate('type(true) != type'), true)
-      assert.strictEqual(evaluate('type(false) != type'), true)
-      assert.strictEqual(evaluate('type(null) != type'), true)
-      assert.strictEqual(evaluate('type(bytes("test")) != type'), true)
-      assert.strictEqual(evaluate('type([]) != type'), true)
-      assert.strictEqual(evaluate('type({}) != type'), true)
+      expectEval('type(1) != type', true)
+      expectEval('type(1.0) != type', true)
+      expectEval(`type('string') != type`, true)
+      expectEval('type(true) != type', true)
+      expectEval('type(false) != type', true)
+      expectEval('type(null) != type', true)
+      expectEval('type(bytes("test")) != type', true)
+      expectEval('type([]) != type', true)
+      expectEval('type({}) != type', true)
     })
 
     test('throws on invalid comparisons', () => {
-      assert.throws(() => evaluate('int > int'), /no such overload: type > type/)
-      assert.throws(() => evaluate('int >= int'), /no such overload: type >= type/)
-      assert.throws(() => evaluate('int < int'), /no such overload: type < type/)
-      assert.throws(() => evaluate('int <= int'), /no such overload: type <= type/)
-      assert.throws(() => evaluate('int + int'), /no such overload: type \+ type/)
-      assert.throws(() => evaluate('int - int'), /no such overload: type - type/)
-      assert.throws(() => evaluate('int * int'), /no such overload: type \* type/)
-      assert.throws(() => evaluate('int / int'), /no such overload: type \/ type/)
-      assert.throws(() => evaluate('int % int'), /no such overload: type % type/)
+      expectEvalThrows('int > int', /no such overload: type > type/)
+      expectEvalThrows('int >= int', /no such overload: type >= type/)
+      expectEvalThrows('int < int', /no such overload: type < type/)
+      expectEvalThrows('int <= int', /no such overload: type <= type/)
+      expectEvalThrows('int + int', /no such overload: type \+ type/)
+      expectEvalThrows('int - int', /no such overload: type - type/)
+      expectEvalThrows('int * int', /no such overload: type \* type/)
+      expectEvalThrows('int / int', /no such overload: type \/ type/)
+      expectEvalThrows('int % int', /no such overload: type % type/)
     })
   })
 
   describe('int function', () => {
     test('should return bigint', () => {
-      assert.strictEqual(evaluate('int(42)'), 42n)
-      assert.strictEqual(evaluate('int(3.14)'), 3n)
-      assert.strictEqual(evaluate(`int('-5')`), -5n)
-      assert.strictEqual(evaluate(`int('0')`), 0n)
-      assert.strictEqual(evaluate(`int('-0')`), 0n)
-      assert.strictEqual(evaluate(`int('9223372036854775807')`), 9223372036854775807n)
+      expectEval('int(42)', 42n)
+      expectEval('int(3.14)', 3n)
+      expectEval(`int('-5')`, -5n)
+      expectEval(`int('0')`, 0n)
+      expectEval(`int('-0')`, 0n)
+      expectEval(`int('9223372036854775807')`, 9223372036854775807n)
     })
 
     test('errors on integer overflow', () => {
-      assert.throws(() => evaluate(`int(double('inf'))`), /integer overflow/)
-      assert.throws(() => evaluate(`int(double('-inf'))`), /integer overflow/)
-      assert.throws(() => evaluate(`int(double('nan'))`), /integer overflow/)
+      expectEvalThrows(`int(double('inf'))`, /integer overflow/)
+      expectEvalThrows(`int(double('-inf'))`, /integer overflow/)
+      expectEvalThrows(`int(double('nan'))`, /integer overflow/)
     })
 
     test('throws invalid integer', () => {
-      assert.throws(() => evaluate(`int('9223372036854775808')`), /cannot convert to int/)
-      assert.throws(() => evaluate(`int('0x01')`), /cannot convert to int/)
-      assert.throws(() => evaluate(`int('1e10')`), /cannot convert to int/)
-      assert.throws(() => evaluate(`int('3.1')`), /cannot convert to int/)
+      expectEvalThrows(`int('9223372036854775808')`, /cannot convert to int/)
+      expectEvalThrows(`int('0x01')`, /cannot convert to int/)
+      expectEvalThrows(`int('1e10')`, /cannot convert to int/)
+      expectEvalThrows(`int('3.1')`, /cannot convert to int/)
     })
   })
 
   describe('double function', () => {
     test('should return numbers as-is', () => {
-      assert.strictEqual(evaluate('double(42)'), 42)
-      assert.strictEqual(evaluate('double(3.14)'), 3.14)
-      assert.strictEqual(evaluate('double(-5)'), -5)
-      assert.strictEqual(evaluate('double(0)'), 0)
-      assert.strictEqual(evaluate('double(-0)'), 0)
-      assert.strictEqual(evaluate('double(1u)'), 1)
-      assert.strictEqual(
-        evaluate('double(inf)', {inf: Number.POSITIVE_INFINITY}),
-        Number.POSITIVE_INFINITY
-      )
-      assert.strictEqual(
-        evaluate('double(inf)', {inf: Number.NEGATIVE_INFINITY}),
-        Number.NEGATIVE_INFINITY
-      )
+      expectEval('double(42)', 42)
+      expectEval('double(3.14)', 3.14)
+      expectEval('double(-5)', -5)
+      expectEval('double(0)', 0)
+      expectEval('double(-0)', 0)
+      expectEval('double(1u)', 1)
+      expectEval('double(inf)', Number.POSITIVE_INFINITY, {inf: Number.POSITIVE_INFINITY})
+      expectEval('double(inf)', Number.NEGATIVE_INFINITY, {inf: Number.NEGATIVE_INFINITY})
       assert.ok(Number.isNaN(evaluate('double(nan)', {nan: Number.NaN})))
     })
 
     test('should convert valid numeric strings to numbers', () => {
-      assert.strictEqual(evaluate('double("42")'), 42)
-      assert.strictEqual(evaluate('double("3.14")'), 3.14)
-      assert.strictEqual(evaluate('double("-5")'), -5)
-      assert.strictEqual(evaluate('double("0")'), 0)
-      assert.strictEqual(evaluate('double("123.456")'), 123.456)
-      assert.strictEqual(evaluate('double("1e5")'), 100000)
-      assert.strictEqual(evaluate('double("1.23e-4")'), 0.000123)
-      assert.strictEqual(evaluate('double("Infinity")'), Number.POSITIVE_INFINITY)
-      assert.strictEqual(evaluate('double("-Infinity")'), Number.NEGATIVE_INFINITY)
+      expectEval('double("42")', 42)
+      expectEval('double("3.14")', 3.14)
+      expectEval('double("-5")', -5)
+      expectEval('double("0")', 0)
+      expectEval('double("123.456")', 123.456)
+      expectEval('double("1e5")', 100000)
+      expectEval('double("1.23e-4")', 0.000123)
+      expectEval('double("Infinity")', Number.POSITIVE_INFINITY)
+      expectEval('double("-Infinity")', Number.NEGATIVE_INFINITY)
       assert.ok(Number.isNaN(evaluate('double("NaN")')))
     })
 
     test('should throw error for invalid string conversions', () => {
       const error = /double\(\) type error: cannot convert to double/
-      assert.throws(() => evaluate('double("not a number")'), error)
-      assert.throws(() => evaluate('double("abc")'), error)
-      assert.throws(() => evaluate('double("")'), error)
-      assert.throws(() => evaluate('double(" ")'), error)
-      assert.throws(() => evaluate('double(" 1")'), error)
-      assert.throws(() => evaluate('double("1 ")'), error)
-      assert.throws(() => evaluate('double("1.1.1")'), error)
-      assert.throws(() => evaluate('double("1 0")'), error)
+      expectEvalThrows('double("not a number")', error)
+      expectEvalThrows('double("abc")', error)
+      expectEvalThrows('double("")', error)
+      expectEvalThrows('double(" ")', error)
+      expectEvalThrows('double(" 1")', error)
+      expectEvalThrows('double("1 ")', error)
+      expectEvalThrows('double("1.1.1")', error)
+      expectEvalThrows('double("1 0")', error)
 
-      assert.throws(
-        () => evaluate('double(true)'),
-        /found no matching overload for 'double\(bool\)'/
-      )
-      assert.throws(
-        () => evaluate('double(false)'),
-        /found no matching overload for 'double\(bool\)'/
-      )
-      assert.throws(
-        () => evaluate('double(null)'),
-        /found no matching overload for 'double\(null\)'/
-      )
+      expectEvalThrows('double(true)', /found no matching overload for 'double\(bool\)'/)
+      expectEvalThrows('double(false)', /found no matching overload for 'double\(bool\)'/)
+      expectEvalThrows('double(null)', /found no matching overload for 'double\(null\)'/)
     })
 
     test('supports addition with number and bigint', () => {
-      assert.strictEqual(
-        evaluate(`int('999999999999999999') + 50000000`),
-        BigInt('1000000000049999999')
-      )
+      expectEval(`int('999999999999999999') + 50000000`, BigInt('1000000000049999999'))
     })
 
     test('should work with variables from context', () => {
@@ -753,28 +737,16 @@ describe('built-in functions', () => {
         bool: true,
         nullVal: null
       }
-      assert.strictEqual(evaluate('double(num)', context), 42)
-      assert.strictEqual(evaluate('double(str)', context), 3.14)
-      assert.strictEqual(evaluate('double(integer)', context), 42)
+      expectEval('double(num)', 42, context)
+      expectEval('double(str)', 3.14, context)
+      expectEval('double(integer)', 42, context)
     })
 
     test('should throw error for objects, arrays, and bytes', () => {
-      assert.throws(
-        () => evaluate('double({})'),
-        /found no matching overload for 'double\(map<dyn, dyn>\)'/
-      )
-      assert.throws(
-        () => evaluate('double([])'),
-        /found no matching overload for 'double\(list<dyn>\)'/
-      )
-      assert.throws(
-        () => evaluate('double([1, 2, 3])'),
-        /found no matching overload for 'double\(list<int>\)'/
-      )
-      assert.throws(
-        () => evaluate('double(bytes("test"))'),
-        /found no matching overload for 'double\(bytes\)'/
-      )
+      expectEvalThrows('double({})', /found no matching overload for 'double\(map<dyn, dyn>\)'/)
+      expectEvalThrows('double([])', /found no matching overload for 'double\(list<dyn>\)'/)
+      expectEvalThrows('double([1, 2, 3])', /found no matching overload for 'double\(list<int>\)'/)
+      expectEvalThrows('double(bytes("test"))', /found no matching overload for 'double\(bytes\)'/)
 
       const context = {
         num: 42,
@@ -782,44 +754,43 @@ describe('built-in functions', () => {
         boolVal: true,
         nullVal: null
       }
-      assert.throws(
-        () => evaluate('double(boolVal)', context),
-        /found no matching overload for 'double\(bool\)'/
+      expectEvalThrows(
+        'double(boolVal)',
+        /found no matching overload for 'double\(bool\)'/,
+        context
       )
-      assert.throws(
-        () => evaluate('double(nullVal)', context),
-        /found no matching overload for 'double\(null\)'/
+      expectEvalThrows(
+        'double(nullVal)',
+        /found no matching overload for 'double\(null\)'/,
+        context
       )
     })
 
     test('should work in expressions', () => {
-      assert.strictEqual(evaluate('double("5") + double("3")'), 8)
-      assert.strictEqual(evaluate('double("3.14") * 2.0'), 6.28)
+      expectEval('double("5") + double("3")', 8)
+      expectEval('double("3.14") * 2.0', 6.28)
     })
 
     test('should throw with no arguments', () => {
-      assert.throws(() => evaluate('double()'), /found no matching overload for 'double\(\)'/)
+      expectEvalThrows('double()', /found no matching overload for 'double\(\)'/)
     })
 
     test('should throw with multiple arguments', () => {
-      assert.throws(
-        () => evaluate('double(1, 2)'),
-        /found no matching overload for 'double\(int, int\)'/
-      )
+      expectEvalThrows('double(1, 2)', /found no matching overload for 'double\(int, int\)'/)
     })
   })
 
   describe('string function', () => {
     describe('string identity', () => {
       test('should return same string string(value)', () => {
-        assert.strictEqual(evaluate('string("something")'), 'something')
+        expectEval('string("something")', 'something')
       })
 
       test('should return string(false)', () => {
-        assert.strictEqual(evaluate('string(false)'), 'false')
-        assert.strictEqual(evaluate('string(true)'), 'true')
-        assert.strictEqual(evaluate('string(1)'), '1')
-        assert.strictEqual(evaluate('string(1.0)'), '1')
+        expectEval('string(false)', 'false')
+        expectEval('string(true)', 'true')
+        expectEval('string(1)', '1')
+        expectEval('string(1.0)', '1')
       })
     })
   })
@@ -827,56 +798,56 @@ describe('built-in functions', () => {
   describe('bool function', () => {
     describe('boolean identity', () => {
       test('should return true for bool(true)', () => {
-        assert.strictEqual(evaluate('bool(true)'), true)
+        expectEval('bool(true)', true)
       })
 
       test('should return false for bool(false)', () => {
-        assert.strictEqual(evaluate('bool(false)'), false)
+        expectEval('bool(false)', false)
       })
     })
 
     describe('string to boolean conversion', () => {
       describe('truthy string values', () => {
         test('should return true for string "1"', () => {
-          assert.strictEqual(evaluate('bool("1")'), true)
+          expectEval('bool("1")', true)
         })
 
         test('should return true for string "t"', () => {
-          assert.strictEqual(evaluate('bool("t")'), true)
+          expectEval('bool("t")', true)
         })
 
         test('should return true for string "true" (lowercase)', () => {
-          assert.strictEqual(evaluate('bool("true")'), true)
+          expectEval('bool("true")', true)
         })
 
         test('should return true for string "TRUE" (uppercase)', () => {
-          assert.strictEqual(evaluate('bool("TRUE")'), true)
+          expectEval('bool("TRUE")', true)
         })
 
         test('should return true for string "True" (pascalcase)', () => {
-          assert.strictEqual(evaluate('bool("True")'), true)
+          expectEval('bool("True")', true)
         })
       })
 
       describe('falsy string values', () => {
         test('should return false for string "0"', () => {
-          assert.strictEqual(evaluate('bool("0")'), false)
+          expectEval('bool("0")', false)
         })
 
         test('should return false for string "f"', () => {
-          assert.strictEqual(evaluate('bool("f")'), false)
+          expectEval('bool("f")', false)
         })
 
         test('should return false for string "false" (lowercase)', () => {
-          assert.strictEqual(evaluate('bool("false")'), false)
+          expectEval('bool("false")', false)
         })
 
         test('should return false for string "FALSE" (uppercase)', () => {
-          assert.strictEqual(evaluate('bool("FALSE")'), false)
+          expectEval('bool("FALSE")', false)
         })
 
         test('should return false for string "False" (pascalcase)', () => {
-          assert.strictEqual(evaluate('bool("False")'), false)
+          expectEval('bool("False")', false)
         })
       })
 
@@ -897,8 +868,8 @@ describe('built-in functions', () => {
 
         for (const invalidString of invalidStrings) {
           test(`should throw error for invalid string "${invalidString}"`, () => {
-            assert.throws(
-              () => evaluate(`bool("${invalidString}")`),
+            expectEvalThrows(
+              `bool("${invalidString}")`,
               new RegExp(`bool\\(\\) conversion error: invalid string value "${invalidString}"`)
             )
           })
@@ -909,41 +880,41 @@ describe('built-in functions', () => {
     describe('invalid argument types', () => {
       const invalidArg = /found no matching overload for/
       test('should throw error for number argument', () => {
-        assert.throws(() => evaluate('bool(1)'), invalidArg)
+        expectEvalThrows('bool(1)', invalidArg)
       })
 
       test('should throw error for null argument', () => {
-        assert.throws(() => evaluate('bool(null)'), invalidArg)
+        expectEvalThrows('bool(null)', invalidArg)
       })
 
       test('should throw error for array argument', () => {
-        assert.throws(() => evaluate('bool([])'), invalidArg)
+        expectEvalThrows('bool([])', invalidArg)
       })
 
       test('should throw error for object argument', () => {
-        assert.throws(() => evaluate('bool({})'), invalidArg)
+        expectEvalThrows('bool({})', invalidArg)
       })
     })
 
     describe('integration with expressions', () => {
       test('should work with string concatenation', () => {
-        assert.strictEqual(evaluate('bool("tr" + "ue")'), true)
+        expectEval('bool("tr" + "ue")', true)
       })
 
       test('should work with conditional expressions', () => {
-        assert.strictEqual(evaluate('bool("true") ? 1 : 0'), 1n)
-        assert.strictEqual(evaluate('bool("false") ? 1 : 0'), 0n)
+        expectEval('bool("true") ? 1 : 0', 1n)
+        expectEval('bool("false") ? 1 : 0', 0n)
       })
 
       test('should work with logical operators', () => {
-        assert.strictEqual(evaluate('bool("true") && bool("true")'), true)
-        assert.strictEqual(evaluate('bool("true") && bool("false")'), false)
-        assert.strictEqual(evaluate('bool("false") || bool("true")'), true)
+        expectEval('bool("true") && bool("true")', true)
+        expectEval('bool("true") && bool("false")', false)
+        expectEval('bool("false") || bool("true")', true)
       })
 
       test('should work with NOT operator', () => {
-        assert.strictEqual(evaluate('!bool("true")'), false)
-        assert.strictEqual(evaluate('!bool("false")'), true)
+        expectEval('!bool("true")', false)
+        expectEval('!bool("false")', true)
       })
 
       test('should work with variables from context', () => {
@@ -952,9 +923,9 @@ describe('built-in functions', () => {
           falseString: 'false',
           boolValue: true
         }
-        assert.strictEqual(evaluate('bool(trueString)', context), true)
-        assert.strictEqual(evaluate('bool(falseString)', context), false)
-        assert.strictEqual(evaluate('bool(boolValue)', context), true)
+        expectEval('bool(trueString)', true, context)
+        expectEval('bool(falseString)', false, context)
+        expectEval('bool(boolValue)', true, context)
       })
     })
   })

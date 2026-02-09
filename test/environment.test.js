@@ -262,7 +262,7 @@ describe('Environment', () => {
         env.registerVariable('x', 'string')
       },
       {
-        message: /Variable already registered: x/
+        message: /Invalid variable declaration: 'x' is already registered/
       }
     )
   })

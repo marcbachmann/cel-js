@@ -86,7 +86,7 @@ env.evaluate('"Hi" * 3') // "HiHiHi"
 
 #### Register constants
 
-Use `registerConstant(name, type, value)` to expose shared configuration without passing it through every evaluation context.
+Use `registerConstant` to expose shared configuration without passing it through every evaluation context.
 
 ```javascript
 import {Environment} from '@marcbachmann/cel-js'
@@ -95,6 +95,13 @@ const env = new Environment()
   .registerConstant('minAge', 'int', 18n)
 
 env.evaluate('user.age >= minAge', {user: {age: 20n}}) // true
+```
+
+Supported signatures:
+
+```javascript
+env.registerConstant('minAge', 'int', 18n)
+env.registerConstant({name: 'minAge', type: 'int', value: 18n, description: 'Minimum age'})
 ```
 
 #### Environment Options
@@ -133,6 +140,62 @@ new Environment({
 - **`parse(expression)`** - Parse expression for reuse
 - **`evaluate(expression, context)`** - Evaluate with context
 - **`check(expression)`** - Validate expression types without evaluation
+- **`getDefinitions()`** - Returns all registered variables and functions with their types, signatures, and descriptions
+
+#### `registerVariable` signatures
+
+```javascript
+env.registerVariable('user', 'map')
+env.registerVariable('user', 'map', {description: 'The current user'})
+env.registerVariable('user', {type: 'map', description: 'The current user'})
+env.registerVariable({name: 'user', type: 'map', description: 'The current user'})
+```
+
+The `type` can be a type string (e.g. `'int'`, `'map'`, `'list<string>'`) or a `TypeDeclaration` obtained from another environment.
+
+#### `registerFunction` signatures
+
+```javascript
+// Signature string + handler
+env.registerFunction('greet(string): string', (name) => `Hello, ${name}!`)
+env.registerFunction('greet(string): string', handler, {description: 'Greets someone'})
+env.registerFunction('greet(string): string', {handler, description: 'Greets someone'})
+
+// Single object with signature string
+env.registerFunction({signature: 'add(int, int): int', handler, description: 'Adds two integers'})
+
+// Single object with signature string and named params
+env.registerFunction({
+  signature: 'formatDate(int, string): string',
+  handler,
+  description: 'Formats a timestamp',
+  params: [
+    {name: 'timestamp', description: 'Unix timestamp in seconds'},
+    {name: 'format', description: 'Date format string'}
+  ]
+})
+
+// Single object without signature string
+env.registerFunction({
+  name: 'multiply',
+  returnType: 'int',
+  handler: (a, b) => a * b,
+  description: 'Multiplies two integers',
+  params: [
+    {name: 'a', type: 'int', description: 'First number'},
+    {name: 'b', type: 'int', description: 'Second number'}
+  ]
+})
+
+// Receiver method (called as 'hello'.shout())
+env.registerFunction({
+  name: 'shout',
+  receiverType: 'string',
+  returnType: 'string',
+  handler: (str) => str.toUpperCase() + '!',
+  params: []
+})
+```
 
 #### `registerFunction` (sync & async)
 
