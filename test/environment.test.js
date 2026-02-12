@@ -297,4 +297,141 @@ describe('Environment', () => {
     const result = env.evaluate('str * num', {str: 'ab', num: 3n})
     assert.strictEqual(result, 'ababab')
   })
+
+  describe('schema-based variable registration', () => {
+    test('basic object schema', () => {
+      const env = new Environment().registerVariable('user', {
+        schema: {name: 'string', age: 'int'}
+      })
+
+      // Type checking
+      const nameCheck = env.check('user.name')
+      assert.strictEqual(nameCheck.valid, true)
+      assert.strictEqual(nameCheck.type, 'string')
+
+      const ageCheck = env.check('user.age')
+      assert.strictEqual(ageCheck.valid, true)
+      assert.strictEqual(ageCheck.type, 'int')
+
+      // Undeclared field should fail
+      const fooCheck = env.check('user.foo')
+      assert.strictEqual(fooCheck.valid, false)
+      assert.ok(fooCheck.error.message.includes('No such key'))
+
+      // Evaluation
+      const ctx = {user: {name: 'Alice', age: 30n}}
+      assert.strictEqual(env.evaluate('user.name', ctx), 'Alice')
+      assert.strictEqual(env.evaluate('user.age', ctx), 30n)
+    })
+
+    test('nested object schema', () => {
+      const env = new Environment().registerVariable('user', {
+        schema: {
+          profile: {
+            name: 'string',
+            age: 'int'
+          },
+          status: 'string'
+        }
+      })
+
+      // Type checking nested fields
+      const nameCheck = env.check('user.profile.name')
+      assert.strictEqual(nameCheck.valid, true)
+      assert.strictEqual(nameCheck.type, 'string')
+
+      const statusCheck = env.check('user.status')
+      assert.strictEqual(statusCheck.valid, true)
+      assert.strictEqual(statusCheck.type, 'string')
+
+      // Undeclared nested field should fail
+      const fooCheck = env.check('user.profile.foo')
+      assert.strictEqual(fooCheck.valid, false)
+
+      // Evaluation
+      const ctx = {user: {profile: {name: 'Alice', age: 30n}, status: 'active'}}
+      assert.strictEqual(env.evaluate('user.profile.name', ctx), 'Alice')
+      assert.strictEqual(env.evaluate('user.status', ctx), 'active')
+    })
+
+    test('deeply nested schema', () => {
+      const env = new Environment().registerVariable('data', {
+        schema: {
+          level1: {
+            level2: {
+              level3: {
+                value: 'string'
+              }
+            }
+          }
+        }
+      })
+
+      const check = env.check('data.level1.level2.level3.value')
+      assert.strictEqual(check.valid, true)
+      assert.strictEqual(check.type, 'string')
+
+      const ctx = {data: {level1: {level2: {level3: {value: 'deep'}}}}}
+      assert.strictEqual(env.evaluate('data.level1.level2.level3.value', ctx), 'deep')
+    })
+
+    test('schema with list and map types', () => {
+      const env = new Environment().registerVariable('data', {
+        schema: {
+          names: 'list<string>',
+          scores: 'map<string, int>'
+        }
+      })
+
+      const namesCheck = env.check('data.names')
+      assert.strictEqual(namesCheck.valid, true)
+      assert.strictEqual(namesCheck.type, 'list<string>')
+
+      const scoresCheck = env.check('data.scores')
+      assert.strictEqual(scoresCheck.valid, true)
+      assert.strictEqual(scoresCheck.type, 'map<string, int>')
+    })
+
+    test('multiple schema variables', () => {
+      const env = new Environment()
+        .registerVariable('user', {schema: {name: 'string'}})
+        .registerVariable('order', {schema: {id: 'int', total: 'double'}})
+
+      assert.strictEqual(env.check('user.name').type, 'string')
+      assert.strictEqual(env.check('order.id').type, 'int')
+      assert.strictEqual(env.check('order.total').type, 'double')
+    })
+
+    test('schema in expressions', () => {
+      const env = new Environment().registerVariable('user', {
+        schema: {
+          name: 'string',
+          age: 'int'
+        }
+      })
+
+      // Use in complex expression
+      const check = env.check('user.name + " is " + string(user.age)')
+      assert.strictEqual(check.valid, true)
+      assert.strictEqual(check.type, 'string')
+
+      const ctx = {user: {name: 'Alice', age: 30n}}
+      assert.strictEqual(env.evaluate('user.name + " is " + string(user.age)', ctx), 'Alice is 30')
+    })
+
+    test('schema variable in list expression', () => {
+      const env = new Environment().registerVariable('user', {
+        schema: {
+          name: 'string',
+          age: 'int'
+        }
+      })
+
+      // Using schema variable in a list should work
+      const ctx = {user: {name: 'Alice', age: 30n}}
+      const result = env.evaluate('[user]', ctx)
+      assert.strictEqual(result.length, 1)
+      assert.deepStrictEqual(result[0], {name: 'Alice', age: 30n})
+    })
+  })
 })

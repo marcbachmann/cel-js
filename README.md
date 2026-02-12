@@ -70,14 +70,20 @@ For type-safe expressions with custom functions and operators:
 import {Environment} from '@marcbachmann/cel-js'
 
 const env = new Environment()
-  .registerVariable('user', 'map')
+  .registerVariable('skipAgeCheck', 'bool')
+  .registerVariable('user', {
+    schema: {
+      email: 'string',
+      age: 'int',
+    }
+  })
   .registerConstant('minAge', 'int', 18n)
   .registerFunction('isAdult(int): bool', age => age >= 18n)
   .registerOperator('string * int', (str, n) => str.repeat(Number(n)))
 
 // Type-checked evaluation with constant
-env.evaluate('isAdult(user.age) && user.age >= minAge', {
-  user: {age: 25n}
+env.evaluate('isAdult(user.age) && (user.age >= minAge || skipAgeCheck)', {
+  user: {age: 25n}, skipAgeCheck: true
 })
 
 // Custom operators
