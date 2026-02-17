@@ -434,9 +434,11 @@ describe('Custom Type Registration', () => {
 
     env.registerType('CustomType', CustomType)
     env.registerOperator('CustomType == string', (a, b) => a.value === b)
+    env.registerOperator('bool == list: bool', (left, right) => right.includes(left))
 
     env.expectEval('ct == "equal-test"', true, {ct: new CustomType('equal-test')})
     env.expectEval('ct != "equal-test"', false, {ct: new CustomType('equal-test')})
+    env.expectEval('true == []', false, {})
   })
 
   describe('registerType with fields only (no constructor)', () => {
