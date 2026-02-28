@@ -32,6 +32,7 @@ describe('double literals', () => {
     expectEval('(0.5 + 0.25) * 2.0', 1.5)
     expectEval('0.1 + (0.2 * 5.0)', 1.1)
     expectEval('[0.1, 0.2, 0.3][2]', 0.3)
+    expectEval('(10.0 + 20.0) * 5.0 - 100.0 / 4.0', 125)
   })
 })
 
