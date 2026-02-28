@@ -35,6 +35,11 @@ export default [
     context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
   },
   {
+    name: 'List .map with filter with list<double>',
+    expression: 'doubles.map(x, x > 5.0, x + 1.0)',
+    context: {doubles: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+  },
+  {
     name: 'cel.bind macro',
     expression: 'cel.bind(i, items, i)',
     context: {items: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}

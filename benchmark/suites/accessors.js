@@ -1,13 +1,23 @@
 export default [
   {
     name: 'Int access',
-    expression: 'intVar',
-    context: {intVar: 1n}
+    expression: 'intA',
+    context: {intA: 1n}
+  },
+  {
+    name: 'String access',
+    expression: 'stringA',
+    context: {stringA: 'hello world'}
   },
   {
     name: 'Variable Access',
     expression: 'user.name',
     context: {user: {name: 'John Doe'}}
+  },
+  {
+    name: 'Variable Access with static types',
+    expression: 'userMap.name',
+    context: {userMap: {name: 'John Doe'}}
   },
   {
     name: 'Deep Property Access',

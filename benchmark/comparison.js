@@ -34,6 +34,10 @@ const scripts = [
     data: {foo: {bar: {test: 'hello'}}}
   },
   {
+    name: 'Complex Arithmetic',
+    expression: '(10.0 + 20.0) * 5.0 - 100.0 / 4.0'
+  },
+  {
     name: 'check container ports',
     expression: `
       object.spec.template.spec.containers.all(container,
