@@ -1,6 +1,12 @@
 import {test, describe} from 'node:test'
 import {assert, evaluate, expectEval, expectEvalDeep, expectEvalThrows} from './helpers.js'
-import {Duration} from '../lib/functions.js'
+import {Duration, UnsignedInt} from '../lib/functions.js'
+
+function expectUint(expr, expected, context) {
+  const result = evaluate(expr, context)
+  assert.ok(result instanceof UnsignedInt, `expected UnsignedInt but got ${result?.constructor?.name ?? typeof result}`)
+  assert.strictEqual(result.valueOf(), expected)
+}
 
 describe('built-in functions', () => {
   describe('size function', () => {
@@ -687,6 +693,46 @@ describe('built-in functions', () => {
     })
   })
 
+  describe('uint function', () => {
+    test('should return UnsignedInt', () => {
+      expectUint('uint(42)', 42n)
+      expectUint('uint(0)', 0n)
+      expectUint('uint(9223372036854775807)', 9223372036854775807n)
+      expectUint('uint(42u)', 42n)
+    })
+
+    test('converts double to uint by truncating', () => {
+      expectUint('uint(3.14)', 3n)
+      expectUint('uint(3.99)', 3n)
+      expectUint('uint(0.0)', 0n)
+    })
+
+    test('errors on double overflow', () => {
+      expectEvalThrows(`uint(double('inf'))`, /unsigned integer overflow/)
+      expectEvalThrows(`uint(double('-inf'))`, /unsigned integer overflow/)
+      expectEvalThrows(`uint(double('nan'))`, /unsigned integer overflow/)
+      expectEvalThrows(`uint(-1.0)`, /unsigned integer overflow/)
+    })
+
+    test('errors on negative int', () => {
+      expectEvalThrows(`uint(-1)`, /cannot convert to uint/)
+    })
+
+    test('converts string to uint', () => {
+      expectUint(`uint('0')`, 0n)
+      expectUint(`uint('42')`, 42n)
+      expectUint(`uint('18446744073709551615')`, 18446744073709551615n)
+    })
+
+    test('throws on invalid string', () => {
+      expectEvalThrows(`uint('18446744073709551616')`, /cannot convert to uint/)
+      expectEvalThrows(`uint('-1')`, /cannot convert to uint/)
+      expectEvalThrows(`uint('0x01')`, /cannot convert to uint/)
+      expectEvalThrows(`uint('1e10')`, /cannot convert to uint/)
+      expectEvalThrows(`uint('3.1')`, /cannot convert to uint/)
+    })
+  })
+
   describe('double function', () => {
     test('should return numbers as-is', () => {
       expectEval('double(42)', 42)
@@ -790,11 +836,13 @@ describe('built-in functions', () => {
         expectEval('string("something")', 'something')
       })
 
-      test('should return string(false)', () => {
+      test('coerces booleans and numbers', () => {
         expectEval('string(false)', 'false')
         expectEval('string(true)', 'true')
         expectEval('string(1)', '1')
-        expectEval('string(1.0)', '1')
+        expectEval('string(2.0)', '2')
+        expectEval('string(3.1)', '3.1')
+        expectEval('string(4u)', '4')
       })
     })
   })
