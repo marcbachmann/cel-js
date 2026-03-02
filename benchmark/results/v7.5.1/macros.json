@@ -1,0 +1,147 @@
+{
+  "suite": "macros",
+  "capturedAt": "2026-02-25T06:49:04.225Z",
+  "nodeVersion": "v24.13.1",
+  "results": [
+    {
+      "name": "parse/general/List .map",
+      "opsSec": 2293350,
+      "runsSampled": 11,
+      "min": 432.7061912395477,
+      "max": 442.9173111451719
+    },
+    {
+      "name": "eval/general/List .map",
+      "opsSec": 1750180,
+      "runsSampled": 10,
+      "min": 568.7829746042592,
+      "max": 574.7641561109209
+    },
+    {
+      "name": "parse/general/List .map with list<double>",
+      "opsSec": 2302419,
+      "runsSampled": 11,
+      "min": 432.16230622268364,
+      "max": 437.90334939635943
+    },
+    {
+      "name": "eval/general/List .map with list<double>",
+      "opsSec": 2721765,
+      "runsSampled": 11,
+      "min": 366.3138341137418,
+      "max": 370.24229470903356
+    },
+    {
+      "name": "parse/general/List .map with async",
+      "opsSec": 1313589,
+      "runsSampled": 10,
+      "min": 756.250803564628,
+      "max": 763.9868383056978
+    },
+    {
+      "name": "eval/general/List .map with async",
+      "opsSec": 3485824,
+      "runsSampled": 11,
+      "min": 156.53145211662067,
+      "max": 482.7001551741616
+    },
+    {
+      "name": "parse/general/List .map 5 times",
+      "opsSec": 649667,
+      "runsSampled": 12,
+      "min": 1401.1788933257274,
+      "max": 1818.4481900019152
+    },
+    {
+      "name": "eval/general/List .map 5 times",
+      "opsSec": 1023421,
+      "runsSampled": 11,
+      "min": 972.7072000935837,
+      "max": 983.4834018398903
+    },
+    {
+      "name": "parse/general/List .filter",
+      "opsSec": 2106959,
+      "runsSampled": 11,
+      "min": 471.42412778478354,
+      "max": 478.5768916455378
+    },
+    {
+      "name": "eval/general/List .filter",
+      "opsSec": 1504924,
+      "runsSampled": 11,
+      "min": 661.2715154566775,
+      "max": 672.3554706163402
+    },
+    {
+      "name": "parse/general/List .filter and .map",
+      "opsSec": 1184869,
+      "runsSampled": 9,
+      "min": 840.5096610226545,
+      "max": 850.9756665148985
+    },
+    {
+      "name": "eval/general/List .filter and .map",
+      "opsSec": 1003202,
+      "runsSampled": 10,
+      "min": 993.1757810945273,
+      "max": 1000.3966119924711
+    },
+    {
+      "name": "parse/general/List .map with filter",
+      "opsSec": 1617542,
+      "runsSampled": 11,
+      "min": 615.714268033071,
+      "max": 621.9446096285834
+    },
+    {
+      "name": "eval/general/List .map with filter",
+      "opsSec": 1134646,
+      "runsSampled": 10,
+      "min": 879.1624953831542,
+      "max": 887.8942571540572
+    },
+    {
+      "name": "parse/general/cel.bind macro",
+      "opsSec": 2439010,
+      "runsSampled": 10,
+      "min": 406.58713883247066,
+      "max": 414.839855204352
+    },
+    {
+      "name": "eval/general/cel.bind macro",
+      "opsSec": 22906406,
+      "runsSampled": 9,
+      "min": 43.395379636743975,
+      "max": 43.73819244473388
+    },
+    {
+      "name": "parse/general/Multiple has calls",
+      "opsSec": 616283,
+      "runsSampled": 11,
+      "min": 1610.635104255927,
+      "max": 1638.3690957946194
+    },
+    {
+      "name": "eval/general/Multiple has calls",
+      "opsSec": 1408615,
+      "runsSampled": 11,
+      "min": 702.3289148761035,
+      "max": 716.7652452256945
+    },
+    {
+      "name": "parse/general/Mixed Complex",
+      "opsSec": 656102,
+      "runsSampled": 9,
+      "min": 1518.380441099997,
+      "max": 1524.5925880400714
+    },
+    {
+      "name": "eval/general/Mixed Complex",
+      "opsSec": 1368599,
+      "runsSampled": 10,
+      "min": 718.9167751085638,
+      "max": 731.0743092723853
+    }
+  ]
+}
