@@ -243,9 +243,6 @@ export function createRegistry(opts?: RegistryOptions): Registry
 export class RootContext {
   constructor(registry: Registry, context?: Map<string, any> | Record<string, any>)
 
-  /** Look up the declared type for a variable name. */
-  getType(name: string): TypeDeclaration | undefined
-
   /** Look up the fallback value (built-ins) for a name. */
   getValue(name: string): any
 
@@ -273,7 +270,4 @@ export class OverlayContext {
 
   /** Resolve a value by name, falling back to parent scopes. */
   getValue(name: string): any
-
-  /** Resolve a declared type by name, respecting overlays. */
-  getType(name: string): TypeDeclaration | undefined
 }

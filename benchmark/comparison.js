@@ -138,6 +138,11 @@ const scripts = [
   }
 ]
 
+bench.add(`marcbachmann env clone`, () => {
+  const v = marcbachmannCelJs.clone()
+  if (typeof v === 'string') return
+})
+
 for (const script of scripts) {
   const self = createMarcBachmannCelJsRenderer(script.expression)
   const other = createChromeGGCelJsRenderer(script.expression)
