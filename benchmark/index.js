@@ -52,7 +52,12 @@ class BenchSuite extends Suite {
   addEval(test) {
     try {
       const evaluate = env.parse(test.expression)
-      return this.add(benchLabel('eval', test), evaluate.bind(null, test.context))
+      evaluate.check()
+      const fn = evaluate.ast.maybeAsync
+        ? async () => evaluate(test.context)
+        : () => evaluate(test.context)
+
+      return this.add(benchLabel('eval', test), fn)
     } catch (err) {
       err.message = `Error in test "${test.name}": ${err.message}`
       throw err
