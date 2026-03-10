@@ -1,63 +1,63 @@
 {
   "suite": "functions",
-  "capturedAt": "2026-03-04T01:27:33.498Z",
+  "capturedAt": "2026-03-10T23:40:43.567Z",
   "nodeVersion": "v24.13.1",
   "results": [
     {
       "name": "parse/general/String .upperAscii()",
-      "opsSec": 3531386,
+      "opsSec": 3457504,
       "runsSampled": 11,
-      "min": 281.23258374935057,
-      "max": 285.58300003948756
+      "min": 287.4206618900613,
+      "max": 292.1584452852895
     },
     {
       "name": "eval/general/String .upperAscii()",
-      "opsSec": 26487029,
-      "runsSampled": 9,
-      "min": 37.589580984875425,
-      "max": 37.774784932039914
+      "opsSec": 26671474,
+      "runsSampled": 11,
+      "min": 36.82249884739511,
+      "max": 39.451241977539084
     },
     {
       "name": "parse/general/String Methods",
-      "opsSec": 1385678,
+      "opsSec": 1339743,
       "runsSampled": 11,
-      "min": 716.4621488652595,
-      "max": 730.4089809430839
+      "min": 741.9828988405235,
+      "max": 753.2174229928268
     },
     {
       "name": "eval/general/String Methods",
-      "opsSec": 6321307,
-      "runsSampled": 11,
-      "min": 157.38192844836834,
-      "max": 159.67220683287167
+      "opsSec": 5757472,
+      "runsSampled": 10,
+      "min": 171.57280448049332,
+      "max": 175.11346831809814
     },
     {
       "name": "parse/general/Function Calls",
-      "opsSec": 1431069,
+      "opsSec": 1272260,
       "runsSampled": 11,
-      "min": 693.0757245117799,
-      "max": 710.2014982312547
+      "min": 714.9062386203079,
+      "max": 798.8737252483426
     },
     {
       "name": "eval/general/Function Calls",
-      "opsSec": 3797422,
+      "opsSec": 4087196,
       "runsSampled": 11,
-      "min": 262.2799432728419,
-      "max": 265.2186543699326
+      "min": 242.57968417679106,
+      "max": 251.43306076718198
     },
     {
       "name": "parse/general/String Regex",
-      "opsSec": 2604268,
-      "runsSampled": 11,
-      "min": 380.68692612086517,
-      "max": 387.38420292206536
+      "opsSec": 2510260,
+      "runsSampled": 12,
+      "min": 388.4977923907938,
+      "max": 416.4441290755872
     },
     {
       "name": "eval/general/String Regex",
-      "opsSec": 7495819,
+      "opsSec": 7207162,
       "runsSampled": 10,
-      "min": 131.56709551039143,
-      "max": 136.60332955634968
+      "min": 136.42380700067736,
+      "max": 144.01639172702488
     }
   ]
 }

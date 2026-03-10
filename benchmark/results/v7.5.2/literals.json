@@ -1,0 +1,133 @@
+{
+  "suite": "literals",
+  "capturedAt": "2026-03-04T01:26:51.763Z",
+  "nodeVersion": "v24.13.1",
+  "results": [
+    {
+      "name": "parse/general/Simple Number",
+      "opsSec": 12736108,
+      "runsSampled": 10,
+      "min": 77.62217588051533,
+      "max": 79.49808739012585
+    },
+    {
+      "name": "eval/general/Simple Number",
+      "opsSec": 228229449,
+      "runsSampled": 10,
+      "min": 4.346178865432021,
+      "max": 4.402325339776579
+    },
+    {
+      "name": "parse/general/Simple String",
+      "opsSec": 11458824,
+      "runsSampled": 10,
+      "min": 86.69542469767741,
+      "max": 88.87985216019712
+    },
+    {
+      "name": "eval/general/Simple String",
+      "opsSec": 227885138,
+      "runsSampled": 10,
+      "min": 4.326799130074525,
+      "max": 4.418095431576658
+    },
+    {
+      "name": "parse/general/Simple Boolean",
+      "opsSec": 19413515,
+      "runsSampled": 11,
+      "min": 50.78767852564898,
+      "max": 53.73586133716229
+    },
+    {
+      "name": "eval/general/Simple Boolean",
+      "opsSec": 227016692,
+      "runsSampled": 10,
+      "min": 4.3518313399411745,
+      "max": 4.425158591683524
+    },
+    {
+      "name": "parse/general/String concat",
+      "opsSec": 1960553,
+      "runsSampled": 11,
+      "min": 507.9947702044097,
+      "max": 513.0767563733796
+    },
+    {
+      "name": "eval/general/String concat",
+      "opsSec": 222364180,
+      "runsSampled": 11,
+      "min": 4.452537267169088,
+      "max": 5.154738711613582
+    },
+    {
+      "name": "parse/general/String concat with variables",
+      "opsSec": 1930097,
+      "runsSampled": 11,
+      "min": 515.825153754076,
+      "max": 520.9390231277305
+    },
+    {
+      "name": "eval/general/String concat with variables",
+      "opsSec": 7330121,
+      "runsSampled": 10,
+      "min": 132.65791489373302,
+      "max": 139.07009878627736
+    },
+    {
+      "name": "parse/general/hex concat",
+      "opsSec": 1464416,
+      "runsSampled": 10,
+      "min": 676.0013888888889,
+      "max": 690.6985015210125
+    },
+    {
+      "name": "eval/general/hex concat",
+      "opsSec": 14907408,
+      "runsSampled": 10,
+      "min": 64.79650288842927,
+      "max": 68.57619192115199
+    },
+    {
+      "name": "parse/general/double concat",
+      "opsSec": 1579949,
+      "runsSampled": 11,
+      "min": 628.9280539280539,
+      "max": 637.9848905957855
+    },
+    {
+      "name": "eval/general/double concat",
+      "opsSec": 56482941,
+      "runsSampled": 11,
+      "min": 11.552133200336867,
+      "max": 21.364736263050993
+    },
+    {
+      "name": "parse/general/long int",
+      "opsSec": 2104572,
+      "runsSampled": 10,
+      "min": 470.7940253366811,
+      "max": 477.4770987290792
+    },
+    {
+      "name": "eval/general/long int",
+      "opsSec": 68178047,
+      "runsSampled": 11,
+      "min": 14.435833281527177,
+      "max": 15.319744557208107
+    },
+    {
+      "name": "parse/general/long identifier",
+      "opsSec": 2153234,
+      "runsSampled": 11,
+      "min": 463.3942016322433,
+      "max": 465.4982936931774
+    },
+    {
+      "name": "eval/general/long identifier",
+      "opsSec": 11348085,
+      "runsSampled": 10,
+      "min": 83.1814200053753,
+      "max": 92.67748066667944
+    }
+  ]
+}

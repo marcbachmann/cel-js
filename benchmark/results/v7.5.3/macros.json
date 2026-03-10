@@ -1,0 +1,161 @@
+{
+  "suite": "macros",
+  "capturedAt": "2026-03-10T23:30:43.304Z",
+  "nodeVersion": "v24.13.1",
+  "results": [
+    {
+      "name": "parse/general/List .map",
+      "opsSec": 2192975,
+      "runsSampled": 11,
+      "min": 452.08614785777894,
+      "max": 459.9820289959934
+    },
+    {
+      "name": "eval/general/List .map",
+      "opsSec": 1840485,
+      "runsSampled": 9,
+      "min": 542.0292764442901,
+      "max": 543.4779394228476
+    },
+    {
+      "name": "parse/general/List .map with list<double>",
+      "opsSec": 2215777,
+      "runsSampled": 11,
+      "min": 448.15003159129884,
+      "max": 455.9790006622375
+    },
+    {
+      "name": "eval/general/List .map with list<double>",
+      "opsSec": 2656769,
+      "runsSampled": 11,
+      "min": 375.19450061262995,
+      "max": 380.57152510875534
+    },
+    {
+      "name": "parse/general/List .map with async",
+      "opsSec": 1052278,
+      "runsSampled": 11,
+      "min": 943.8088916095955,
+      "max": 957.4969284566677
+    },
+    {
+      "name": "eval/general/List .map with async",
+      "opsSec": 562708,
+      "runsSampled": 10,
+      "min": 1772.1981760535784,
+      "max": 1787.919193473911
+    },
+    {
+      "name": "parse/general/List .map 5 times",
+      "opsSec": 666756,
+      "runsSampled": 11,
+      "min": 1486.0856076791142,
+      "max": 1527.314049586777
+    },
+    {
+      "name": "eval/general/List .map 5 times",
+      "opsSec": 903757,
+      "runsSampled": 10,
+      "min": 1095.732148336475,
+      "max": 1129.2033276562295
+    },
+    {
+      "name": "parse/general/List .filter",
+      "opsSec": 1855424,
+      "runsSampled": 11,
+      "min": 535.9603291403035,
+      "max": 543.5810364428047
+    },
+    {
+      "name": "eval/general/List .filter",
+      "opsSec": 1541759,
+      "runsSampled": 11,
+      "min": 642.2927252846208,
+      "max": 669.1802993834708
+    },
+    {
+      "name": "parse/general/List .filter and .map",
+      "opsSec": 1074288,
+      "runsSampled": 10,
+      "min": 922.844186437826,
+      "max": 936.4504637594434
+    },
+    {
+      "name": "eval/general/List .filter and .map",
+      "opsSec": 979769,
+      "runsSampled": 11,
+      "min": 1010.6927524512281,
+      "max": 1042.4085840127448
+    },
+    {
+      "name": "parse/general/List .map with filter",
+      "opsSec": 1598116,
+      "runsSampled": 11,
+      "min": 622.3438433745483,
+      "max": 630.6962688130218
+    },
+    {
+      "name": "eval/general/List .map with filter",
+      "opsSec": 1101666,
+      "runsSampled": 11,
+      "min": 898.4174261428236,
+      "max": 931.0235402723287
+    },
+    {
+      "name": "parse/general/List .map with filter with list<double>",
+      "opsSec": 1582642,
+      "runsSampled": 11,
+      "min": 629.0961378370879,
+      "max": 637.1913994594526
+    },
+    {
+      "name": "eval/general/List .map with filter with list<double>",
+      "opsSec": 1817117,
+      "runsSampled": 11,
+      "min": 547.3193125233071,
+      "max": 553.3665092465905
+    },
+    {
+      "name": "parse/general/cel.bind macro",
+      "opsSec": 2157302,
+      "runsSampled": 11,
+      "min": 458.89881744271986,
+      "max": 471.18783256473927
+    },
+    {
+      "name": "eval/general/cel.bind macro",
+      "opsSec": 29167610,
+      "runsSampled": 10,
+      "min": 34.16003207318817,
+      "max": 34.399458497983076
+    },
+    {
+      "name": "parse/general/Multiple has calls",
+      "opsSec": 542373,
+      "runsSampled": 11,
+      "min": 1835.6400427555195,
+      "max": 1858.299507890718
+    },
+    {
+      "name": "eval/general/Multiple has calls",
+      "opsSec": 1445242,
+      "runsSampled": 11,
+      "min": 683.1994369292041,
+      "max": 701.6055294643855
+    },
+    {
+      "name": "parse/general/Mixed Complex",
+      "opsSec": 587688,
+      "runsSampled": 11,
+      "min": 1692.170725062153,
+      "max": 1714.0758796532382
+    },
+    {
+      "name": "eval/general/Mixed Complex",
+      "opsSec": 1463374,
+      "runsSampled": 11,
+      "min": 674.1725950659529,
+      "max": 701.060495405027
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "suite": "accessors",
+  "capturedAt": "2026-03-10T23:30:06.109Z",
+  "nodeVersion": "v24.13.1",
+  "results": [
+    {
+      "name": "parse/general/Int access",
+      "opsSec": 16849862,
+      "runsSampled": 11,
+      "min": 58.49433818755657,
+      "max": 60.54751144675031
+    },
+    {
+      "name": "eval/general/Int access",
+      "opsSec": 115617537,
+      "runsSampled": 11,
+      "min": 8.335766772387812,
+      "max": 9.068923988522492
+    },
+    {
+      "name": "parse/general/String access",
+      "opsSec": 15780315,
+      "runsSampled": 11,
+      "min": 62.794095047709284,
+      "max": 64.13941583435351
+    },
+    {
+      "name": "eval/general/String access",
+      "opsSec": 117977065,
+      "runsSampled": 10,
+      "min": 8.26669723835033,
+      "max": 8.542854417147888
+    },
+    {
+      "name": "parse/general/Variable Access",
+      "opsSec": 7260144,
+      "runsSampled": 11,
+      "min": 136.35087988093153,
+      "max": 139.33706158064498
+    },
+    {
+      "name": "eval/general/Variable Access",
+      "opsSec": 38309832,
+      "runsSampled": 10,
+      "min": 25.482945741626942,
+      "max": 26.273730131292595
+    },
+    {
+      "name": "parse/general/Variable Access with static types",
+      "opsSec": 6923839,
+      "runsSampled": 10,
+      "min": 143.0332142970009,
+      "max": 145.38574077293006
+    },
+    {
+      "name": "eval/general/Variable Access with static types",
+      "opsSec": 42876912,
+      "runsSampled": 10,
+      "min": 22.765489064318267,
+      "max": 24.11519874431799
+    },
+    {
+      "name": "parse/general/Deep Property Access",
+      "opsSec": 3704430,
+      "runsSampled": 11,
+      "min": 265.3730558292986,
+      "max": 278.7116304154435
+    },
+    {
+      "name": "eval/general/Deep Property Access",
+      "opsSec": 17806822,
+      "runsSampled": 10,
+      "min": 55.50554097566504,
+      "max": 56.589894508891966
+    },
+    {
+      "name": "parse/general/Deep Property Access (bracket notation)",
+      "opsSec": 2678126,
+      "runsSampled": 11,
+      "min": 362.9176348072705,
+      "max": 383.00275056921504
+    },
+    {
+      "name": "eval/general/Deep Property Access (bracket notation)",
+      "opsSec": 16808353,
+      "runsSampled": 10,
+      "min": 59.15682468425838,
+      "max": 59.87209186078064
+    },
+    {
+      "name": "parse/general/Array Index Access",
+      "opsSec": 5145025,
+      "runsSampled": 9,
+      "min": 190.50418655637273,
+      "max": 194.92093793953873
+    },
+    {
+      "name": "eval/general/Array Index Access",
+      "opsSec": 53347485,
+      "runsSampled": 11,
+      "min": 18.344873377301816,
+      "max": 19.551271313410364
+    },
+    {
+      "name": "parse/general/Array Membership",
+      "opsSec": 5451876,
+      "runsSampled": 11,
+      "min": 181.43720028903633,
+      "max": 186.3544278481669
+    },
+    {
+      "name": "eval/general/Array Membership",
+      "opsSec": 19023847,
+      "runsSampled": 11,
+      "min": 49.24515561991493,
+      "max": 61.29047634179669
+    }
+  ]
+}
