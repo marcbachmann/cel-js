@@ -8,6 +8,8 @@ A high-performance, zero-dependency implementation of the [Common Expression Lan
 
 CEL (Common Expression Language) is a non-Turing complete language designed for simplicity, speed, safety, and portability. This JavaScript implementation provides a fast, lightweight CEL evaluator perfect for policy evaluation, configuration, and embedded expressions.
 
+To migrate from [cel-js](https://www.npmjs.com/package/cel-js) to `@marcbachmann/cel-js`, please see [Migrating from cel-js](#migrating-from-cel-js)
+
 ## Features
 
 - 🚀 **Zero Dependencies** - No external packages required
@@ -689,7 +691,7 @@ function isEnabled(feature, context) {
 Full TypeScript support included:
 
 ```typescript
-import {Environment, evaluate, ParseError} from '@marcbachmann/cel-js'
+import {Environment, ParseError} from '@marcbachmann/cel-js'
 
 // Instantiating an environment is expensive, please do that outside hot code paths
 const env = new Environment()
@@ -698,6 +700,106 @@ const env = new Environment()
 
 const result: any = env.evaluate('multiplyByTwo(count)', {count: 21n})
 ```
+
+## Migrating from `cel-js`
+
+This library is a drop-in-spirit replacement for the [`cel-js`](https://www.npmjs.com/package/cel-js) package (by ChromeGG) with full CEL spec coverage and ~10x better performance.
+
+### Key differences
+
+| | `cel-js` | `@marcbachmann/cel-js` |
+|---|---|---|
+| **Package** | `cel-js` | `@marcbachmann/cel-js` |
+| **`evaluate()` args** | `(expr, vars, functions)` | `(expr, vars)` — 2 args only |
+| **`parse()` result** | `{isSuccess, errors, cst}` | throws `ParseError` on failure, returns a callable |
+| **Reusing parsed expr** | `evaluate(result.cst, vars)` | `compiled(vars)` |
+| **Custom functions** | 3rd arg to `evaluate()` | `env.registerFunction(signature, handler)` |
+| **Integer values** | plain `number` | `BigInt` (e.g. `42n`) |
+| **Floating-point values** | plain `number` | plain `number` (unchanged) |
+| **Undeclared variables** | always allowed | requires `unlistedVariablesAreDyn: true` |
+| **Mixed-type list/map literals** | always allowed | requires `homogeneousAggregateLiterals: false` |
+
+### `evaluate()` — no change for simple use
+
+```js
+// Before
+import { evaluate } from 'cel-js'
+evaluate('user.role == "admin"', { user: { role: 'admin' } })
+
+// After
+import { evaluate } from '@marcbachmann/cel-js'
+evaluate('user.role == "admin"', { user: { role: 'admin' } })
+```
+
+### `parse()` — result is now a callable
+
+`cel-js` returned `{isSuccess, errors, cst}` and required passing `cst` back to `evaluate()`. Now `parse()` throws a `ParseError` on invalid syntax and returns a compiled, directly callable function.
+
+```js
+// Before
+import { evaluate, parse } from 'cel-js'
+const result = parse('2 + a')
+if (!result.isSuccess) throw new Error('Expression failed to parse')
+
+const value = evaluate(result.cst, { a: 2 })
+
+// After
+import { parse, ParseError } from '@marcbachmann/cel-js'
+
+// Throws ParseError if the expression is not valid
+const compiled = parse('2 + a')
+
+// Throws EvaluationError if the evaluation fails
+const value = compiled({ a: 2n })
+```
+
+### Custom functions — use `Environment`
+
+`cel-js` accepted a `functions` object as the third argument to `evaluate()`. This library uses an `Environment` instead, which also unlocks type safety, reuse, and better performance.
+
+```js
+// Before
+import { evaluate } from 'cel-js'
+evaluate('greet(name)', { name: 'Alice' }, {
+  greet: (name) => `Hello, ${name}!`
+})
+
+// After
+import { Environment } from '@marcbachmann/cel-js'
+const env = new Environment({ unlistedVariablesAreDyn: true })
+  .registerFunction('greet(string): string', (name) => `Hello, ${name}!`)
+
+env.evaluate('greet(name)', { name: 'Alice' })
+```
+
+Create the `Environment` once outside of hot code paths and reuse it — parsing and environment setup are the expensive parts.
+
+### `unlistedVariablesAreDyn` and `homogeneousAggregateLiterals`
+
+`cel-js` treats all variables as dynamic and allows mixed-type lists and maps by default. To replicate that behavior:
+
+```js
+const env = new Environment({
+  unlistedVariablesAreDyn: true,       // allow undeclared variables
+  homogeneousAggregateLiterals: false  // allow mixed-type list/map literals
+})
+```
+
+Without `unlistedVariablesAreDyn: true`, all variables must be declared via `env.registerVariable()` before use. The global `evaluate()` and `parse()` functions always behave as if `unlistedVariablesAreDyn: true`.
+
+### Integer values are `BigInt`
+
+CEL integers are returned as `BigInt` (`42n`) instead of plain JS numbers. Pass integer context values as `BigInt` too, or use `unlistedVariablesAreDyn: true` to accept plain numbers via coercion.
+
+```js
+// Before
+evaluate('count + 1', { count: 5 }) // => 6
+
+// After
+evaluate('count + 1', { count: 5n }) // => 6n
+```
+
+Floating-point (`double`) values remain plain JS `number` in both libraries.
 
 ## Contributing
 
