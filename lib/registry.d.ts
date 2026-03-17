@@ -213,7 +213,11 @@ export type RegisterTypeDeclaration =
   | (NamedTypeIdentity & RegisterTypeWithFields)
   | (NamedTypeIdentity & RegisterTypeWithSchema)
 
-export type RegisterTypeDefinition = Function | RegisterTypeDeclaration
+export type RegisterTypeDefinition =
+  | Function
+  | RegisterTypeWithCtor
+  | RegisterTypeWithFields
+  | RegisterTypeWithSchema
 
 export interface RegisteredType {
   name: string
