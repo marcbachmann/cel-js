@@ -102,6 +102,26 @@ export interface ObjectSchema {
   [field: string]: string | ObjectSchema
 }
 
+export type RegisteredVariableType = string | TypeDeclaration
+
+export interface RegisterVariableMetadata {
+  description?: string
+}
+
+export interface RegisterVariableTypeOptions extends RegisterVariableMetadata {
+  type: RegisteredVariableType
+}
+
+export interface RegisterVariableSchemaOptions extends RegisterVariableMetadata {
+  schema: ObjectSchema
+}
+
+export type RegisterVariableOptions = RegisterVariableTypeOptions | RegisterVariableSchemaOptions
+
+export type RegisterVariableDeclaration = {name: string} & RegisterVariableOptions
+
+export type RegisterConstantDeclaration = {name: string; value: any} & RegisterVariableOptions
+
 export type RegisteredFunctionHandler = (...args: any[]) => any
 
 export interface RegisteredFunctionParam {
@@ -192,17 +212,18 @@ export class Registry {
    * Register a variable with its type, throwing if it already exists.
    * When an ObjectSchema is provided via `{schema: ...}`, a type is auto-registered
    * via `registerType` with runtime conversion support.
-   * @param name - The variable name
-   * @param type - The variable type name, declaration, or options with schema
+   * Supports `name + type`, `name + {type|schema}`, and a single declaration object.
    */
-  registerVariable(
-    name: string,
-    type:
-      | string
-      | TypeDeclaration
-      | {type: string; description?: string}
-      | {schema: ObjectSchema; description?: string}
-  ): this
+  registerVariable(name: string, type: RegisteredVariableType, opts?: RegisterVariableMetadata): this
+  registerVariable(name: string, options: RegisterVariableOptions): this
+  registerVariable(definition: RegisterVariableDeclaration): this
+
+  /**
+   * Register a constant value that is always available without requiring evaluation context.
+   * Supports `name + type + value` and a single declaration object.
+   */
+  registerConstant(name: string, type: RegisteredVariableType, value: any): this
+  registerConstant(definition: RegisterConstantDeclaration): this
 
   /**
    * Register a unary operator overload.
