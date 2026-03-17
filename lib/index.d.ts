@@ -1,4 +1,5 @@
 import type {UnsignedInt} from './functions.js'
+import type {ObjectSchema, TypeDeclaration} from './registry.d'
 
 /**
  * Represents a CEL expression AST node produced by the parser.
@@ -266,6 +267,26 @@ export interface EnvironmentOptions {
   limits?: Partial<Limits>
 }
 
+export type RegisteredVariableType = string | TypeDeclaration
+
+export interface RegisterVariableMetadata {
+  description?: string
+}
+
+export interface RegisterVariableTypeOptions extends RegisterVariableMetadata {
+  type: RegisteredVariableType
+}
+
+export interface RegisterVariableSchemaOptions extends RegisterVariableMetadata {
+  schema: ObjectSchema
+}
+
+export type RegisterVariableOptions = RegisterVariableTypeOptions | RegisterVariableSchemaOptions
+
+export type RegisterVariableDeclaration = {name: string} & RegisterVariableOptions
+
+export type RegisterConstantDeclaration = {name: string; value: any} & RegisterVariableOptions
+
 export type RegisteredFunctionHandler = (...args: any[]) => any
 
 export interface RegisteredFunctionParam {
@@ -348,34 +369,40 @@ export class Environment {
   /**
    * Register a variable with its expected type.
    *
-   * @param name - The variable name
-   * @param type - The CEL type name ('string', 'int', 'double', 'bool', 'list', 'map', etc.)
+   * Supports `name + type`, `name + {type|schema}`, and a single declaration object.
    * @returns This environment for chaining
    * @throws Error if variable is already registered
    *
    * @example
    * ```typescript
    * env.registerVariable('username', 'string')
-   *    .registerVariable('count', 'int')
+   * env.registerVariable('user', {type: 'map', description: 'The current user'})
+   * env.registerVariable({name: 'profile', schema: {email: 'string'}})
    * ```
    */
-  registerVariable(name: string, type: string): this
+  registerVariable(
+    name: string,
+    type: RegisteredVariableType,
+    opts?: RegisterVariableMetadata
+  ): this
+  registerVariable(name: string, options: RegisterVariableOptions): this
+  registerVariable(definition: RegisterVariableDeclaration): this
 
   /**
    * Register a constant value that is always available in expressions without providing it via context.
    *
-   * @param name - The constant identifier exposed to CEL expressions
-   * @param type - The CEL type name of the constant (e.g., 'int', 'string')
-   * @param value - The concrete value supplied during registration
+   * Supports `name + type + value` and a single declaration object.
    * @returns This environment for chaining further registrations
    *
    * @example
    * ```typescript
    * const env = new Environment().registerConstant('timezone', 'string', 'UTC')
+   * env.registerConstant({name: 'minAge', type: 'int', value: 18n, description: 'Minimum age'})
    * env.evaluate('timezone == "UTC"') // true
    * ```
    */
-  registerConstant(name: string, type: string, value: any): this
+  registerConstant(name: string, type: RegisteredVariableType, value: any): this
+  registerConstant(definition: RegisterConstantDeclaration): this
 
   /**
    * Register a custom function or method.
