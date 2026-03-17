@@ -1,5 +1,18 @@
 import type {UnsignedInt} from './functions.js'
-import type {ObjectSchema, TypeDeclaration} from './registry.d'
+import type {
+  DefinitionsResult,
+  RegisterConstantDeclaration,
+  RegisterFunctionDeclaration,
+  RegisterFunctionHandler,
+  RegisterFunctionMetadata,
+  RegisterFunctionOptions,
+  RegisterTypeDeclaration,
+  RegisterTypeDefinition,
+  RegisterVariableDeclaration,
+  RegisterVariableMetadata,
+  RegisterVariableOptions,
+  RegisteredVariableType
+} from './registry.js'
 
 /**
  * Represents a CEL expression AST node produced by the parser.
@@ -82,11 +95,37 @@ export type ASTNode = {
  * Context object for variable resolution during evaluation.
  * Can contain any nested structure of primitive values, arrays, and objects.
  */
-export interface Context {
-  [key: string]: any
-}
+export type Context = Record<string, any>
 
-export type {RootContext, OverlayContext} from './registry.d'
+export type {
+  DefinitionFunction,
+  DefinitionFunctionParam,
+  DefinitionsResult,
+  DefinitionVariable,
+  ObjectSchema,
+  OverlayContext,
+  RegisterConstantDeclaration,
+  RegisterFunctionDeclaration,
+  RegisterFunctionHandler,
+  RegisterFunctionMetadata,
+  RegisterFunctionOptions,
+  RegisterFunctionWithName,
+  RegisterFunctionWithSignature,
+  RegisterTypeDeclaration,
+  RegisterTypeDefinition,
+  RegisteredFunctionParam,
+  RegisteredFunctionTypedParam,
+  RegisteredType,
+  RegisteredTypeFieldDeclaration,
+  RegisteredVariableType,
+  RegisterVariableDeclaration,
+  RegisterVariableMetadata,
+  RegisterVariableOptions,
+  RegisterVariableSchemaOptions,
+  RegisterVariableTypeOptions,
+  RootContext,
+  TypeDeclaration
+} from './registry.js'
 
 /**
  * Result of type checking an expression.
@@ -96,8 +135,8 @@ export interface TypeCheckResult {
   valid: boolean
   /** The inferred type of the expression (only present if valid is true) */
   type?: string
-  /** The type error that occurred (only present if valid is false) */
-  error?: TypeError
+  /** The parse or type error that occurred (only present if valid is false) */
+  error?: ParseError | TypeError
 }
 
 export type ParseResult = {
@@ -112,16 +151,20 @@ export type ParseResult = {
  * Error thrown during parsing when the CEL expression syntax is invalid.
  */
 export class ParseError extends Error {
-  constructor(message: string)
+  constructor(message: string, node?: ASTNode, cause?: unknown)
   readonly name: 'ParseError'
+  readonly node?: ASTNode
+  withAst(node: ASTNode): this
 }
 
 /**
  * Error thrown during evaluation when an error occurs while executing the CEL expression.
  */
 export class EvaluationError extends Error {
-  constructor(message: string)
+  constructor(message: string, node?: ASTNode, cause?: unknown)
   readonly name: 'EvaluationError'
+  readonly node?: ASTNode
+  withAst(node: ASTNode): this
 }
 
 /**
@@ -129,27 +172,29 @@ export class EvaluationError extends Error {
  * The error message includes source position highlighting.
  */
 export class TypeError extends Error {
-  constructor(message: string)
+  constructor(message: string, node?: ASTNode, cause?: unknown)
   readonly name: 'TypeError'
+  readonly node?: ASTNode
+  withAst(node: ASTNode): this
 }
 
 /**
  * Represents an optional value that may or may not be present.
  * Used with optional chaining (.?/.[]?) and optional.* helpers.
  */
-export class Optional {
+export class Optional<T = unknown> {
   /**
    * Create a new Optional with a value.
    * @param value - The value to wrap
    * @returns A new Optional instance
    */
-  static of(value: any): Optional
+  static of<T>(value: T): Optional<T>
 
   /**
    * Create an empty Optional.
    * @returns The singleton empty Optional instance
    */
-  static none(): Optional
+  static none(): Optional<never>
 
   /** Check if a value is present. */
   hasValue(): boolean
@@ -159,21 +204,21 @@ export class Optional {
    * @returns The wrapped value
    * @throws EvaluationError if no value is present
    */
-  value(): any
+  value(): T
 
   /**
    * Return this Optional if it has a value, otherwise return the provided Optional.
    * @param optional - The fallback Optional
    * @returns An Optional instance
    */
-  or(optional: Optional): Optional
+  or<U>(optional: Optional<U>): Optional<T | U>
 
   /**
    * Return the wrapped value if present, otherwise return the default value.
    * @param defaultValue - The fallback value
    * @returns The resulting value
    */
-  orValue(defaultValue: any): any
+  orValue<U>(defaultValue: U): T | U
 }
 
 /**
@@ -212,6 +257,14 @@ export function parse(expression: string): ParseResult
  * ```
  */
 export function evaluate(expression: string, context?: Context): any
+
+/**
+ * Type check a CEL expression string directly.
+ *
+ * @param expression - The CEL expression string to check
+ * @returns Validation result with inferred type or error details
+ */
+export function check(expression: string): TypeCheckResult
 
 /**
  * Serialize an AST back to a CEL expression string.
@@ -267,60 +320,9 @@ export interface EnvironmentOptions {
   limits?: Partial<Limits>
 }
 
-export type RegisteredVariableType = string | TypeDeclaration
-
-export interface RegisterVariableMetadata {
-  description?: string
+export type ResolvedEnvironmentOptions = Omit<Required<EnvironmentOptions>, 'limits'> & {
+  limits: Limits
 }
-
-export interface RegisterVariableTypeOptions extends RegisterVariableMetadata {
-  type: RegisteredVariableType
-}
-
-export interface RegisterVariableSchemaOptions extends RegisterVariableMetadata {
-  schema: ObjectSchema
-}
-
-export type RegisterVariableOptions = RegisterVariableTypeOptions | RegisterVariableSchemaOptions
-
-export type RegisterVariableDeclaration = {name: string} & RegisterVariableOptions
-
-export type RegisterConstantDeclaration = {name: string; value: any} & RegisterVariableOptions
-
-export type RegisteredFunctionHandler = (...args: any[]) => any
-
-export interface RegisteredFunctionParam {
-  name?: string
-  type?: string
-  description?: string
-}
-
-export interface RegisteredFunctionTypedParam extends RegisteredFunctionParam {
-  type: string
-}
-
-export interface RegisterFunctionMetadata {
-  description?: string
-  params?: RegisteredFunctionParam[]
-  async?: boolean
-}
-
-export interface RegisterFunctionOptions extends RegisterFunctionMetadata {
-  handler: RegisteredFunctionHandler
-}
-
-export interface RegisterFunctionWithSignature extends RegisterFunctionOptions {
-  signature: string
-}
-
-export interface RegisterFunctionWithName extends Omit<RegisterFunctionOptions, 'params'> {
-  name: string
-  receiverType?: string
-  returnType: string
-  params: RegisteredFunctionTypedParam[]
-}
-
-export type RegisterFunctionDeclaration = RegisterFunctionWithSignature | RegisterFunctionWithName
 
 /**
  * Environment for CEL expression evaluation with type checking and custom functions.
@@ -336,6 +338,9 @@ export type RegisterFunctionDeclaration = RegisterFunctionWithSignature | Regist
  * ```
  */
 export class Environment {
+  /** The fully resolved options for this environment instance. */
+  readonly opts: ResolvedEnvironmentOptions
+
   /**
    * Create a new Environment with optional configuration.
    *
@@ -355,16 +360,19 @@ export class Environment {
    * Register a custom type for use in expressions.
    *
    * @param typename - The name of the type (e.g., 'Vector', 'Point')
-   * @param constructor - The constructor function or class for the type
+   * @param definition - The type constructor or registration object
    * @returns This environment for chaining
    *
    * @example
    * ```typescript
    * class Vector { constructor(public x: number, public y: number) {} }
    * env.registerType('Vector', Vector)
+   * env.registerType('Vector', {ctor: Vector, fields: {x: 'double', y: 'double'}})
+   * env.registerType({name: 'Vector', schema: {x: 'double', y: 'double'}})
    * ```
    */
-  registerType(typename: string, constructor: any): this
+  registerType(typename: string, definition: RegisterTypeDefinition): this
+  registerType(definition: RegisterTypeDeclaration): this
 
   /**
    * Register a variable with its expected type.
@@ -408,6 +416,9 @@ export class Environment {
    * Register a custom function or method.
    *
    * Supports signature-based registration as well as a single declaration object.
+   * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
+   * @param handler - The function implementation
+   * @param opts - Optional metadata such as descriptions, param docs, and async hints
    * @returns This environment for chaining
    *
    * @example
@@ -417,6 +428,9 @@ export class Environment {
    *
    * // Signature string with descriptions
    * env.registerFunction('greet(string): string', handler, {description: 'Greets someone'})
+   *
+   * // Instance method
+   * env.registerFunction('string.reverse(): string', (str) => str.split('').reverse().join(''))
    *
    * // Single object with signature and named params
    * env.registerFunction({
@@ -428,6 +442,17 @@ export class Environment {
    *     {name: 'format', description: 'Date format string'}
    *   ]
    * })
+   *
+   * // Macro function
+   * env.registerFunction('macro(ast): dyn', ({args}) => ({
+   *   firstArgument: args[0],
+   *   typeCheck(checker, macro, ctx) {
+   *     return checker.check(macro.firstArgument, ctx)
+   *   },
+   *   evaluate(evaluator, macro, ctx) {
+   *     return evaluator.eval(macro.firstArgument, ctx)
+   *   }
+   * }))
    * ```
    */
   registerFunction(
@@ -451,6 +476,12 @@ export class Environment {
    * ```
    */
   registerOperator(signature: string, handler: (left: any, right: any) => any): this
+
+  /**
+   * Return user-facing definitions for all registered variables and functions,
+   * including the built-ins inherited from the global environment.
+   */
+  getDefinitions(): DefinitionsResult
 
   /**
    * Check if a variable is registered in this environment.
@@ -522,6 +553,7 @@ export class Environment {
 declare const cel: {
   parse: typeof parse
   evaluate: typeof evaluate
+  check: typeof check
   serialize: typeof serialize
   Environment: typeof Environment
   ParseError: typeof ParseError
