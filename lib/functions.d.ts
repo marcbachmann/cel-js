@@ -20,6 +20,9 @@ export class UnsignedInt {
 
   /** Convert to string representation. */
   toString(): string
+
+  /** Validate and store an unsigned integer value. */
+  verify(v: bigint): void
 }
 
 /**
@@ -40,11 +43,38 @@ export class Duration {
   /** Get the nanoseconds component. */
   get nanos(): number
 
-  /** Convert to primitive bigint (seconds only) for operations. */
-  valueOf(): bigint
+  /** Construct a duration from a millisecond value. */
+  static fromMilliseconds(ms: number): Duration
+
+  /** Convert to primitive milliseconds for operations. */
+  valueOf(): number
+
+  /** Add another duration. */
+  addDuration(other: Duration): Duration
+
+  /** Subtract another duration. */
+  subtractDuration(other: Duration): Duration
+
+  /** Add this duration to a timestamp. */
+  extendTimestamp(timestamp: Date): Date
+
+  /** Subtract this duration from a timestamp. */
+  subtractTimestamp(timestamp: Date): Date
 
   /** Convert to string representation in format like "5s", "1h30m", etc. */
   toString(): string
+
+  /** Whole hours represented by this duration. */
+  getHours(): bigint
+
+  /** Whole minutes represented by this duration. */
+  getMinutes(): bigint
+
+  /** Whole seconds represented by this duration. */
+  getSeconds(): bigint
+
+  /** Total milliseconds represented by this duration. */
+  getMilliseconds(): bigint
 }
 
 /**

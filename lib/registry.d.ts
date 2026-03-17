@@ -24,7 +24,7 @@ export class TypeDeclaration {
    * @param options - Type declaration options
    */
   constructor(options: {
-    kind: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+    kind: 'primitive' | 'list' | 'map' | 'message' | 'enum' | 'dyn' | 'optional' | 'param'
     type: string
     name: string
     keyType?: TypeDeclaration
@@ -32,8 +32,8 @@ export class TypeDeclaration {
     values?: Record<string, bigint>
   })
 
-  /** The kind of type (primitive, list, map, message, enum). */
-  kind: 'primitive' | 'list' | 'map' | 'message' | 'enum'
+  /** The kind of type (primitive, list, map, message, enum, dyn, optional, param). */
+  kind: 'primitive' | 'list' | 'map' | 'message' | 'enum' | 'dyn' | 'optional' | 'param'
 
   /** The type name. */
   type: string
@@ -50,8 +50,29 @@ export class TypeDeclaration {
   /** For enum types, the enum values. */
   values?: Record<string, bigint>
 
+  /** The underlying non-dyn type. */
+  unwrappedType: TypeDeclaration
+
+  /** A wrapped dyn variant of this type. */
+  wrappedType: TypeDeclaration
+
+  /** True when this declaration contains dyn anywhere in its structure. */
+  hasDynType: boolean
+
+  /** True when this declaration contains placeholder type parameters. */
+  hasPlaceholderType: boolean
+
   /** Check if this type is 'dyn' or 'bool'. */
   isDynOrBool(): boolean
+
+  /** Check if this declaration represents an empty aggregate placeholder. */
+  isEmpty(): boolean
+
+  /** Attempt to unify this declaration with another declaration. */
+  unify(registry: Registry, other: TypeDeclaration): TypeDeclaration | null
+
+  /** Replace placeholder types using the provided bindings. */
+  templated(registry: Registry, bind?: Map<string, TypeDeclaration>): TypeDeclaration
 
   /** Convert to string representation. */
   toString(): string
@@ -86,6 +107,7 @@ export const celTypes: {
   dyn: TypeDeclaration
   null: TypeDeclaration
   type: TypeDeclaration
+  optional: TypeDeclaration
   list: TypeDeclaration
   'list<dyn>': TypeDeclaration
   map: TypeDeclaration
@@ -157,6 +179,87 @@ export interface RegisterFunctionWithName extends Omit<RegisterFunctionOptions, 
 
 export type RegisterFunctionDeclaration = RegisterFunctionWithSignature | RegisterFunctionWithName
 
+export type RegisteredTypeFieldDeclaration =
+  | string
+  | {
+      id?: number
+      keyType?: string
+      map?: boolean
+      repeated?: boolean
+      type?: string
+    }
+
+export interface RegisterTypeWithCtor {
+  ctor: Function
+  fields?: Record<string, RegisteredTypeFieldDeclaration>
+  convert?: (value: any) => any
+}
+
+export interface RegisterTypeWithFields {
+  fields: Record<string, RegisteredTypeFieldDeclaration>
+  convert?: (value: any) => any
+}
+
+export interface RegisterTypeWithSchema {
+  schema: ObjectSchema
+  ctor?: Function
+  convert?: (value: any) => any
+}
+
+export type NamedTypeIdentity = {name: string; fullName?: string} | {fullName: string; name?: string}
+
+export type RegisterTypeDeclaration =
+  | ({name?: string; fullName?: string} & RegisterTypeWithCtor)
+  | (NamedTypeIdentity & RegisterTypeWithFields)
+  | (NamedTypeIdentity & RegisterTypeWithSchema)
+
+export type RegisterTypeDefinition = Function | RegisterTypeDeclaration
+
+export interface RegisteredType {
+  name: string
+  typeType: Type
+  type: TypeDeclaration
+  ctor: Function
+  convert?: (value: any) => any
+  fields?: Record<string, TypeDeclaration>
+}
+
+export class VariableDeclaration {
+  constructor(name: string, type: TypeDeclaration, description?: string | null, value?: any)
+
+  readonly name: string
+  readonly type: TypeDeclaration
+  readonly description: string | null
+  readonly constant: boolean
+  readonly value: any
+}
+
+export interface DefinitionVariable {
+  name: string
+  description: string | null
+  type: string
+}
+
+export interface DefinitionFunctionParam {
+  name: string
+  type: string
+  description: string | null
+}
+
+export interface DefinitionFunction {
+  signature: string
+  name: string
+  description: string | null
+  receiverType: string | null
+  returnType: string
+  params: DefinitionFunctionParam[]
+}
+
+export interface DefinitionsResult {
+  variables: DefinitionVariable[]
+  functions: DefinitionFunction[]
+}
+
 /**
  * Registry for managing function overloads, operator overloads, and type mappings.
  */
@@ -169,6 +272,9 @@ export class Registry {
 
   /**
    * Register a function overload.
+   * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
+   * @param handler - The function implementation
+   * @param opts - Optional metadata such as descriptions, param docs, and async hints
    * Supports signature-based registration as well as a single declaration object.
    */
   registerFunctionOverload(
@@ -191,15 +297,13 @@ export class Registry {
    * When `ctor` is omitted but `fields` is provided, an internal wrapper class is auto-generated
    * and a default `convert` function is created to wrap plain objects at runtime.
    * @param typename - The name of the type
-   * @param definition - Either a constructor function or an object with ctor/fields/convert
+   * @param definition - A constructor function or registration object with ctor, fields, schema, and/or convert
    */
   registerType(
     typename: string,
-    definition:
-      | Function
-      | {ctor: Function; fields?: Record<string, string>; convert?: (value: any) => any}
-      | {fields: Record<string, string>; convert?: (value: any) => any}
-  ): void
+    definition: RegisterTypeDefinition
+  ): RegisteredType
+  registerType(definition: RegisterTypeDeclaration): RegisteredType
 
   /**
    * Get type declaration for a given type string.
@@ -256,14 +360,17 @@ export class Registry {
    */
   clone(opts?: {unlistedVariablesAreDyn?: boolean; enableOptionalTypes?: boolean}): Registry
 
+  /** Read back user-facing variable/function definitions. */
+  getDefinitions(): DefinitionsResult
+
   /** Registered object types keyed by CEL typename. */
-  readonly objectTypes: Map<string, any>
+  readonly objectTypes: Map<string, RegisteredType>
 
   /** Map of constructors to their registered type metadata. */
-  readonly objectTypesByConstructor: Map<Function | undefined, any>
+  readonly objectTypesByConstructor: Map<Function | undefined, RegisteredType>
 
   /** Registered variables and their type declarations. */
-  readonly variables: Map<string, TypeDeclaration>
+  readonly variables: Map<string, VariableDeclaration>
 
   /** Whether optional types/functions are enabled for this registry. */
   readonly enableOptionalTypes: boolean
@@ -273,12 +380,12 @@ export class Registry {
  * Options for creating a new registry.
  */
 export interface RegistryOptions {
-  objectTypes?: Map<string, any>
-  objectTypesByConstructor?: Map<Function | undefined, any>
+  objectTypes?: Map<string, RegisteredType>
+  objectTypesByConstructor?: Map<Function | undefined, RegisteredType>
   functionDeclarations?: Map<string, any>
   operatorDeclarations?: Map<string, any>
   typeDeclarations?: Map<string, TypeDeclaration>
-  variables?: Map<string, TypeDeclaration>
+  variables?: Map<string, VariableDeclaration>
   unlistedVariablesAreDyn?: boolean
   enableOptionalTypes?: boolean
 }
