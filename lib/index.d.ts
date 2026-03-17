@@ -266,6 +266,41 @@ export interface EnvironmentOptions {
   limits?: Partial<Limits>
 }
 
+export type RegisteredFunctionHandler = (...args: any[]) => any
+
+export interface RegisteredFunctionParam {
+  name?: string
+  type?: string
+  description?: string
+}
+
+export interface RegisteredFunctionTypedParam extends RegisteredFunctionParam {
+  type: string
+}
+
+export interface RegisterFunctionMetadata {
+  description?: string
+  params?: RegisteredFunctionParam[]
+  async?: boolean
+}
+
+export interface RegisterFunctionOptions extends RegisterFunctionMetadata {
+  handler: RegisteredFunctionHandler
+}
+
+export interface RegisterFunctionWithSignature extends RegisterFunctionOptions {
+  signature: string
+}
+
+export interface RegisterFunctionWithName extends Omit<RegisterFunctionOptions, 'params'> {
+  name: string
+  receiverType?: string
+  returnType: string
+  params: RegisteredFunctionTypedParam[]
+}
+
+export type RegisterFunctionDeclaration = RegisterFunctionWithSignature | RegisterFunctionWithName
+
 /**
  * Environment for CEL expression evaluation with type checking and custom functions.
  *
@@ -345,8 +380,7 @@ export class Environment {
   /**
    * Register a custom function or method.
    *
-   * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
-   * @param handlerOrOptions - Either the function implementation or an options object with handler and optional typeCheck
+   * Supports signature-based registration as well as a single declaration object.
    * @returns This environment for chaining
    *
    * @example
@@ -354,25 +388,28 @@ export class Environment {
    * // Standalone function
    * env.registerFunction('double(int): int', (x) => x * 2n)
    *
-   * // Instance method
-   * env.registerFunction('string.reverse(): string', (str) => str.split('').reverse().join(''))
+   * // Signature string with descriptions
+   * env.registerFunction('greet(string): string', handler, {description: 'Greets someone'})
    *
-   * // Macro function with type checker
-   * env.registerFunction('list.custom(ast, ast): bool', {
-   *   handler: (receiver, ast) => { ... },
-   *   typeCheck: (checker, receiverType, args) => 'bool'
+   * // Single object with signature and named params
+   * env.registerFunction({
+   *   signature: 'formatDate(int, string): string',
+   *   handler,
+   *   description: 'Formats a timestamp',
+   *   params: [
+   *     {name: 'timestamp', description: 'Unix timestamp in seconds'},
+   *     {name: 'format', description: 'Date format string'}
+   *   ]
    * })
    * ```
    */
   registerFunction(
     signature: string,
-    handlerOrOptions:
-      | ((...args: any[]) => any)
-      | {
-          handler: (...args: any[]) => any
-          typeCheck?: (checker: any, receiverType: string, args: any[]) => string
-        }
+    handler: RegisteredFunctionHandler,
+    opts?: RegisterFunctionMetadata
   ): this
+  registerFunction(signature: string, options: RegisterFunctionOptions): this
+  registerFunction(definition: RegisterFunctionDeclaration): this
 
   /**
    * Register a custom operator overload.

@@ -102,6 +102,41 @@ export interface ObjectSchema {
   [field: string]: string | ObjectSchema
 }
 
+export type RegisteredFunctionHandler = (...args: any[]) => any
+
+export interface RegisteredFunctionParam {
+  name?: string
+  type?: string
+  description?: string
+}
+
+export interface RegisteredFunctionTypedParam extends RegisteredFunctionParam {
+  type: string
+}
+
+export interface RegisterFunctionMetadata {
+  description?: string
+  params?: RegisteredFunctionParam[]
+  async?: boolean
+}
+
+export interface RegisterFunctionOptions extends RegisterFunctionMetadata {
+  handler: RegisteredFunctionHandler
+}
+
+export interface RegisterFunctionWithSignature extends RegisterFunctionOptions {
+  signature: string
+}
+
+export interface RegisterFunctionWithName extends Omit<RegisterFunctionOptions, 'params'> {
+  name: string
+  receiverType?: string
+  returnType: string
+  params: RegisteredFunctionTypedParam[]
+}
+
+export type RegisterFunctionDeclaration = RegisterFunctionWithSignature | RegisterFunctionWithName
+
 /**
  * Registry for managing function overloads, operator overloads, and type mappings.
  */
@@ -114,18 +149,15 @@ export class Registry {
 
   /**
    * Register a function overload.
-   * @param signature - Function signature in format 'name(type1, type2): returnType' or 'Type.method(args): returnType'
-   * @param handlerOrOptions - Either the function implementation or an options object with handler and optional typeCheck
+   * Supports signature-based registration as well as a single declaration object.
    */
   registerFunctionOverload(
     signature: string,
-    handlerOrOptions:
-      | ((...args: any[]) => any)
-      | {
-          handler: (...args: any[]) => any
-          typeCheck?: (checker: any, receiverType: string, args: any[]) => string
-        }
+    handler: RegisteredFunctionHandler,
+    opts?: RegisterFunctionMetadata
   ): void
+  registerFunctionOverload(signature: string, options: RegisterFunctionOptions): void
+  registerFunctionOverload(definition: RegisterFunctionDeclaration): void
 
   /**
    * Register an operator overload.
