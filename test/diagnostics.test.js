@@ -5,8 +5,7 @@ import {
   EvaluationError,
   ParseError,
   TypeError,
-  evaluate,
-  parse
+  evaluate
 } from '../lib/index.js'
 
 describe('Structured diagnostics', () => {
@@ -38,21 +37,64 @@ describe('Structured diagnostics', () => {
   })
 
   test('attaches AST metadata to runtime evaluation errors', () => {
-    assert.throws(() => evaluate('timestamp(1.5)'), (error) => {
+    assert.throws(() => evaluate('bytes("a").at(1)'), (error) => {
       assert.ok(error instanceof EvaluationError)
-      assert.strictEqual(error.code, 'invalid_timestamp')
-      assert.strictEqual(error.summary, 'timestamp() requires a valid integer unix timestamp')
-      assert.deepStrictEqual(error.range, {start: 0, end: 14})
+      assert.strictEqual(error.code, 'index_out_of_range')
+      assert.strictEqual(error.summary, 'Bytes index out of range')
+      assert.deepStrictEqual(error.range, {start: 0, end: 16})
       assert.deepStrictEqual(error.diagnostic, {
-        code: 'invalid_timestamp',
-        message: 'timestamp() requires a valid integer unix timestamp',
+        code: 'index_out_of_range',
+        message: 'Bytes index out of range',
         severity: 'error',
-        range: {start: 0, end: 14},
+        range: {start: 0, end: 16},
         related: undefined
       })
       assert.strictEqual(error.node.start, 0)
-      assert.strictEqual(error.node.end, 14)
+      assert.strictEqual(error.node.end, 16)
       return true
+    })
+  })
+
+  test('preserves plain-object causes on evaluation errors', () => {
+    const cause = {code: 'ETIMEDOUT'}
+    const error = new EvaluationError('boom', undefined, cause)
+
+    assert.strictEqual(error.cause, cause)
+    assert.strictEqual(error.code, 'evaluation_error')
+    assert.deepStrictEqual(error.diagnostic, {
+      code: 'evaluation_error',
+      message: 'boom',
+      severity: 'error',
+      range: undefined,
+      related: undefined
+    })
+  })
+
+  test('accepts unambiguous error option bags', () => {
+    const error = new EvaluationError('boom', undefined, {
+      code: 'custom_code',
+      range: {start: 1, end: 3}
+    })
+
+    assert.strictEqual(error.cause, undefined)
+    assert.strictEqual(error.code, 'custom_code')
+    assert.deepStrictEqual(error.range, {start: 1, end: 3})
+    assert.deepStrictEqual(error.diagnostic, {
+      code: 'custom_code',
+      message: 'boom',
+      severity: 'error',
+      range: {start: 1, end: 3},
+      related: undefined
+    })
+  })
+
+  test('returns an empty diagnostics list on successful checks', () => {
+    const result = new Environment().registerVariable('value', 'int').check('value + 1')
+
+    assert.deepStrictEqual(result, {
+      valid: true,
+      type: 'int',
+      diagnostics: []
     })
   })
 })
