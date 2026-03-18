@@ -93,7 +93,6 @@ export interface Diagnostic {
 }
 
 export interface ErrorOptions {
-  readonly cause?: unknown
   readonly code?: string
   readonly range?: SourceRange
   readonly related?: readonly DiagnosticRelated[]
@@ -191,7 +190,7 @@ export type ParseResult = {
  * Error thrown during parsing when the CEL expression syntax is invalid.
  */
 export class ParseError extends Error {
-  constructor(message: string, node?: SourceLocation, causeOrOptions?: unknown | ErrorOptions)
+  constructor(message: string, node?: SourceLocation, cause?: unknown, options?: ErrorOptions)
   readonly name: 'ParseError'
   readonly node?: SourceLocation
   readonly code: string
@@ -205,7 +204,7 @@ export class ParseError extends Error {
  * Error thrown during evaluation when an error occurs while executing the CEL expression.
  */
 export class EvaluationError extends Error {
-  constructor(message: string, node?: SourceLocation, causeOrOptions?: unknown | ErrorOptions)
+  constructor(message: string, node?: SourceLocation, cause?: unknown, options?: ErrorOptions)
   readonly name: 'EvaluationError'
   readonly node?: SourceLocation
   readonly code: string
@@ -220,7 +219,7 @@ export class EvaluationError extends Error {
  * The error message includes source position highlighting.
  */
 export class TypeError extends Error {
-  constructor(message: string, node?: SourceLocation, causeOrOptions?: unknown | ErrorOptions)
+  constructor(message: string, node?: SourceLocation, cause?: unknown, options?: ErrorOptions)
   readonly name: 'TypeError'
   readonly node?: SourceLocation
   readonly code: string
