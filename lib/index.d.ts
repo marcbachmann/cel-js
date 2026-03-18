@@ -3,7 +3,6 @@ import type {
   DefinitionsResult,
   RegisterConstantDeclaration,
   RegisterFunctionDeclaration,
-  RegisterFunctionHandler,
   RegisterFunctionMetadata,
   RegisterFunctionOptions,
   RegisterTypeDeclaration,
@@ -11,6 +10,7 @@ import type {
   RegisterVariableDeclaration,
   RegisterVariableMetadata,
   RegisterVariableOptions,
+  RegisteredFunctionHandler,
   RegisteredVariableType
 } from './registry.js'
 
@@ -111,6 +111,15 @@ export interface SourceLocation {
   readonly range?: SourceRange
 }
 
+export interface ErrorLocation extends SourceLocation {
+  /** Present when the error is attached to a parsed AST node. */
+  readonly op?: ASTOperator
+  /** Present when the error is attached to a parsed AST node. */
+  readonly args?: unknown
+  /** Present when the error is attached to a parsed AST node. */
+  toOldStructure?(): LegacyAstTuple
+}
+
 interface ASTNodeBase<T extends ASTOperator> extends SourceLocation {
   /** The original CEL input string for this parsed AST node. */
   readonly input: string
@@ -143,13 +152,13 @@ export type {
   OverlayContext,
   RegisterConstantDeclaration,
   RegisterFunctionDeclaration,
-  RegisterFunctionHandler,
   RegisterFunctionMetadata,
   RegisterFunctionOptions,
   RegisterFunctionWithName,
   RegisterFunctionWithSignature,
   RegisterTypeDeclaration,
   RegisterTypeDefinition,
+  RegisteredFunctionHandler,
   RegisteredFunctionParam,
   RegisteredFunctionTypedParam,
   RegisteredType,
@@ -190,23 +199,23 @@ export type ParseResult = {
  * Error thrown during parsing when the CEL expression syntax is invalid.
  */
 export class ParseError extends Error {
-  constructor(message: string, node?: SourceLocation, cause?: unknown, options?: ErrorOptions)
+  constructor(message: string, node?: ErrorLocation, cause?: unknown, options?: ErrorOptions)
   readonly name: 'ParseError'
-  readonly node?: SourceLocation
+  readonly node?: ErrorLocation
   readonly code: string
   readonly range?: SourceRange
   readonly summary: string
   readonly diagnostic: Diagnostic
-  withAst(node: ASTNode | SourceLocation): this
+  withAst(node: ASTNode | ErrorLocation): this
 }
 
 /**
  * Error thrown during evaluation when an error occurs while executing the CEL expression.
  */
 export class EvaluationError extends Error {
-  constructor(message: string, node?: SourceLocation, cause?: unknown, options?: ErrorOptions)
+  constructor(message: string, node?: ASTNode, cause?: unknown, options?: ErrorOptions)
   readonly name: 'EvaluationError'
-  readonly node?: SourceLocation
+  readonly node?: ASTNode
   readonly code: string
   readonly range?: SourceRange
   readonly summary: string
@@ -219,9 +228,9 @@ export class EvaluationError extends Error {
  * The error message includes source position highlighting.
  */
 export class TypeError extends Error {
-  constructor(message: string, node?: SourceLocation, cause?: unknown, options?: ErrorOptions)
+  constructor(message: string, node?: ASTNode, cause?: unknown, options?: ErrorOptions)
   readonly name: 'TypeError'
-  readonly node?: SourceLocation
+  readonly node?: ASTNode
   readonly code: string
   readonly range?: SourceRange
   readonly summary: string
