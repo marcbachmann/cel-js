@@ -604,15 +604,16 @@ To run the benchmarks against previous versions of this module, you can run `./b
 ## Error Handling
 
 ```javascript
-import {evaluate, ParseError, EvaluationError, TypeError} from '@marcbachmann/cel-js'
+import {Environment, evaluate, ParseError, EvaluationError, TypeError} from '@marcbachmann/cel-js'
 
 try {
   evaluate('invalid + + syntax')
 } catch (error) {
   if (error instanceof ParseError) {
-    console.error('Syntax error:', error.message)
+    console.error('Syntax error:', error.code, error.range, error.summary)
+    console.error(error.message) // Includes source highlighting for humans
   } else if (error instanceof EvaluationError) {
-    console.error('Runtime error:', error.message)
+    console.error('Runtime error:', error.code, error.range, error.summary)
   }
 }
 
@@ -620,7 +621,8 @@ try {
 const env = new Environment().registerVariable('x', 'int')
 const result = env.check('x + "string"')
 if (!result.valid && result.error instanceof TypeError) {
-  console.error('Type error:', result.error.message)
+  console.error('Type error:', result.error.code, result.error.range)
+  console.error(result.diagnostics[0])
 }
 ```
 
