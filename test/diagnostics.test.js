@@ -56,6 +56,38 @@ describe('Structured diagnostics', () => {
     })
   })
 
+  test('attaches call-site ranges to sync and async custom function errors', async () => {
+    const syncEnv = new Environment()
+    syncEnv.registerFunction('syncFail(): string', () => {
+      throw new EvaluationError('sync failure')
+    })
+
+    assert.throws(() => syncEnv.evaluate('syncFail()'), (error) => {
+      assert.ok(error instanceof EvaluationError)
+      assert.strictEqual(error.summary, 'sync failure')
+      assert.deepStrictEqual(error.range, {start: 0, end: 10})
+      assert.deepStrictEqual(error.diagnostic.range, {start: 0, end: 10})
+      assert.strictEqual(error.node.start, 0)
+      assert.strictEqual(error.node.end, 10)
+      return true
+    })
+
+    const asyncEnv = new Environment()
+    asyncEnv.registerFunction('asyncFail(): string', async () => {
+      throw new EvaluationError('async failure')
+    })
+
+    await assert.rejects(asyncEnv.evaluate('asyncFail()'), (error) => {
+      assert.ok(error instanceof EvaluationError)
+      assert.strictEqual(error.summary, 'async failure')
+      assert.deepStrictEqual(error.range, {start: 0, end: 11})
+      assert.deepStrictEqual(error.diagnostic.range, {start: 0, end: 11})
+      assert.strictEqual(error.node.start, 0)
+      assert.strictEqual(error.node.end, 11)
+      return true
+    })
+  })
+
   test('preserves plain-object causes on evaluation errors', () => {
     const cause = {code: 'ETIMEDOUT'}
     const error = new EvaluationError('boom', undefined, cause)
