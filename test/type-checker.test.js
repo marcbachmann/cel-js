@@ -777,7 +777,7 @@ describe('Type Checker', () => {
     // Property access not allowed on primitives
     env.expectCheckThrows(
       'someNum.property',
-      "Cannot index type 'int'\n\n>    1 | someNum.property\n                 ^"
+      /Cannot index type 'int'\n\n>    1 \| someNum\.property\n         \^{16}/
     )
   })
 

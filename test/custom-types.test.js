@@ -105,7 +105,7 @@ describe('Custom Type Registration', () => {
         `Field 'x' is not of type 'int', got 'double'`,
         '\n\n',
         `>    1 | p1.x\n`,
-        `            ^`
+        `         ^^^^`
       ].join(''),
       {
         p1: new Point(10, 20n)

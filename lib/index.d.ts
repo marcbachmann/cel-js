@@ -74,11 +74,29 @@ export type ASTOperator = keyof ASTNodeArgsMapWithBinary
 type ASTNodeArgs<T extends ASTOperator> = ASTNodeArgsMapWithBinary[T]
 type LegacyAstTuple = [string, ...any[]]
 
-interface ASTNodeBase<T extends ASTOperator> {
-  /** The position in the source string where this node starts */
+export interface SourceRange {
+  readonly start: number
+  readonly end: number
+}
+
+export interface SourceLocation {
+  /** Compatibility position used by existing consumers and error reporting. */
   readonly pos: number
+  /** The full source range start for this node or error anchor. */
+  readonly start: number
+  /** The full source range end for this node or error anchor. */
+  readonly end: number
   /** The original CEL input string */
+  readonly input?: string
+  /** The full source range for this node or error anchor. */
+  readonly range?: SourceRange
+}
+
+interface ASTNodeBase<T extends ASTOperator> extends SourceLocation {
+  /** The original CEL input string for this parsed AST node. */
   readonly input: string
+  /** The full source range for this AST node. */
+  readonly range: SourceRange
   /** Operator for this node */
   readonly op: T
   /** Operator-specific operand payload */
@@ -151,20 +169,22 @@ export type ParseResult = {
  * Error thrown during parsing when the CEL expression syntax is invalid.
  */
 export class ParseError extends Error {
-  constructor(message: string, node?: ASTNode, cause?: unknown)
+  constructor(message: string, node?: SourceLocation, cause?: unknown)
   readonly name: 'ParseError'
-  readonly node?: ASTNode
-  withAst(node: ASTNode): this
+  readonly node?: SourceLocation
+  readonly range?: SourceRange
+  withAst(node: SourceLocation): this
 }
 
 /**
  * Error thrown during evaluation when an error occurs while executing the CEL expression.
  */
 export class EvaluationError extends Error {
-  constructor(message: string, node?: ASTNode, cause?: unknown)
+  constructor(message: string, node?: SourceLocation, cause?: unknown)
   readonly name: 'EvaluationError'
-  readonly node?: ASTNode
-  withAst(node: ASTNode): this
+  readonly node?: SourceLocation
+  readonly range?: SourceRange
+  withAst(node: SourceLocation): this
 }
 
 /**
@@ -172,10 +192,11 @@ export class EvaluationError extends Error {
  * The error message includes source position highlighting.
  */
 export class TypeError extends Error {
-  constructor(message: string, node?: ASTNode, cause?: unknown)
+  constructor(message: string, node?: SourceLocation, cause?: unknown)
   readonly name: 'TypeError'
-  readonly node?: ASTNode
-  withAst(node: ASTNode): this
+  readonly node?: SourceLocation
+  readonly range?: SourceRange
+  withAst(node: SourceLocation): this
 }
 
 /**
