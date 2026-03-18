@@ -71,8 +71,8 @@ describe('Structured diagnostics', () => {
     })
   })
 
-  test('accepts code-only error option bags', () => {
-    const error = new EvaluationError('boom', undefined, {code: 'custom_code'})
+  test('accepts explicit diagnostic options', () => {
+    const error = new EvaluationError('boom', undefined, undefined, {code: 'custom_code'})
 
     assert.strictEqual(error.cause, undefined)
     assert.strictEqual(error.code, 'custom_code')
@@ -85,15 +85,16 @@ describe('Structured diagnostics', () => {
     })
   })
 
-  test('accepts unambiguous error option bags', () => {
+  test('accepts cause and diagnostic options together', () => {
+    const cause = new Error('original')
     const related = [{message: 'See the original expression', range: {start: 0, end: 4}}]
-    const error = new EvaluationError('boom', undefined, {
+    const error = new EvaluationError('boom', undefined, cause, {
       code: 'custom_code',
       range: {start: 1, end: 3},
       related
     })
 
-    assert.strictEqual(error.cause, undefined)
+    assert.strictEqual(error.cause, cause)
     assert.strictEqual(error.code, 'custom_code')
     assert.deepStrictEqual(error.range, {start: 1, end: 3})
     assert.deepStrictEqual(error.diagnostic, {
