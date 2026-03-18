@@ -15,7 +15,9 @@ describe('CEL Implementation Integration Tests', () => {
       name: 'ParseError',
       node: {
         input: '1 +',
-        pos: 3
+        pos: 3,
+        start: 3,
+        end: 3
       }
     })
   })
