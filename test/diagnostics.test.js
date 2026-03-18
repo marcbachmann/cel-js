@@ -32,6 +32,7 @@ describe('Structured diagnostics', () => {
     assert.strictEqual(result.valid, false)
     assert.ok(result.error instanceof ParseError)
     assert.deepStrictEqual(result.diagnostics, [result.error.diagnostic])
+    assert.strictEqual(result.error.code, 'unexpected_token')
     assert.strictEqual(result.error.summary, 'Unexpected token: EOF')
     assert.deepStrictEqual(result.error.range, {start: 3, end: 3})
   })
@@ -70,10 +71,26 @@ describe('Structured diagnostics', () => {
     })
   })
 
+  test('accepts code-only error option bags', () => {
+    const error = new EvaluationError('boom', undefined, {code: 'custom_code'})
+
+    assert.strictEqual(error.cause, undefined)
+    assert.strictEqual(error.code, 'custom_code')
+    assert.deepStrictEqual(error.diagnostic, {
+      code: 'custom_code',
+      message: 'boom',
+      severity: 'error',
+      range: undefined,
+      related: undefined
+    })
+  })
+
   test('accepts unambiguous error option bags', () => {
+    const related = [{message: 'See the original expression', range: {start: 0, end: 4}}]
     const error = new EvaluationError('boom', undefined, {
       code: 'custom_code',
-      range: {start: 1, end: 3}
+      range: {start: 1, end: 3},
+      related
     })
 
     assert.strictEqual(error.cause, undefined)
@@ -84,7 +101,7 @@ describe('Structured diagnostics', () => {
       message: 'boom',
       severity: 'error',
       range: {start: 1, end: 3},
-      related: undefined
+      related
     })
   })
 
