@@ -1,23 +1,18 @@
 import {describe, test} from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  Environment,
-  EvaluationError,
-  ParseError,
-  TypeError,
-  evaluate
-} from '../lib/index.js'
+import {EvaluationError, ParseError, TypeError} from '../lib/index.js'
+import {TestEnvironment, expectEvalThrows} from './helpers.js'
 
 describe('Structured diagnostics', () => {
   test('returns machine-readable diagnostics from check()', () => {
-    const env = new Environment().registerVariable('str', 'string').registerVariable('num', 'int')
-    const result = env.check('str + num')
+    const env = new TestEnvironment()
+      .registerVariable('str', 'string')
+      .registerVariable('num', 'int')
 
-    assert.strictEqual(result.valid, false)
-    assert.ok(result.error instanceof TypeError)
-    assert.deepStrictEqual(result.diagnostics, [result.error.diagnostic])
-    assert.deepStrictEqual(result.error.range, {start: 0, end: 9})
-    assert.deepStrictEqual(result.error.diagnostic, {
+    const error = env.expectCheckThrows('str + num', /no such overload: string \+ int/)
+    assert.ok(error instanceof TypeError)
+    assert.deepStrictEqual(error.range, {start: 0, end: 9})
+    assert.deepStrictEqual(error.diagnostic, {
       code: 'no_such_overload',
       message: 'no such overload: string + int',
       severity: 'error',
@@ -27,65 +22,54 @@ describe('Structured diagnostics', () => {
   })
 
   test('surfaces parse diagnostics through check()', () => {
-    const result = new Environment().check('1 +')
+    const env = new TestEnvironment()
 
-    assert.strictEqual(result.valid, false)
-    assert.ok(result.error instanceof ParseError)
-    assert.deepStrictEqual(result.diagnostics, [result.error.diagnostic])
-    assert.strictEqual(result.error.code, 'unexpected_token')
-    assert.strictEqual(result.error.summary, 'Unexpected token: EOF')
-    assert.deepStrictEqual(result.error.range, {start: 3, end: 3})
+    const error = env.expectCheckThrows('1 +', /Unexpected token: EOF/)
+    assert.ok(error instanceof ParseError)
+    assert.strictEqual(error.code, 'unexpected_token')
+    assert.strictEqual(error.summary, 'Unexpected token: EOF')
+    assert.deepStrictEqual(error.range, {start: 3, end: 3})
   })
 
   test('attaches AST metadata to runtime evaluation errors', () => {
-    assert.throws(() => evaluate('bytes("a").at(1)'), (error) => {
-      assert.ok(error instanceof EvaluationError)
-      assert.strictEqual(error.code, 'index_out_of_range')
-      assert.strictEqual(error.summary, 'Bytes index out of range')
-      assert.deepStrictEqual(error.range, {start: 0, end: 16})
-      assert.deepStrictEqual(error.diagnostic, {
-        code: 'index_out_of_range',
-        message: 'Bytes index out of range',
-        severity: 'error',
-        range: {start: 0, end: 16},
-        related: undefined
-      })
-      assert.strictEqual(error.node.start, 0)
-      assert.strictEqual(error.node.end, 16)
-      return true
+    const error = expectEvalThrows('bytes("a").at(1)', /Bytes index out of range/)
+    assert.ok(error instanceof EvaluationError)
+    assert.strictEqual(error.code, 'index_out_of_range')
+    assert.strictEqual(error.summary, 'Bytes index out of range')
+    assert.deepStrictEqual(error.range, {start: 0, end: 16})
+    assert.deepStrictEqual(error.diagnostic, {
+      code: 'index_out_of_range',
+      message: 'Bytes index out of range',
+      severity: 'error',
+      range: {start: 0, end: 16},
+      related: undefined
     })
+    assert.strictEqual(error.node.start, 0)
+    assert.strictEqual(error.node.end, 16)
   })
 
   test('attaches call-site ranges to sync and async custom function errors', async () => {
-    const syncEnv = new Environment()
-    syncEnv.registerFunction('syncFail(): string', () => {
+    const syncEnv = new TestEnvironment().registerFunction('syncFail(): string', () => {
       throw new EvaluationError('sync failure')
     })
 
-    assert.throws(() => syncEnv.evaluate('syncFail()'), (error) => {
-      assert.ok(error instanceof EvaluationError)
-      assert.strictEqual(error.summary, 'sync failure')
-      assert.deepStrictEqual(error.range, {start: 0, end: 10})
-      assert.deepStrictEqual(error.diagnostic.range, {start: 0, end: 10})
-      assert.strictEqual(error.node.start, 0)
-      assert.strictEqual(error.node.end, 10)
-      return true
-    })
+    const syncError = syncEnv.expectEvalThrows('syncFail()', /sync failure/)
+    assert.ok(syncError instanceof EvaluationError)
+    assert.deepStrictEqual(syncError.range, {start: 0, end: 10})
+    assert.deepStrictEqual(syncError.diagnostic.range, {start: 0, end: 10})
+    assert.strictEqual(syncError.node.start, 0)
+    assert.strictEqual(syncError.node.end, 10)
 
-    const asyncEnv = new Environment()
-    asyncEnv.registerFunction('asyncFail(): string', async () => {
+    const asyncEnv = new TestEnvironment().registerFunction('asyncFail(): string', async () => {
       throw new EvaluationError('async failure')
     })
 
-    await assert.rejects(asyncEnv.evaluate('asyncFail()'), (error) => {
-      assert.ok(error instanceof EvaluationError)
-      assert.strictEqual(error.summary, 'async failure')
-      assert.deepStrictEqual(error.range, {start: 0, end: 11})
-      assert.deepStrictEqual(error.diagnostic.range, {start: 0, end: 11})
-      assert.strictEqual(error.node.start, 0)
-      assert.strictEqual(error.node.end, 11)
-      return true
-    })
+    const asyncError = await asyncEnv.expectEvalThrows('asyncFail()', /async failure/)
+    assert.ok(asyncError instanceof EvaluationError)
+    assert.deepStrictEqual(asyncError.range, {start: 0, end: 11})
+    assert.deepStrictEqual(asyncError.diagnostic.range, {start: 0, end: 11})
+    assert.strictEqual(asyncError.node.start, 0)
+    assert.strictEqual(asyncError.node.end, 11)
   })
 
   test('preserves plain-object causes on evaluation errors', () => {
@@ -139,7 +123,7 @@ describe('Structured diagnostics', () => {
   })
 
   test('returns an empty diagnostics list on successful checks', () => {
-    const result = new Environment().registerVariable('value', 'int').check('value + 1')
+    const result = new TestEnvironment().registerVariable('value', 'int').check('value + 1')
 
     assert.deepStrictEqual(result, {
       valid: true,
