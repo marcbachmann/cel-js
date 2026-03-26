@@ -620,9 +620,9 @@ try {
 // Type checking returns errors without throwing
 const env = new Environment().registerVariable('x', 'int')
 const result = env.check('x + "string"')
-if (!result.valid && result.error instanceof TypeError) {
-  console.error('Type error:', result.error.code, result.error.range)
-  console.error(result.diagnostics[0])
+if (!result.valid) {
+  const error = result.error
+  console.error('Type error:', error.code, error.range)
 }
 ```
 
