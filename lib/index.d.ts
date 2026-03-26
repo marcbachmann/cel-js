@@ -79,23 +79,12 @@ export interface SourceRange {
   readonly end: number
 }
 
-export interface DiagnosticRelated {
-  readonly message: string
-  readonly range?: SourceRange
-}
-
-export interface Diagnostic {
-  readonly code: string
-  readonly message: string
-  readonly severity: 'error'
-  readonly range?: SourceRange
-  readonly related?: readonly DiagnosticRelated[]
-}
-
 export interface ErrorOptions {
   readonly code?: string
+  readonly message?: string
+  readonly node?: ErrorLocation | ASTNode
+  readonly cause?: unknown
   readonly range?: SourceRange
-  readonly related?: readonly DiagnosticRelated[]
 }
 
 export interface SourceLocation {
@@ -183,8 +172,6 @@ export interface TypeCheckResult {
   type?: string
   /** The parse or type error that occurred (only present if valid is false) */
   error?: ParseError | TypeError
-  /** Machine-readable diagnostics for editor integrations. */
-  diagnostics: Diagnostic[]
 }
 
 export type ParseResult = {
@@ -199,13 +186,13 @@ export type ParseResult = {
  * Error thrown during parsing when the CEL expression syntax is invalid.
  */
 export class ParseError extends Error {
-  constructor(message: string, node?: ErrorLocation, cause?: unknown, options?: ErrorOptions)
+  constructor(message: string, node?: ErrorLocation, cause?: unknown)
+  constructor(options: ErrorOptions)
   readonly name: 'ParseError'
-  readonly node?: ErrorLocation
   readonly code: string
-  readonly range?: SourceRange
   readonly summary: string
-  readonly diagnostic: Diagnostic
+  readonly node?: ErrorLocation
+  readonly range?: SourceRange
   withAst(node: ASTNode | ErrorLocation): this
 }
 
@@ -213,13 +200,13 @@ export class ParseError extends Error {
  * Error thrown during evaluation when an error occurs while executing the CEL expression.
  */
 export class EvaluationError extends Error {
-  constructor(message: string, node?: ASTNode, cause?: unknown, options?: ErrorOptions)
+  constructor(message: string, node?: ASTNode, cause?: unknown)
+  constructor(options: ErrorOptions)
   readonly name: 'EvaluationError'
-  readonly node?: ASTNode
   readonly code: string
-  readonly range?: SourceRange
   readonly summary: string
-  readonly diagnostic: Diagnostic
+  readonly node?: ASTNode
+  readonly range?: SourceRange
   withAst(node: ASTNode | SourceLocation): this
 }
 
@@ -228,13 +215,13 @@ export class EvaluationError extends Error {
  * The error message includes source position highlighting.
  */
 export class TypeError extends Error {
-  constructor(message: string, node?: ASTNode, cause?: unknown, options?: ErrorOptions)
+  constructor(message: string, node?: ASTNode, cause?: unknown)
+  constructor(options: ErrorOptions)
   readonly name: 'TypeError'
-  readonly node?: ASTNode
   readonly code: string
-  readonly range?: SourceRange
   readonly summary: string
-  readonly diagnostic: Diagnostic
+  readonly node?: ASTNode
+  readonly range?: SourceRange
   withAst(node: ASTNode | SourceLocation): this
 }
 
