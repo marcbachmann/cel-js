@@ -122,7 +122,7 @@ describe('Overlapping function overloads', () => {
             return checker.check(macro.firstArgument, ctx)
           },
           evaluate(evaluator, macro, ctx) {
-            return evaluator.eval(macro.firstArgument, ctx)
+            return evaluator.run(macro.firstArgument, ctx)
           }
         }
       })
@@ -164,8 +164,8 @@ describe('Overlapping function overloads', () => {
 
     test('multiple ast arguments allowed', () => {
       const env = new Environment()
-      env.registerFunction('macro(ast): dyn', (ast) => this.eval(ast))
-      env.registerFunction('macro(ast, ast): dyn', (a, b) => this.eval(a) + this.eval(b))
+      env.registerFunction('macro(ast): dyn', (ast) => this.run(ast))
+      env.registerFunction('macro(ast, ast): dyn', (a, b) => this.run(a) + this.run(b))
     })
   })
 
