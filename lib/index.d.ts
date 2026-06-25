@@ -497,7 +497,7 @@ export class Environment {
    *     return checker.check(macro.firstArgument, ctx)
    *   },
    *   evaluate(evaluator, macro, ctx) {
-   *     return evaluator.eval(macro.firstArgument, ctx)
+   *     return evaluator.run(macro.firstArgument, ctx)
    *   }
    * }))
    * ```

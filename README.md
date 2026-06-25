@@ -530,7 +530,7 @@ env.registerFunction('macro(ast): dyn', ({ast, args}) => {
     },
     // Mandatory: called when the expression is evaluated
     evaluate(evaluator, macro, ctx) {
-      return evaluator.eval(macro.firstArgument, ctx)
+      return evaluator.run(macro.firstArgument, ctx)
     }
   }
 })
