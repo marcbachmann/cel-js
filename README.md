@@ -556,15 +556,16 @@ const env = new Environment()
   .registerVariable('v1', 'Vector')
   .registerVariable('v2', 'Vector')
   .registerOperator('Vector + Vector', (a, b) => a.add(b))
+  .registerFunction('Vector.add(Vector): Vector', (a, b) => a.add(b))
   .registerFunction('magnitude(Vector): double', (v) =>
     Math.sqrt(v.x * v.x + v.y * v.y)
   )
 
-const result = env.evaluate('magnitude(v1 + v2)', {
+const result = env.evaluate('magnitude(v1.add(v1) + v2)', {
   v1: new Vector(3, 4),
   v2: new Vector(1, 2)
 })
-// 7.211102550927978
+// 12.206555615733702
 ```
 
 ## Performance
