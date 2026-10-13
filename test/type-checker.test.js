@@ -804,4 +804,84 @@ describe('Type Checker', () => {
     // Property access allowed on custom types
     env.expectType('p.x', 'dyn')
   })
+
+  describe('declared fields in has() and optional selection', () => {
+    const env = new TestEnvironment({enableOptionalTypes: true})
+      .registerType('Inner', {fields: {name: 'string'}})
+      .registerType('Record', {
+        fields: {name: 'string', quantity: 'int', inner: 'Inner', items: 'list<Inner>'}
+      })
+      .registerVariable('record', 'Record')
+      .registerVariable('m', 'map<string, int>')
+      .registerVariable('d', 'dyn')
+
+    test('has() rejects undeclared fields', () => {
+      for (const expr of [
+        'has(record.naem)',
+        '!has(record.naem)',
+        'has(record.inner.naem)',
+        'has(record.naem.name)',
+        'has(record.?inner.naem)',
+        'record.items.all(x, has(x.naem))'
+      ]) {
+        const error = env.expectCheckThrows(expr, /No such key: naem/)
+        assert.strictEqual(error.code, 'no_such_key')
+      }
+    })
+
+    test('has() rejects selection on types without fields', () => {
+      env.expectCheckThrows('has(record.name.x)', /Cannot index type 'string'/)
+      env.expectCheckThrows('has(record.items.x)', /List index must be int, got 'string'/)
+      env.expectCheckThrows('has(m.anyKey.x)', /Cannot index type 'int'/)
+    })
+
+    test('has() accepts declared fields', () => {
+      env.expectType('has(record.name)', 'bool')
+      env.expectType('has(record.inner.name)', 'bool')
+      env.expectType('has(record.?inner.name)', 'bool')
+      env.expectType('record.items.all(x, has(x.name))', 'bool')
+    })
+
+    test('optional selection rejects undeclared fields', () => {
+      env.expectCheckThrows('record.?quanntity.orValue(0) > 0', /No such key: quanntity/)
+      for (const expr of [
+        'record.?naem',
+        'record.?inner.naem',
+        'record.?inner.?naem',
+        'record[?"naem"]'
+      ]) {
+        const error = env.expectCheckThrows(expr, /No such key: naem/)
+        assert.strictEqual(error.code, 'no_such_key')
+      }
+    })
+
+    test('optional selection accepts declared fields', () => {
+      env.expectType('record.?name', 'optional<string>')
+      env.expectType('record.?inner.name', 'optional<string>')
+      env.expectType('record[?"quantity"]', 'optional<int>')
+      env.expectType('record.?quantity.orValue(0) > 0', 'bool')
+    })
+
+    test('maps and dyn keep permissive field selection', () => {
+      env.expectType('has(m.anyKey)', 'bool')
+      env.expectType('m.?anyKey', 'optional<int>')
+      env.expectType('has(d.anyKey)', 'bool')
+      env.expectType('d.?anyKey', 'optional<dyn>')
+      env.expectType('dyn(record).?naem', 'optional<dyn>')
+      env.expectType('record[?d]', 'optional<dyn>')
+    })
+
+    test('types without declared fields keep permissive field selection', () => {
+      const freeEnv = new TestEnvironment({enableOptionalTypes: true})
+        .registerType('Free', class Free {})
+        .registerVariable('free', 'Free')
+      freeEnv.expectType('has(free.anyKey)', 'bool')
+      freeEnv.expectType('free.?anyKey', 'optional<dyn>')
+    })
+
+    test('evaluate() rejects undeclared fields in has()', () => {
+      env.expectEvalThrows('has(record.naem)', /No such key: naem/, {record: {name: 'a'}})
+      env.expectEval('has(record.name)', true, {record: {name: 'a'}})
+    })
+  })
 })
