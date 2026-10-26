@@ -1,4 +1,5 @@
 import {describe, it} from 'node:test'
+import assert from 'node:assert'
 import {TestEnvironment} from './helpers.js'
 
 describe('Async Functions', () => {
@@ -478,5 +479,35 @@ describe('macros with async', () => {
       6n,
       12n
     ])
+  })
+
+  it('should evaluate a nested quantifier with async predicate on every outer iteration', async () => {
+    const env = new TestEnvironment({unlistedVariablesAreDyn: true}).registerFunction(
+      'asyncIsPositive(int): bool',
+      async (n) => {
+        await new Promise((resolve) => setTimeout(resolve, 1))
+        return n > 0n
+      }
+    )
+    await env.expectEval('[1, 2].all(x, [1].all(y, asyncIsPositive(x)))', true)
+    await env.expectEval('[1, -2].all(x, [1].all(y, asyncIsPositive(x)))', false)
+    await env.expectEval('[1, -2].all(x, ![1].all(y, asyncIsPositive(x)))', false)
+    await env.expectEval('[1, -2].exists(x, ![1].all(y, asyncIsPositive(x)))', true)
+    await env.expectEval('[1, 2].all(x, [1].exists(y, asyncIsPositive(x)))', true)
+    await env.expectEval('[1, 2].all(x, [1].exists_one(y, asyncIsPositive(x)))', true)
+    await env.expectEvalDeep('[1, -2].map(x, [1].all(y, asyncIsPositive(x)))', [true, false])
+  })
+
+  it('should evaluate a parsed quantifier with async predicate more than once', async () => {
+    const env = new TestEnvironment({unlistedVariablesAreDyn: true}).registerFunction(
+      'asyncIsPositive(int): bool',
+      async (n) => n > 0n
+    )
+    const allPositive = env.parse('[1, 2].all(x, asyncIsPositive(x))')
+    const existsNegative = env.parse('[1, 2].exists(x, !asyncIsPositive(x))')
+    for (let i = 0; i < 3; i++) {
+      assert.strictEqual(await allPositive(), true)
+      assert.strictEqual(await existsNegative(), false)
+    }
   })
 })
