@@ -33,6 +33,27 @@ describe('AST to CEL Serialization', () => {
       equalResult('"backslash\\\\"')
     })
 
+    test('should serialize strings with Unicode escapes', () => {
+      // BMP characters retain four-digit \u escapes.
+      equalResult('"caf\\u00e9"')
+      // Supplementary characters use one \U escape, not two surrogate escapes.
+      equalResult('"\\U0001f600"')
+      // Lower boundary of supplementary code points.
+      equalResult('"\\U00010000"')
+      // Upper boundary of valid Unicode scalar values.
+      equalResult('"\\U0010ffff"')
+      // BMP, supplementary, and variation-selector code points coexist with string escaping.
+      equalResult('"caf\\u00e9 \\U0001f6f0\\ufe0f\\n\\"\\\\"')
+    })
+
+    test('should round-trip a Unicode string value', () => {
+      const value = 'café 🛰️\n"\\'
+      const node = {op: 'value', args: value}
+      const literal = serialize(node)
+      const actValue = parse(literal).ast.args
+      assert.strictEqual(actValue, value)
+    })
+
     test('should serialize bytes literals', () => {
       equalResult('b"hello"')
       assert.strictEqual(serialize(parse('b"\\x00\\xFF"').ast), 'b"\\x00\\xff"')
