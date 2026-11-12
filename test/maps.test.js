@@ -110,6 +110,14 @@ describe('maps/objects expressions', () => {
       env.expectEvalThrows('{"name": "John", "age": 30}', /Map value uses wrong type/)
     })
 
+    test('rejects repeated keys by default', () => {
+      expectEvalThrows('{"name": "John", "name": "Jane"}', /Failed with repeated key.'name'/)
+    })
+
+    test('rejects in and uint keys with the same values', () => {
+      expectEvalThrows('{dyn(0): 1, dyn(0u): 2}', /Failed with repeated key.'0'/)
+    })
+
     test('rejects mixed key types by default', () => {
       expectEvalThrows('{"name": "John", 1: "duplicate"}', /Map key uses wrong type/)
     })
